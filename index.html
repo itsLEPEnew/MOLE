@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Iceberg — Music Digger</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#02263d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Iceberg">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" href="./icon-192.png">
+<style>
+  :root{
+    --bg-deep:#010912;
+    --bg-mid:#03192b;
+    --ice:#bfe9ff;
+    --ice-dim:#7fb8d9;
+    --accent:#3ee0c8;
+    --accent2:#ff5f7e;
+    --card:#08243a;
+    --card-border:#123a56;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    background:linear-gradient(180deg,#e8fbff 0%, #a9e2f5 6%, #4fa8d6 12%, #1c5f8f 22%, #0c3a5c 38%, var(--bg-mid) 60%, var(--bg-deep) 100%);
+    color:var(--ice);
+    min-height:100vh;
+  }
+  header{
+    text-align:center;
+    padding:28px 16px 10px;
+  }
+  header h1{
+    margin:0;
+    font-size:28px;
+    letter-spacing:0.5px;
+    color:#02263d;
+    text-shadow:0 1px 0 rgba(255,255,255,0.4);
+  }
+  header p{
+    color:#0a3550;
+    margin:6px 0 0;
+    font-size:14px;
+  }
+  .tabs{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin:18px 0 8px;
+  }
+  .tab-btn{
+    background:rgba(255,255,255,0.15);
+    border:1px solid rgba(2,38,61,0.25);
+    color:#02263d;
+    padding:9px 18px;
+    border-radius:20px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:600;
+  }
+  .tab-btn.active{
+    background:#02263d;
+    color:#bfe9ff;
+  }
+  main{
+    max-width:760px;
+    margin:0 auto;
+    padding:10px 16px 80px;
+  }
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* --- Reco view --- */
+  .filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    justify-content:center;
+    margin:18px 0;
+  }
+  select{
+    background:rgba(255,255,255,0.9);
+    border:none;
+    border-radius:10px;
+    padding:9px 12px;
+    font-size:13px;
+    color:#02263d;
+    font-weight:600;
+  }
+  .roll-btn{
+    display:block;
+    margin:22px auto 8px;
+    background:var(--accent);
+    color:#02263d;
+    border:none;
+    padding:16px 32px;
+    border-radius:30px;
+    font-size:16px;
+    font-weight:800;
+    cursor:pointer;
+    box-shadow:0 6px 20px rgba(62,224,200,0.35);
+  }
+  .roll-btn:active{transform:translateY(1px);}
+
+  .reco-card{
+    margin-top:26px;
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:18px;
+    padding:24px;
+    animation:fadein 0.35s ease;
+  }
+  @keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .tier-badge{
+    display:inline-block;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    padding:4px 10px;
+    border-radius:12px;
+    background:rgba(62,224,200,0.15);
+    color:var(--accent);
+    margin-bottom:10px;
+    font-weight:700;
+  }
+  .reco-genre{
+    font-size:12px;
+    color:var(--ice-dim);
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-bottom:2px;
+  }
+  .reco-card h2{
+    margin:4px 0 2px;
+    font-size:24px;
+  }
+  .reco-card .track{
+    font-size:15px;
+    color:var(--ice-dim);
+    margin-bottom:14px;
+  }
+  .reco-card .why{
+    font-size:14.5px;
+    line-height:1.55;
+    color:#dff5ff;
+    margin-bottom:18px;
+  }
+  .links{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .links a{
+    text-decoration:none;
+    color:#02263d;
+    background:var(--ice);
+    padding:9px 16px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:700;
+  }
+  .links a.yt{
+    background:transparent;
+    border:1px solid var(--ice-dim);
+    color:var(--ice);
+  }
+
+  /* --- Explore view --- */
+  .genre-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:10px;
+    margin-top:16px;
+  }
+  .genre-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:16px 10px;
+    text-align:center;
+    cursor:pointer;
+    font-weight:700;
+    font-size:14px;
+  }
+  .genre-card:hover{border-color:var(--accent);}
+
+  .iceberg-wrap{
+    display:flex;
+    gap:16px;
+    margin-top:20px;
+  }
+  .iceberg-gauge{
+    width:34px;
+    flex-shrink:0;
+    position:relative;
+    background:linear-gradient(180deg,#dff6ff,#8fd3ee 8%,#123a56 20%,#08243a 100%);
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .depth-marker{
+    position:absolute;
+    left:0;right:0;
+    height:2px;
+    background:var(--accent);
+    transition:top 0.3s ease;
+  }
+  .depth-dot{
+    position:absolute;
+    left:50%;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 10px var(--accent);
+    transform:translate(-50%,-50%);
+    transition:top 0.3s ease;
+  }
+  .tiers-col{flex:1;}
+  .tier-block{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:12px;
+    opacity:0.3;
+    filter:blur(1px);
+    pointer-events:none;
+    transition:opacity 0.4s ease, filter 0.4s ease;
+  }
+  .tier-block.unlocked{
+    opacity:1;
+    filter:none;
+    pointer-events:auto;
+  }
+  .tier-block h3{
+    margin:0 0 8px;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--accent);
+  }
+  .entry{
+    padding:10px 0;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+  .entry:first-of-type{border-top:none;}
+  .entry .name{font-weight:700;font-size:15px;}
+  .entry .trk{font-size:13px;color:var(--ice-dim);margin:2px 0 6px;}
+  .entry .why{font-size:13.5px;line-height:1.5;color:#dff5ff;margin-bottom:8px;}
+  .entry .links a{padding:6px 12px;font-size:12px;}
+
+  .dive-btn{
+    display:block;
+    width:100%;
+    margin:6px 0 24px;
+    background:transparent;
+    border:1px dashed var(--ice-dim);
+    color:var(--ice);
+    padding:12px;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:600;
+  }
+  .back-link{
+    display:inline-block;
+    margin-top:6px;
+    color:var(--ice-dim);
+    cursor:pointer;
+    font-size:13px;
+  }
+  footer{
+    text-align:center;
+    font-size:11.5px;
+    color:rgba(255,255,255,0.35);
+    padding:20px;
+  }
+
+  /* --- Profil view --- */
+  .profil-intro{
+    font-size:13.5px;
+    color:var(--ice-dim);
+    line-height:1.5;
+    margin:14px 0 18px;
+  }
+  .chip-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:20px;
+  }
+  .chip{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    color:var(--ice);
+    padding:9px 14px;
+    border-radius:18px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .chip.selected{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#02263d;
+  }
+  .known-block{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:12px;
+  }
+  .known-block h4{
+    margin:0 0 8px;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--accent);
+  }
+  .known-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:5px 0;
+    font-size:13.5px;
+  }
+  .known-item input{width:16px;height:16px;}
+  .save-btn{
+    display:block;
+    width:100%;
+    margin:12px 0 8px;
+    background:var(--accent);
+    color:#02263d;
+    border:none;
+    padding:14px;
+    border-radius:14px;
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .profile-status{
+    font-size:13px;
+    color:var(--accent);
+    text-align:center;
+    margin-top:8px;
+    min-height:18px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧊 ICEBERG</h1>
+  <p>Digging engine — du classique au totalement inconnu</p>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="reco">Reco instantanée</button>
+  <button class="tab-btn" data-tab="explore">Explorer l'iceberg</button>
+  <button class="tab-btn" data-tab="profil">Mon profil</button>
+</div>
+
+<main>
+
+  <!-- ===== RECO VIEW ===== -->
+  <section id="view-reco" class="view active">
+    <div class="filters">
+      <select id="genreFilter">
+        <option value="all">Tous les genres</option>
+      </select>
+      <select id="depthFilter">
+        <option value="all">N'importe quelle profondeur</option>
+        <option value="0">Surface (grand public)</option>
+        <option value="1">Sous la surface</option>
+        <option value="2">Le corps (pionniers)</option>
+        <option value="3">Les profondeurs</option>
+        <option value="4">Le fond abyssal</option>
+      </select>
+    </div>
+    <button class="roll-btn" id="rollBtn">🎲 Lance-moi un banger</button>
+    <div id="recoResult"></div>
+  </section>
+
+  <!-- ===== EXPLORE VIEW ===== -->
+  <section id="view-explore" class="view">
+    <div id="genreGrid" class="genre-grid"></div>
+    <div id="icebergDetail" style="display:none;">
+      <span class="back-link" id="backToGenres">← Choisir un autre genre</span>
+      <div class="iceberg-wrap">
+        <div class="iceberg-gauge" id="gauge">
+          <div class="depth-dot" id="depthDot" style="top:10%;"></div>
+        </div>
+        <div class="tiers-col" id="tiersCol"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROFIL VIEW ===== -->
+  <section id="view-profil" class="view">
+    <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
+    <div id="genreChips" class="chip-row"></div>
+    <div id="knownArtists"></div>
+    <button class="save-btn" id="saveProfileBtn">Enregistrer mon profil</button>
+    <div class="profile-status" id="profileStatus"></div>
+  </section>
+
+</main>
+
+<footer>V0 prototype — data curée à la main sur 5 genres · Apple Music &amp; YouTube en liens externes</footer>
+
+<script>
+const TIER_LABELS = [
+  "Surface — grand public",
+  "Sous la surface — fans du genre",
+  "Le corps du glacier — les pionniers",
+  "Les profondeurs — diggers confirmés",
+  "Le fond abyssal — ultra niche"
+];
+
+const DATA = {
+  "Techno": [
+    [
+      {artist:"Kraftwerk", track:"Trans-Europe Express", year:1977, why:"Les Allemands qui ont inventé le vocabulaire électronique dont toute la techno descend."},
+      {artist:"Daft Punk", track:"Da Funk", year:1995, why:"L'entrée grand public de la French Touch dans la techno/house mondiale."},
+      {artist:"The Prodigy", track:"Breathe", year:1996, why:"La techno/rave portée jusqu'aux charts et aux stades."},
+      {artist:"Charlotte de Witte", track:"Doppler", year:2018, why:"Le visage actuel de la techno mainstream sur les gros festivals."}
+    ],
+    [
+      {artist:"Jeff Mills", track:"The Bells", year:1997, why:"Le 'Wizard' de Detroit, un hymne que même les non-initiés reconnaissent en club."},
+      {artist:"Richie Hawtin", track:"Spastik", year:1993, why:"Minimal techno culte, référence absolue pour tout digger sérieux."},
+      {artist:"Carl Craig", track:"At Les (Sandstorm)", year:1997, why:"Le pont entre la techno de Detroit et la scène electronica."},
+      {artist:"Nina Kraviz", track:"Ghetto Kraviz", year:2012, why:"A ramené une nouvelle génération vers la techno underground."}
+    ],
+    [
+      {artist:"Juan Atkins (Model 500)", track:"No UFO's", year:1985, why:"Un des trois fondateurs de la techno de Detroit, littéralement le point zéro du genre."},
+      {artist:"Derrick May (Rhythim Is Rhythim)", track:"Strings of Life", year:1987, why:"Le morceau qui a défini l'âme mélancolique et futuriste de la techno."},
+      {artist:"Kevin Saunderson (Inner City)", track:"Big Fun", year:1988, why:"Le troisième du 'Belleville Three', a amené la techno vers la pop sans la trahir."},
+      {artist:"Dr. Motte", track:"Der Klang der Familie (compil)", year:1997, why:"Fondateur de la Love Parade, pionnier de la scène techno berlinoise."}
+    ],
+    [
+      {artist:"Drexciya", track:"Wave Jumper", year:1997, why:"Duo masqué de Detroit, mythologie afrofuturiste sous-marine, culte absolu chez les diggers."},
+      {artist:"Underground Resistance", track:"Sonic Destroyer", year:1991, why:"Collectif activiste, techno comme résistance politique et sociale."},
+      {artist:"Basic Channel", track:"Phylyps Trak", year:1994, why:"Le son dub-techno le plus minimal et le plus révéré de Berlin."},
+      {artist:"DJ Stingray", track:"Elements of Extinction", year:2007, why:"Héritier direct d'UR, techno électro froide et technique, très niche."}
+    ],
+    [
+      {artist:"Anthony 'Shake' Shakir", track:"Frictionalism 1994-2009", year:2009, why:"Un des pionniers de Detroit les plus sous-estimés, jamais vraiment sorti de l'ombre."},
+      {artist:"Terrence Dixon", track:"From the Far Future", year:2000, why:"Minimalisme extrême, culte chez les collectionneurs de vinyles Detroit."},
+      {artist:"Sea Lion", track:"Untitled EPs", year:2015, why:"Productions ultra confidentielles, presque introuvables, cultissimes dans les cercles très pointus."},
+      {artist:"Aardvarck", track:"Meccano Mixup", year:2001, why:"Techno/glitch hollandaise expérimentale, connue quasi uniquement des diggers hardcore."}
+    ]
+  ],
+  "House": [
+    [
+      {artist:"Disclosure", track:"Latch", year:2012, why:"A remis la house dans les charts mondiaux pour toute une génération."},
+      {artist:"Robin S.", track:"Show Me Love", year:1993, why:"Un des hymnes house les plus connus, encore joué partout aujourd'hui."},
+      {artist:"CeCe Peniston", track:"Finally", year:1991, why:"Un classique house-pop que tout le monde a déjà entendu sans savoir d'où il vient."},
+      {artist:"Duke Dumont", track:"Need U (100%)", year:2013, why:"House commerciale de qualité, énorme succès radio."}
+    ],
+    [
+      {artist:"Masters at Work", track:"The Ha Dance", year:1991, why:"Duo culte (Louie Vega & Kenny Dope), référence pour toute la house new-yorkaise."},
+      {artist:"Armand Van Helden", track:"You Don't Know Me", year:1999, why:"A façonné le son house filtré des années 90-2000."},
+      {artist:"Todd Terry", track:"Bango (To The Batmobile)", year:1988, why:"Pionnier du sample house new-yorkais, adoré des connaisseurs."},
+      {artist:"Roger Sanchez", track:"Another Chance", year:2001, why:"Producteur incontournable de la house garage new-yorkaise."}
+    ],
+    [
+      {artist:"Frankie Knuckles", track:"Your Love", year:1987, why:"Le 'Godfather of House', DJ résident du Warehouse de Chicago qui a donné son nom au genre."},
+      {artist:"Larry Levan", track:"Set at the Paradise Garage (live)", year:1979, why:"Résident du Paradise Garage, a inventé la culture du DJ comme architecte de soirée."},
+      {artist:"Marshall Jefferson", track:"Move Your Body (The House Music Anthem)", year:1986, why:"Le morceau qui a littéralement donné son hymne au genre house."},
+      {artist:"Jesse Saunders", track:"On and On", year:1984, why:"Considéré comme le tout premier disque house jamais pressé."}
+    ],
+    [
+      {artist:"Mr. Fingers (Larry Heard)", track:"Can You Feel It", year:1986, why:"Le son deep house le plus pur et le plus copié de l'histoire du genre."},
+      {artist:"Ron Hardy", track:"Sets at the Music Box (bootlegs)", year:1983, why:"Rival de Frankie Knuckles, son plus brut et plus rapide, culte à Chicago."},
+      {artist:"Phuture", track:"Acid Tracks", year:1987, why:"Le disque qui a inventé l'acid house avec la TB-303, littéralement fondateur d'un sous-genre entier."},
+      {artist:"Sleezy D", track:"I've Lost Control", year:1986, why:"Production sombre et hypnotique, culte pour les collectionneurs de house de Chicago."}
+    ],
+    [
+      {artist:"Chip E.", track:"Time to Jack", year:1985, why:"Un des tout premiers producteurs house, quasiment oublié aujourd'hui."},
+      {artist:"Farley 'Jackmaster' Funk", track:"Deep cuts radio mixes", year:1985, why:"Figure de la radio WBMX Chicago, matériel dispersé et rarement réédité."},
+      {artist:"Z-Factor", track:"Fantasy", year:1983, why:"Proto-house ultra rare, pressages originaux quasiment introuvables."},
+      {artist:"Virgo Four", track:"It's a Crime", year:1989, why:"Redécouvert seulement des décennies après sa sortie confidentielle, culte de niche total."}
+    ]
+  ],
+  "Hip-Hop": [
+    [
+      {artist:"Jay-Z", track:"99 Problems", year:2003, why:"Un des rappeurs les plus connus et influents commercialement de tous les temps."},
+      {artist:"Eminem", track:"Lose Yourself", year:2002, why:"Rap devenu culture pop mondiale, un des artistes les plus vendus de l'histoire."},
+      {artist:"Kendrick Lamar", track:"HUMBLE.", year:2017, why:"Le rap contemporain le plus acclamé critique ET grand public."},
+      {artist:"Kanye West", track:"Stronger", year:2007, why:"A redéfini le son mainstream du hip-hop des années 2000-2010."}
+    ],
+    [
+      {artist:"Nas", track:"N.Y. State of Mind", year:1994, why:"'Illmatic' est considéré comme un des meilleurs albums de rap jamais écrits."},
+      {artist:"Wu-Tang Clan", track:"C.R.E.A.M.", year:1993, why:"Collectif culte de Staten Island, a redéfini le rap indépendant et l'esthétique lo-fi."},
+      {artist:"A Tribe Called Quest", track:"Can I Kick It?", year:1990, why:"Pionniers du jazz-rap, référence absolue pour les puristes."},
+      {artist:"MF DOOM", track:"Doomsday", year:1999, why:"Le rappeur masqué culte, vénéré par toute une génération de diggers hip-hop."}
+    ],
+    [
+      {artist:"DJ Kool Herc", track:"Back to School Jam (reconstitution)", year:1973, why:"Considéré comme l'inventeur du hip-hop lors d'une fête d'anniversaire dans le Bronx."},
+      {artist:"Grandmaster Flash", track:"The Adventures of Grandmaster Flash on the Wheels of Steel", year:1981, why:"A inventé les techniques de scratch et de mixage fondatrices du DJing hip-hop."},
+      {artist:"Afrika Bambaataa", track:"Planet Rock", year:1982, why:"A fusionné hip-hop et electro, fondateur de la Zulu Nation."},
+      {artist:"Sugarhill Gang", track:"Rapper's Delight", year:1979, why:"Le premier morceau de rap à connaître un succès commercial mondial."}
+    ],
+    [
+      {artist:"Cold Crush Brothers", track:"Punk Rock Rap", year:1983, why:"Un des tout premiers crews à structurer le rap en groupe avec des routines vocales complexes."},
+      {artist:"Rammellzee", track:"Beat Bop", year:1983, why:"Artiste graffeur/rappeur culte, disque devenu une pièce de collection légendaire."},
+      {artist:"Ultramagnetic MCs", track:"Ego Trippin'", year:1988, why:"Production et flow en avance sur leur temps, très respectés par les puristes."},
+      {artist:"Marley Marl", track:"The Bridge (prod.)", year:1985, why:"Producteur fondateur du son 'Juice Crew', pionnier du sampling hip-hop."}
+    ],
+    [
+      {artist:"Divine Sounds", track:"What People Do for Money", year:1984, why:"Groupe quasi oublié du early hip-hop, pressage original très recherché."},
+      {artist:"DJ Disco Wiz", track:"early Bronx tapes", year:1975, why:"Considéré comme le premier DJ latino du hip-hop, matériel très peu documenté."},
+      {artist:"Grand Wizzard Theodore", track:"tapes de block parties", year:1977, why:"Inventeur revendiqué du scratch, dont l'essentiel du travail n'existe qu'en cassettes de fêtes de rue."},
+      {artist:"Mr. Magic (Rap Attack radio)", track:"archives radio", year:1979, why:"Première émission radio dédiée au rap, archives très partielles et dispersées."}
+    ]
+  ],
+  "Jazz": [
+    [
+      {artist:"Miles Davis", track:"So What", year:1959, why:"L'album 'Kind of Blue' est l'album de jazz le plus vendu de l'histoire."},
+      {artist:"John Coltrane", track:"A Love Supreme", year:1965, why:"Un sommet spirituel et technique du jazz, connu bien au-delà des amateurs du genre."},
+      {artist:"Louis Armstrong", track:"What a Wonderful World", year:1967, why:"Le visage le plus universellement reconnu du jazz dans le monde entier."},
+      {artist:"Herbie Hancock", track:"Cantaloupe Island", year:1964, why:"Jazz devenu référence pop culture, samplé dans d'innombrables morceaux hip-hop."}
+    ],
+    [
+      {artist:"Thelonious Monk", track:"Round Midnight", year:1957, why:"Harmonies et rythmes uniques, un des compositeurs les plus repris du jazz."},
+      {artist:"Charles Mingus", track:"Goodbye Pork Pie Hat", year:1959, why:"Bassiste-compositeur culte, jazz chargé politiquement et émotionnellement."},
+      {artist:"Sun Ra", track:"Space Is the Place", year:1973, why:"Pionnier de l'afrofuturisme en musique, univers cosmique et théâtral unique."},
+      {artist:"Alice Coltrane", track:"Journey in Satchidananda", year:1971, why:"Jazz spirituel, harpe et modalité, très admirée des connaisseurs."}
+    ],
+    [
+      {artist:"Jelly Roll Morton", track:"Black Bottom Stomp", year:1926, why:"Un des tout premiers à composer et arranger le jazz plutôt que de simplement improviser."},
+      {artist:"King Oliver", track:"Dippermouth Blues", year:1923, why:"Mentor de Louis Armstrong, figure fondatrice du jazz de La Nouvelle-Orléans."},
+      {artist:"Buddy Bolden", track:"aucun enregistrement connu subsistant", why:"Considéré par la légende orale comme le tout premier musicien de jazz, avant même l'ère de l'enregistrement."},
+      {artist:"Bessie Smith", track:"Down Hearted Blues", year:1923, why:"Reine du blues qui a directement nourri le langage vocal du jazz naissant."}
+    ],
+    [
+      {artist:"Eric Dolphy", track:"Out to Lunch!", year:1964, why:"Jazz d'avant-garde très exigeant, culte chez les auditeurs pointus."},
+      {artist:"Cecil Taylor", track:"Unit Structures", year:1966, why:"Pianiste extrême du free jazz, écoute difficile mais vénérée des puristes."},
+      {artist:"Andrew Hill", track:"Point of Departure", year:1965, why:"Compositeur sous-estimé de son vivant, redécouvert par les diggers plus tard."},
+      {artist:"Sam Rivers", track:"Fuchsia Swing Song", year:1964, why:"Saxophoniste d'avant-garde peu connu du grand public mais culte chez les collectionneurs."}
+    ],
+    [
+      {artist:"Horace Tapscott", track:"The Giant Is Awakened", year:1969, why:"Pianiste de Los Angeles resté quasi confidentiel toute sa carrière, culte tardif."},
+      {artist:"Sun Ra Arkestra (pressages Saturn originaux)", track:"Saturn label rarities", why:"Pressages auto-produits en quantités infimes, aujourd'hui des Graals de collectionneurs."},
+      {artist:"Charles Gayle", track:"Homeless", year:1988, why:"A joué dans la rue pendant des années avant d'être reconnu, free jazz extrême."},
+      {artist:"Peter Brötzmann", track:"Machine Gun", year:1968, why:"Free jazz européen d'une violence sonore rare, réservé aux auditeurs les plus aguerris."}
+    ]
+  ],
+  "UK Bass (Jungle / Garage / Dubstep)": [
+    [
+      {artist:"Burial", track:"Archangel", year:2007, why:"A porté le dubstep atmosphérique jusqu'à la reconnaissance critique mondiale."},
+      {artist:"Skepta", track:"Shutdown", year:2015, why:"Grime devenu phénomène mainstream international."},
+      {artist:"Disclosure", track:"White Noise", year:2013, why:"UK garage réintroduit dans les charts pop."},
+      {artist:"Chase & Status", track:"Blind Faith", year:2010, why:"Drum & bass/jungle amenée sur les grosses scènes de festival."}
+    ],
+    [
+      {artist:"Goldie", track:"Inner City Life", year:1994, why:"A donné à la jungle/drum & bass ses lettres de noblesse artistique."},
+      {artist:"Roni Size / Reprazent", track:"Brown Paper Bag", year:1997, why:"A gagné le Mercury Prize, jungle reconnue par la critique généraliste."},
+      {artist:"Wiley", track:"Eskimo", year:2002, why:"Le 'Godfather of Grime', a posé les bases sonores du genre."},
+      {artist:"Benga & Skream", track:"Night", year:2007, why:"Duo fondateur du son dubstep de Croydon dans les années 2000."}
+    ],
+    [
+      {artist:"DJ Hype", track:"Roll The Beats", year:1994, why:"Un des architectes du son jungle, encore actif et respecté aujourd'hui."},
+      {artist:"Fabio & Grooverider", track:"Rage sets at Heaven (Londres)", year:1991, why:"Résidents de la soirée Rage, considérés comme fondateurs de la culture jungle londonienne."},
+      {artist:"Shut Up And Dance", track:"Raving I'm Raving", year:1992, why:"Duo pionnier du breakbeat hardcore qui a directement mené à la jungle."},
+      {artist:"Zed Bias", track:"Neighbourhood", year:2000, why:"Pionnier essentiel du son 2-step UK garage."}
+    ],
+    [
+      {artist:"Photek", track:"Ni Ten Ichi Ryu", year:1997, why:"Production jungle chirurgicale, très respectée des connaisseurs techniques du genre."},
+      {artist:"Doc Scott", track:"Surgery", year:1992, why:"Un des tout premiers disques jungle 'dark', référence pour les diggers du genre."},
+      {artist:"Source Direct", track:"Snake Style", year:1996, why:"Son jungle sombre et minimal, culte chez les amateurs de 'techstep'."},
+      {artist:"Digital Mystikz", track:"Haunted", year:2006, why:"Duo fondateur du label DMZ, pierre angulaire du dubstep culte de Londres."}
+    ],
+    [
+      {artist:"Nasty Habits", track:"Shadow Boxing (white label original)", year:1994, why:"Pressage blanc distribué en quantités infimes, culte parmi les collectionneurs jungle."},
+      {artist:"Kemet Crew", track:"dubplates non commercialisées", why:"Sound system culte des années 90, essentiellement connu via des dubplates jamais éditées."},
+      {artist:"DJ SS", track:"Lighter (early press)", year:1994, why:"Pionnier du label Formation Records, pressages originaux devenus rarissimes."},
+      {artist:"Horsepower Productions", track:"Original Nuttah (rework confidentiel)", why:"Trio fondateur du dubstep pré-2000, matériel quasi introuvable en dehors de vinyles très rares."}
+    ]
+  ]
+};
+
+// ---------- helpers ----------
+function amLink(artist, track){
+  const q = encodeURIComponent(artist + (track ? " " + track : ""));
+  return "https://music.apple.com/us/search?term=" + q;
+}
+function ytLink(artist, track){
+  const q = encodeURIComponent(artist + (track ? " " + track : ""));
+  return "https://www.youtube.com/results?search_query=" + q;
+}
+function entryLinksHTML(e){
+  return `<div class="links">
+    <a class="am" href="${amLink(e.artist, e.track)}" target="_blank" rel="noopener">🎵 Apple Music</a>
+    <a class="yt" href="${ytLink(e.artist, e.track)}" target="_blank" rel="noopener">▶ YouTube</a>
+  </div>`;
+}
+
+// ---------- populate genre filter + grid ----------
+const genreNames = Object.keys(DATA);
+const genreFilterEl = document.getElementById("genreFilter");
+genreNames.forEach(g=>{
+  const opt = document.createElement("option");
+  opt.value = g; opt.textContent = g;
+  genreFilterEl.appendChild(opt);
+});
+
+const genreGrid = document.getElementById("genreGrid");
+genreNames.forEach(g=>{
+  const div = document.createElement("div");
+  div.className = "genre-card";
+  div.textContent = g;
+  div.onclick = () => openIceberg(g);
+  genreGrid.appendChild(div);
+});
+
+// ---------- profil (goûts + profondeur connue) ----------
+const PROFILE_KEY = "iceberg_profile_v1";
+function loadProfile(){
+  try{
+    const raw = localStorage.getItem(PROFILE_KEY);
+    const p = raw ? JSON.parse(raw) : null;
+    return p && Array.isArray(p.liked) && p.known ? p : {liked:[], known:{}};
+  }catch(e){ return {liked:[], known:{}}; }
+}
+function saveProfileToStorage(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+
+let profile = loadProfile();
+
+const genreChipsEl = document.getElementById("genreChips");
+const knownArtistsEl = document.getElementById("knownArtists");
+
+function sampleArtistsForGenre(genre){
+  const tiers = DATA[genre];
+  const picks = [];
+  for(let i=0;i<Math.min(4, tiers.length); i++){
+    picks.push({tier:i, artist:tiers[i][0].artist});
+  }
+  return picks;
+}
+
+function renderGenreChips(){
+  genreChipsEl.innerHTML = "";
+  genreNames.forEach(g=>{
+    const chip = document.createElement("div");
+    chip.className = "chip" + (profile.liked.includes(g) ? " selected" : "");
+    chip.textContent = g;
+    chip.onclick = () => {
+      if(profile.liked.includes(g)){
+        profile.liked = profile.liked.filter(x=>x!==g);
+      } else {
+        profile.liked.push(g);
+      }
+      renderGenreChips();
+      renderKnownArtists();
+    };
+    genreChipsEl.appendChild(chip);
+  });
+}
+
+function renderKnownArtists(){
+  knownArtistsEl.innerHTML = "";
+  if(profile.liked.length === 0){
+    knownArtistsEl.innerHTML = '<p class="profil-intro">Choisis d\'abord les genres que t\'aimes ci-dessus.</p>';
+    return;
+  }
+  profile.liked.forEach(g=>{
+    const block = document.createElement("div");
+    block.className = "known-block";
+    const picks = sampleArtistsForGenre(g);
+    const knownTier = profile.known[g] ?? -1;
+    block.innerHTML = `<h4>${g} — tu connais déjà ?</h4>` + picks.map(p => `
+      <label class="known-item">
+        <input type="checkbox" data-genre="${g}" data-tier="${p.tier}" ${knownTier >= p.tier ? "checked" : ""}>
+        ${p.artist} <span style="color:var(--ice-dim);font-size:11px;">(${TIER_LABELS[p.tier]})</span>
+      </label>
+    `).join("");
+    knownArtistsEl.appendChild(block);
+  });
+}
+
+renderGenreChips();
+renderKnownArtists();
+
+document.getElementById("saveProfileBtn").onclick = () => {
+  const newKnown = {};
+  profile.liked.forEach(g => { newKnown[g] = -1; });
+  knownArtistsEl.querySelectorAll('input[type="checkbox"]:checked').forEach(c=>{
+    const g = c.dataset.genre;
+    const t = parseInt(c.dataset.tier, 10);
+    newKnown[g] = Math.max(newKnown[g] ?? -1, t);
+  });
+  profile.known = newKnown;
+  saveProfileToStorage(profile);
+  const status = document.getElementById("profileStatus");
+  status.textContent = "Profil enregistré ✓ — tes recos vont s'ajuster.";
+  setTimeout(()=>{ status.textContent = ""; }, 3000);
+};
+
+function pickWeightedGenre(){
+  if(profile.liked.length === 0) return genreNames[Math.floor(Math.random()*genreNames.length)];
+  // 70% du temps on reste dans tes genres aimés, 30% pour découvrir autre chose
+  if(Math.random() < 0.7){
+    return profile.liked[Math.floor(Math.random()*profile.liked.length)];
+  }
+  return genreNames[Math.floor(Math.random()*genreNames.length)];
+}
+
+function pickWeightedTier(genre, tiersLength){
+  const known = profile.known[genre];
+  if(known === undefined) return Math.floor(Math.random()*tiersLength);
+  const target = Math.min(known+1, tiersLength-1);
+  const weights = [];
+  for(let i=0;i<tiersLength;i++) weights.push(1/(1+Math.abs(i-target)));
+  const total = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random()*total;
+  for(let i=0;i<tiersLength;i++){
+    r -= weights[i];
+    if(r<=0) return i;
+  }
+  return tiersLength-1;
+}
+
+// ---------- tabs ----------
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+    document.getElementById("view-" + btn.dataset.tab).classList.add("active");
+  };
+});
+
+// ---------- reco roll ----------
+document.getElementById("rollBtn").onclick = () => {
+  const gSel = genreFilterEl.value;
+  const dSel = document.getElementById("depthFilter").value;
+  const genre = gSel === "all" ? pickWeightedGenre() : gSel;
+  const tiers = DATA[genre];
+  const tierIdx = dSel === "all" ? pickWeightedTier(genre, tiers.length) : parseInt(dSel);
+  const entries = tiers[tierIdx];
+  const entry = entries[Math.floor(Math.random()*entries.length)];
+
+  document.getElementById("recoResult").innerHTML = `
+    <div class="reco-card">
+      <div class="reco-genre">${genre}</div>
+      <div class="tier-badge">${TIER_LABELS[tierIdx]}</div>
+      <h2>${entry.artist}</h2>
+      <div class="track">${entry.track ? entry.track + (entry.year ? " · " + entry.year : "") : ""}</div>
+      <div class="why">${entry.why}</div>
+      ${entryLinksHTML(entry)}
+    </div>
+  `;
+};
+
+// ---------- explore / iceberg ----------
+let currentDepth = 0;
+function openIceberg(genre){
+  document.getElementById("genreGrid").style.display = "none";
+  const detail = document.getElementById("icebergDetail");
+  detail.style.display = "block";
+  const known = profile.known[genre];
+  currentDepth = known !== undefined ? Math.min(known+1, DATA[genre].length-1) : 0;
+  renderIceberg(genre);
+}
+document.getElementById("backToGenres").onclick = () => {
+  document.getElementById("genreGrid").style.display = "grid";
+  document.getElementById("icebergDetail").style.display = "none";
+};
+
+function renderIceberg(genre){
+  const tiers = DATA[genre];
+  const col = document.getElementById("tiersCol");
+  col.innerHTML = "";
+  tiers.forEach((entries, idx)=>{
+    const block = document.createElement("div");
+    block.className = "tier-block" + (idx <= currentDepth ? " unlocked" : "");
+    block.innerHTML = `<h3>${TIER_LABELS[idx]}</h3>` + entries.map(e => `
+      <div class="entry">
+        <div class="name">${e.artist}</div>
+        <div class="trk">${e.track ? e.track + (e.year ? " · " + e.year : "") : ""}</div>
+        <div class="why">${e.why}</div>
+        ${entryLinksHTML(e)}
+      </div>
+    `).join("");
+    col.appendChild(block);
+
+    if(idx === currentDepth && currentDepth < tiers.length - 1){
+      const btn = document.createElement("button");
+      btn.className = "dive-btn";
+      btn.textContent = "⬇ Plonger plus profond";
+      btn.onclick = () => { currentDepth++; renderIceberg(genre); };
+      col.appendChild(btn);
+    }
+  });
+
+  const pct = 8 + (currentDepth/(tiers.length-1))*84;
+  document.getElementById("depthDot").style.top = pct + "%";
+}
+
+// ---------- PWA install (service worker) ----------
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

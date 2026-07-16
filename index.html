@@ -2,70 +2,83 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Iceberg — Music Digger</title>
+<title>MOLE — Le Tunnel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#02263d">
+<meta name="theme-color" content="#111111">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Iceberg">
+<meta name="apple-mobile-web-app-title" content="MOLE">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" href="./icon-192.png">
 <style>
   :root{
-    --bg-deep:#010912;
-    --bg-mid:#03192b;
-    --ice:#bfe9ff;
-    --ice-dim:#7fb8d9;
-    --accent:#3ee0c8;
-    --accent2:#ff5f7e;
-    --card:#08243a;
-    --card-border:#123a56;
+    --paper:#f2eee4;
+    --paper-dim:#e8e2d3;
+    --ink:#141210;
+    --ink-soft:#4a4540;
+    --line:#141210;
+    --accent:#141210;
+    --card:#f7f4ec;
+    --card-border:#141210;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
-    background:linear-gradient(180deg,#e8fbff 0%, #a9e2f5 6%, #4fa8d6 12%, #1c5f8f 22%, #0c3a5c 38%, var(--bg-mid) 60%, var(--bg-deep) 100%);
-    color:var(--ice);
+    font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+    background:var(--paper);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(20,18,16,0.02) 0px, rgba(20,18,16,0.02) 1px, transparent 1px, transparent 3px),
+      repeating-linear-gradient(90deg, rgba(20,18,16,0.015) 0px, rgba(20,18,16,0.015) 1px, transparent 1px, transparent 3px);
+    color:var(--ink);
     min-height:100vh;
   }
   header{
     text-align:center;
-    padding:28px 16px 10px;
+    padding:26px 16px 8px;
+  }
+  .mole-logo{
+    width:56px;
+    height:56px;
+    display:block;
+    margin:0 auto 6px;
   }
   header h1{
     margin:0;
-    font-size:28px;
-    letter-spacing:0.5px;
-    color:#02263d;
-    text-shadow:0 1px 0 rgba(255,255,255,0.4);
+    font-size:26px;
+    letter-spacing:2px;
+    color:var(--ink);
+    font-family:Georgia, "Times New Roman", serif;
+    text-transform:uppercase;
   }
   header p{
-    color:#0a3550;
+    color:var(--ink-soft);
     margin:6px 0 0;
-    font-size:14px;
+    font-size:13px;
+    font-style:italic;
   }
   .tabs{
     display:flex;
+    flex-wrap:wrap;
     justify-content:center;
-    gap:8px;
+    gap:6px;
     margin:18px 0 8px;
+    padding:0 10px;
   }
   .tab-btn{
-    background:rgba(255,255,255,0.15);
-    border:1px solid rgba(2,38,61,0.25);
-    color:#02263d;
-    padding:9px 18px;
-    border-radius:20px;
+    background:var(--paper);
+    border:2px solid var(--line);
+    color:var(--ink);
+    padding:8px 14px;
+    border-radius:3px 10px 3px 10px;
     cursor:pointer;
-    font-size:14px;
-    font-weight:600;
+    font-size:13px;
+    font-weight:700;
   }
   .tab-btn.active{
-    background:#02263d;
-    color:#bfe9ff;
+    background:var(--ink);
+    color:var(--paper);
   }
   main{
     max-width:760px;
@@ -84,70 +97,73 @@
     margin:18px 0;
   }
   select{
-    background:rgba(255,255,255,0.9);
-    border:none;
-    border-radius:10px;
-    padding:9px 12px;
+    background:var(--paper);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:8px 11px;
     font-size:13px;
-    color:#02263d;
+    color:var(--ink);
     font-weight:600;
   }
   .roll-btn{
     display:block;
     margin:22px auto 8px;
-    background:var(--accent);
-    color:#02263d;
-    border:none;
-    padding:16px 32px;
-    border-radius:30px;
-    font-size:16px;
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    padding:15px 30px;
+    border-radius:4px 16px 4px 16px;
+    font-size:15px;
     font-weight:800;
     cursor:pointer;
-    box-shadow:0 6px 20px rgba(62,224,200,0.35);
+    letter-spacing:0.5px;
   }
   .roll-btn:active{transform:translateY(1px);}
 
   .reco-card{
-    margin-top:26px;
+    margin-top:24px;
     background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:18px;
-    padding:24px;
-    animation:fadein 0.35s ease;
+    border:2px solid var(--card-border);
+    border-radius:4px 18px 4px 18px;
+    padding:22px;
+    animation:fadein 0.3s ease;
+    position:relative;
   }
-  @keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
   .tier-badge{
     display:inline-block;
-    font-size:11px;
+    font-size:10.5px;
     text-transform:uppercase;
     letter-spacing:1px;
     padding:4px 10px;
-    border-radius:12px;
-    background:rgba(62,224,200,0.15);
-    color:var(--accent);
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    color:var(--ink);
     margin-bottom:10px;
     font-weight:700;
   }
   .reco-genre{
     font-size:12px;
-    color:var(--ice-dim);
+    color:var(--ink-soft);
     text-transform:uppercase;
     letter-spacing:1px;
     margin-bottom:2px;
   }
   .reco-card h2{
     margin:4px 0 2px;
-    font-size:24px;
+    font-size:23px;
+    font-family:Georgia, serif;
   }
   .reco-card .track{
-    font-size:15px;
-    color:var(--ice-dim);
+    font-size:14.5px;
+    color:var(--ink-soft);
     margin-bottom:14px;
+    font-style:italic;
   }
   .reco-card .why{
-    font-size:14.5px;
+    font-size:14px;
     line-height:1.55;
-    color:#dff5ff;
+    color:var(--ink);
     margin-bottom:18px;
   }
   .links{
@@ -157,133 +173,160 @@
   }
   .links a{
     text-decoration:none;
-    color:#02263d;
-    background:var(--ice);
-    padding:9px 16px;
-    border-radius:20px;
-    font-size:13px;
+    color:var(--paper);
+    background:var(--ink);
+    padding:8px 15px;
+    border-radius:16px;
+    font-size:12.5px;
     font-weight:700;
+    border:1.5px solid var(--line);
   }
   .links a.yt{
     background:transparent;
-    border:1px solid var(--ice-dim);
-    color:var(--ice);
+    color:var(--ink);
   }
 
-  /* --- Explore view --- */
+  /* --- Tunnel (explore) view --- */
+  .doghouse-wrap{
+    text-align:center;
+    margin:10px 0 4px;
+  }
+  .doghouse-wrap svg{ width:64px; height:56px; }
+  .doghouse-caption{
+    font-size:12px;
+    color:var(--ink-soft);
+    font-style:italic;
+    margin:2px 0 14px;
+  }
   .genre-grid{
     display:grid;
     grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
     gap:10px;
-    margin-top:16px;
+    margin-top:10px;
   }
   .genre-card{
     background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:14px;
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
     padding:16px 10px;
     text-align:center;
     cursor:pointer;
     font-weight:700;
     font-size:14px;
   }
-  .genre-card:hover{border-color:var(--accent);}
+  .genre-card:hover{background:var(--ink); color:var(--paper);}
 
   .iceberg-wrap{
     display:flex;
-    gap:16px;
-    margin-top:20px;
+    gap:14px;
+    margin-top:18px;
   }
   .iceberg-gauge{
-    width:34px;
+    width:38px;
     flex-shrink:0;
     position:relative;
-    background:linear-gradient(180deg,#dff6ff,#8fd3ee 8%,#123a56 20%,#08243a 100%);
+    background:linear-gradient(180deg,#f7f4ec 0%, #e8e2d3 25%, #d3cabb 50%, #b7ab98 75%, #9c8f7c 100%);
     border-radius:8px;
-    overflow:hidden;
-  }
-  .depth-marker{
-    position:absolute;
-    left:0;right:0;
-    height:2px;
-    background:var(--accent);
-    transition:top 0.3s ease;
+    border:2px solid var(--line);
+    overflow:visible;
   }
   .depth-dot{
     position:absolute;
     left:50%;
-    width:14px;height:14px;
+    width:16px;height:16px;
     border-radius:50%;
-    background:var(--accent);
-    box-shadow:0 0 10px var(--accent);
+    background:var(--ink);
+    border:2px solid var(--paper);
     transform:translate(-50%,-50%);
-    transition:top 0.3s ease;
+    transition:top 0.12s linear;
+    z-index:3;
+  }
+  .gauge-marker{
+    position:absolute;
+    left:50%;
+    width:26px;height:26px;
+    margin-left:-13px;
+    border-radius:50%;
+    cursor:pointer;
+    transform:translateY(-50%);
+    z-index:2;
   }
   .tiers-col{flex:1;}
   .tier-block{
-    background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:14px;
+    border:2px solid var(--line);
+    border-radius:4px 16px 4px 16px;
     padding:14px 16px;
     margin-bottom:12px;
-    opacity:0.3;
-    filter:blur(1px);
-    pointer-events:none;
-    transition:opacity 0.4s ease, filter 0.4s ease;
+    cursor:pointer;
+    transition:opacity 0.3s ease;
   }
-  .tier-block.unlocked{
-    opacity:1;
-    filter:none;
-    pointer-events:auto;
+  .tier-block.locked{
+    opacity:0.45;
+  }
+  .tier-block.locked .entry .links,
+  .tier-block.locked .entry .why{
+    display:none;
   }
   .tier-block h3{
     margin:0 0 8px;
-    font-size:13px;
+    font-size:12.5px;
     text-transform:uppercase;
     letter-spacing:1px;
-    color:var(--accent);
+    color:var(--ink);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .tier-block h3 .hint{
+    font-size:10.5px;
+    font-weight:400;
+    font-style:italic;
+    color:var(--ink-soft);
+    text-transform:none;
+    letter-spacing:0;
   }
   .entry{
-    padding:10px 0;
-    border-top:1px solid rgba(255,255,255,0.06);
+    padding:9px 0;
+    border-top:1px solid rgba(20,18,16,0.15);
   }
   .entry:first-of-type{border-top:none;}
-  .entry .name{font-weight:700;font-size:15px;}
-  .entry .trk{font-size:13px;color:var(--ice-dim);margin:2px 0 6px;}
-  .entry .why{font-size:13.5px;line-height:1.5;color:#dff5ff;margin-bottom:8px;}
-  .entry .links a{padding:6px 12px;font-size:12px;}
+  .entry .name{font-weight:700;font-size:14.5px;}
+  .entry .trk{font-size:12.5px;color:var(--ink-soft);margin:2px 0 6px;font-style:italic;}
+  .entry .why{font-size:13px;line-height:1.5;color:var(--ink);margin-bottom:8px;}
+  .entry .links a{padding:6px 12px;font-size:11.5px;}
 
   .dive-btn{
     display:block;
     width:100%;
     margin:6px 0 24px;
-    background:transparent;
-    border:1px dashed var(--ice-dim);
-    color:var(--ice);
+    background:var(--paper);
+    border:2px dashed var(--line);
+    color:var(--ink);
     padding:12px;
-    border-radius:12px;
+    border-radius:4px 14px 4px 14px;
     cursor:pointer;
-    font-size:14px;
-    font-weight:600;
+    font-size:13.5px;
+    font-weight:700;
   }
   .back-link{
     display:inline-block;
     margin-top:6px;
-    color:var(--ice-dim);
+    color:var(--ink-soft);
     cursor:pointer;
     font-size:13px;
+    text-decoration:underline;
   }
   footer{
     text-align:center;
-    font-size:11.5px;
-    color:rgba(255,255,255,0.35);
+    font-size:11px;
+    color:var(--ink-soft);
     padding:20px;
   }
 
   /* --- Profil view --- */
   .profil-intro{
-    font-size:13.5px;
-    color:var(--ice-dim);
+    font-size:13px;
+    color:var(--ink-soft);
     line-height:1.5;
     margin:14px 0 18px;
   }
@@ -295,74 +338,134 @@
   }
   .chip{
     background:var(--card);
-    border:1px solid var(--card-border);
-    color:var(--ice);
-    padding:9px 14px;
-    border-radius:18px;
-    font-size:13px;
+    border:2px solid var(--line);
+    color:var(--ink);
+    padding:8px 13px;
+    border-radius:14px;
+    font-size:12.5px;
     font-weight:600;
     cursor:pointer;
   }
   .chip.selected{
-    background:var(--accent);
-    border-color:var(--accent);
-    color:#02263d;
+    background:var(--ink);
+    color:var(--paper);
   }
   .known-block{
     background:var(--card);
-    border:1px solid var(--card-border);
-    border-radius:14px;
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
     padding:14px 16px;
     margin-bottom:12px;
   }
   .known-block h4{
     margin:0 0 8px;
-    font-size:13px;
+    font-size:12.5px;
     text-transform:uppercase;
     letter-spacing:0.5px;
-    color:var(--accent);
+    color:var(--ink);
   }
   .known-item{
     display:flex;
     align-items:center;
     gap:8px;
     padding:5px 0;
-    font-size:13.5px;
+    font-size:13px;
   }
   .known-item input{width:16px;height:16px;}
   .save-btn{
     display:block;
     width:100%;
     margin:12px 0 8px;
-    background:var(--accent);
-    color:#02263d;
-    border:none;
-    padding:14px;
-    border-radius:14px;
-    font-size:15px;
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    padding:13px;
+    border-radius:4px 14px 4px 14px;
+    font-size:14.5px;
     font-weight:800;
     cursor:pointer;
   }
   .profile-status{
     font-size:13px;
-    color:var(--accent);
+    color:var(--ink);
     text-align:center;
     margin-top:8px;
     min-height:18px;
+    font-weight:700;
+  }
+  .curiosity-block{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
+    padding:16px;
+    margin-bottom:20px;
+  }
+  .curiosity-block h4{
+    margin:0 0 4px;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .curiosity-block p{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:2px 0 12px;
+    line-height:1.4;
+  }
+  .curiosity-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .curiosity-row span{ font-size:11.5px; color:var(--ink-soft); white-space:nowrap; }
+  input[type="range"]{
+    flex:1;
+    accent-color:var(--ink);
+  }
+  .curiosity-value{
+    text-align:center;
+    font-size:12px;
+    margin-top:6px;
+    font-weight:700;
+  }
+
+  /* --- Actus view --- */
+  .actus-stub{
+    background:var(--card);
+    border:2px dashed var(--line);
+    border-radius:4px 14px 4px 14px;
+    padding:26px 20px;
+    text-align:center;
+    margin-top:20px;
+    color:var(--ink-soft);
+    font-size:14px;
+    line-height:1.6;
   }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🧊 ICEBERG</h1>
-  <p>Digging engine — du classique au totalement inconnu</p>
+  <svg class="mole-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="52" rx="30" ry="22" fill="#141210"/>
+    <polygon points="24,50 10,58 26,64" fill="#141210"/>
+    <circle cx="11" cy="58" r="2.4" fill="#f2eee4"/>
+    <line x1="38" y1="44" x2="45" y2="44" stroke="#f2eee4" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="60" cy="72" rx="9" ry="7" fill="#141210"/>
+    <line x1="56" y1="76" x2="56" y2="80" stroke="#141210" stroke-width="2.5"/>
+    <line x1="60" y1="77" x2="60" y2="81" stroke="#141210" stroke-width="2.5"/>
+    <line x1="64" y1="76" x2="64" y2="80" stroke="#141210" stroke-width="2.5"/>
+    <ellipse cx="50" cy="76" rx="34" ry="4" fill="none" stroke="#141210" stroke-width="1.5"/>
+  </svg>
+  <h1>MOLE</h1>
+  <p>Creuse ta culture musicale, un tunnel à la fois</p>
 </header>
 
 <div class="tabs">
-  <button class="tab-btn active" data-tab="reco">Reco instantanée</button>
-  <button class="tab-btn" data-tab="explore">Explorer l'iceberg</button>
-  <button class="tab-btn" data-tab="profil">Mon profil</button>
+  <button class="tab-btn active" data-tab="reco">Recos de la taupe</button>
+  <button class="tab-btn" data-tab="explore">Le Tunnel</button>
+  <button class="tab-btn" data-tab="actus">Actus</button>
+  <button class="tab-btn" data-tab="profil">Mon Profil</button>
 </div>
 
 <main>
@@ -375,19 +478,26 @@
       </select>
       <select id="depthFilter">
         <option value="all">N'importe quelle profondeur</option>
-        <option value="0">Surface (grand public)</option>
-        <option value="1">Sous la surface</option>
-        <option value="2">Le corps (pionniers)</option>
-        <option value="3">Les profondeurs</option>
-        <option value="4">Le fond abyssal</option>
+        <option value="0">Surface</option>
+        <option value="1">Premières galeries</option>
+        <option value="2">Le cœur du tunnel</option>
+        <option value="3">Galeries profondes</option>
+        <option value="4">La roche mère</option>
       </select>
     </div>
-    <button class="roll-btn" id="rollBtn">🎲 Lance-moi un banger</button>
+    <button class="roll-btn" id="rollBtn">⛏ La taupe déterre un banger</button>
     <div id="recoResult"></div>
   </section>
 
-  <!-- ===== EXPLORE VIEW ===== -->
+  <!-- ===== TUNNEL (EXPLORE) VIEW ===== -->
   <section id="view-explore" class="view">
+    <div id="doghouseIntro" class="doghouse-wrap">
+      <svg viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="50,8 92,42 82,42 82,80 18,80 18,42 8,42" fill="none" stroke="#141210" stroke-width="4" stroke-linejoin="round"/>
+        <ellipse cx="50" cy="66" rx="14" ry="18" fill="#141210"/>
+      </svg>
+      <p class="doghouse-caption">Entrée du Tunnel — un son niche, ça se mérite pas, ça se creuse.</p>
+    </div>
     <div id="genreGrid" class="genre-grid"></div>
     <div id="icebergDetail" style="display:none;">
       <span class="back-link" id="backToGenres">← Choisir un autre genre</span>
@@ -400,9 +510,29 @@
     </div>
   </section>
 
+  <!-- ===== ACTUS VIEW (placeholder) ===== -->
+  <section id="view-actus" class="view">
+    <div class="actus-stub">
+      🚧 Bientôt ici : actus musicales et nouvelles pépites déterrées par la taupe.<br>
+      Contenu pas encore tranché (actu générale du milieu digger, ou actu de l'app elle-même).
+    </div>
+  </section>
+
   <!-- ===== PROFIL VIEW ===== -->
   <section id="view-profil" class="view">
     <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
+
+    <div class="curiosity-block">
+      <h4>Curiosity Bar</h4>
+      <p>Joue uniquement sur le style : rester dans tes genres aimés, ou aller voir ailleurs. La profondeur n'est jamais bridée par ce curseur — tout niveau reste toujours pertinent.</p>
+      <div class="curiosity-row">
+        <span>Mes genres</span>
+        <input type="range" id="curiositySlider" min="0" max="100" value="30">
+        <span>Explorer</span>
+      </div>
+      <div class="curiosity-value" id="curiosityValue">30% de découverte</div>
+    </div>
+
     <div id="genreChips" class="chip-row"></div>
     <div id="knownArtists"></div>
     <button class="save-btn" id="saveProfileBtn">Enregistrer mon profil</button>
@@ -411,16 +541,17 @@
 
 </main>
 
-<footer>V0 prototype — data curée à la main sur 5 genres · Apple Music &amp; YouTube en liens externes</footer>
+<footer>MOLE V0.2 — data curée à la main sur 5 genres · Apple Music &amp; YouTube en liens externes</footer>
 
 <script>
 const TIER_LABELS = [
-  "Surface — grand public",
-  "Sous la surface — fans du genre",
-  "Le corps du glacier — les pionniers",
-  "Les profondeurs — diggers confirmés",
-  "Le fond abyssal — ultra niche"
+  "Surface — à l'air libre",
+  "Premières galeries",
+  "Le cœur du tunnel — les pionniers",
+  "Galeries profondes — diggers confirmés",
+  "La roche mère — ultra niche"
 ];
+const TIER_SHORT = ["Surface", "Galeries", "Cœur", "Profond", "Roche mère"];
 
 const DATA = {
   "Techno": [
@@ -619,14 +750,18 @@ genreNames.forEach(g=>{
   genreGrid.appendChild(div);
 });
 
-// ---------- profil (goûts + profondeur connue) ----------
-const PROFILE_KEY = "iceberg_profile_v1";
+// ---------- profil (goûts + profondeur connue + curiosity bar) ----------
+const PROFILE_KEY = "mole_profile_v2";
 function loadProfile(){
   try{
     const raw = localStorage.getItem(PROFILE_KEY);
     const p = raw ? JSON.parse(raw) : null;
-    return p && Array.isArray(p.liked) && p.known ? p : {liked:[], known:{}};
-  }catch(e){ return {liked:[], known:{}}; }
+    if(p && Array.isArray(p.liked) && p.known){
+      if(typeof p.curiosity !== "number") p.curiosity = 30;
+      return p;
+    }
+    return {liked:[], known:{}, curiosity:30};
+  }catch(e){ return {liked:[], known:{}, curiosity:30}; }
 }
 function saveProfileToStorage(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
 
@@ -634,6 +769,14 @@ let profile = loadProfile();
 
 const genreChipsEl = document.getElementById("genreChips");
 const knownArtistsEl = document.getElementById("knownArtists");
+const curiositySlider = document.getElementById("curiositySlider");
+const curiosityValue = document.getElementById("curiosityValue");
+
+curiositySlider.value = profile.curiosity;
+curiosityValue.textContent = profile.curiosity + "% de découverte";
+curiositySlider.addEventListener("input", () => {
+  curiosityValue.textContent = curiositySlider.value + "% de découverte";
+});
 
 function sampleArtistsForGenre(genre){
   const tiers = DATA[genre];
@@ -666,7 +809,7 @@ function renderGenreChips(){
 function renderKnownArtists(){
   knownArtistsEl.innerHTML = "";
   if(profile.liked.length === 0){
-    knownArtistsEl.innerHTML = '<p class="profil-intro">Choisis d\'abord les genres que t\'aimes ci-dessus.</p>';
+    knownArtistsEl.innerHTML = '<p class="profil-intro">Choisis d\'abord les genres que tu creuses déjà ci-dessus.</p>';
     return;
   }
   profile.liked.forEach(g=>{
@@ -677,7 +820,7 @@ function renderKnownArtists(){
     block.innerHTML = `<h4>${g} — tu connais déjà ?</h4>` + picks.map(p => `
       <label class="known-item">
         <input type="checkbox" data-genre="${g}" data-tier="${p.tier}" ${knownTier >= p.tier ? "checked" : ""}>
-        ${p.artist} <span style="color:var(--ice-dim);font-size:11px;">(${TIER_LABELS[p.tier]})</span>
+        ${p.artist} <span style="color:var(--ink-soft);font-size:11px;">(${TIER_SHORT[p.tier]})</span>
       </label>
     `).join("");
     knownArtistsEl.appendChild(block);
@@ -696,27 +839,35 @@ document.getElementById("saveProfileBtn").onclick = () => {
     newKnown[g] = Math.max(newKnown[g] ?? -1, t);
   });
   profile.known = newKnown;
+  profile.curiosity = parseInt(curiositySlider.value, 10);
   saveProfileToStorage(profile);
   const status = document.getElementById("profileStatus");
   status.textContent = "Profil enregistré ✓ — tes recos vont s'ajuster.";
   setTimeout(()=>{ status.textContent = ""; }, 3000);
 };
 
+// distribution de base jamais dominée par le mainstream (10/15/25/25/25)
+const NICHE_BIAS_5 = [0.10, 0.15, 0.25, 0.25, 0.25];
+
 function pickWeightedGenre(){
   if(profile.liked.length === 0) return genreNames[Math.floor(Math.random()*genreNames.length)];
-  // 70% du temps on reste dans tes genres aimés, 30% pour découvrir autre chose
-  if(Math.random() < 0.7){
-    return profile.liked[Math.floor(Math.random()*profile.liked.length)];
+  const explorationRate = (profile.curiosity ?? 30) / 100;
+  if(Math.random() < explorationRate){
+    return genreNames[Math.floor(Math.random()*genreNames.length)];
   }
-  return genreNames[Math.floor(Math.random()*genreNames.length)];
+  return profile.liked[Math.floor(Math.random()*profile.liked.length)];
 }
 
 function pickWeightedTier(genre, tiersLength){
   const known = profile.known[genre];
-  if(known === undefined) return Math.floor(Math.random()*tiersLength);
-  const target = Math.min(known+1, tiersLength-1);
-  const weights = [];
-  for(let i=0;i<tiersLength;i++) weights.push(1/(1+Math.abs(i-target)));
+  let weights;
+  if(known === undefined){
+    weights = (tiersLength === 5) ? NICHE_BIAS_5.slice() : Array.from({length:tiersLength}, ()=>1/tiersLength);
+  } else {
+    const target = Math.min(known+1, tiersLength-1);
+    weights = [];
+    for(let i=0;i<tiersLength;i++) weights.push(1/(1+Math.abs(i-target)));
+  }
   const total = weights.reduce((a,b)=>a+b,0);
   let r = Math.random()*total;
   for(let i=0;i<tiersLength;i++){
@@ -758,29 +909,90 @@ document.getElementById("rollBtn").onclick = () => {
   `;
 };
 
-// ---------- explore / iceberg ----------
+// ---------- Le Tunnel (explore) ----------
 let currentDepth = 0;
+let currentGenre = null;
+let jumping = false;
+
+function depthPct(idx, tiersLength){
+  return 8 + (idx/(tiersLength-1))*84;
+}
+
 function openIceberg(genre){
   document.getElementById("genreGrid").style.display = "none";
+  document.getElementById("doghouseIntro").style.display = "none";
   const detail = document.getElementById("icebergDetail");
   detail.style.display = "block";
+  currentGenre = genre;
   const known = profile.known[genre];
   currentDepth = known !== undefined ? Math.min(known+1, DATA[genre].length-1) : 0;
+  renderGaugeMarkers(genre);
   renderIceberg(genre);
 }
 document.getElementById("backToGenres").onclick = () => {
   document.getElementById("genreGrid").style.display = "grid";
+  document.getElementById("doghouseIntro").style.display = "block";
   document.getElementById("icebergDetail").style.display = "none";
 };
+
+function renderGaugeMarkers(genre){
+  const gauge = document.getElementById("gauge");
+  gauge.querySelectorAll(".gauge-marker").forEach(m => m.remove());
+  const tiersLength = DATA[genre].length;
+  for(let i=0;i<tiersLength;i++){
+    const marker = document.createElement("div");
+    marker.className = "gauge-marker";
+    marker.title = TIER_SHORT[i];
+    marker.style.top = depthPct(i, tiersLength) + "%";
+    marker.onclick = () => jumpToDepth(genre, i);
+    gauge.appendChild(marker);
+  }
+}
+
+// accès libre à tout palier : cliquer un marqueur ou un palier verrouillé saute direct,
+// avec une traversée visible mais rapide des paliers intermédiaires (jamais pénalisante).
+function jumpToDepth(genre, target){
+  if(jumping) return;
+  const tiers = DATA[genre];
+  target = Math.max(0, Math.min(target, tiers.length-1));
+  if(target === currentDepth) return;
+  jumping = true;
+  const start = currentDepth;
+  const path = [];
+  if(target > start){ for(let i=start+1;i<=target;i++) path.push(i); }
+  else { for(let i=start-1;i>=target;i--) path.push(i); }
+
+  let i = 0;
+  const dot = document.getElementById("depthDot");
+  function step(){
+    if(i < path.length){
+      dot.style.top = depthPct(path[i], tiers.length) + "%";
+      i++;
+      setTimeout(step, 70);
+    } else {
+      currentDepth = target;
+      jumping = false;
+      renderIceberg(genre);
+    }
+  }
+  step();
+}
+
+const TIER_BG = ["#f7f4ec","#e8e2d3","#d3cabb","#b7ab98","#9c8f7c"];
 
 function renderIceberg(genre){
   const tiers = DATA[genre];
   const col = document.getElementById("tiersCol");
   col.innerHTML = "";
   tiers.forEach((entries, idx)=>{
+    const locked = idx > currentDepth;
     const block = document.createElement("div");
-    block.className = "tier-block" + (idx <= currentDepth ? " unlocked" : "");
-    block.innerHTML = `<h3>${TIER_LABELS[idx]}</h3>` + entries.map(e => `
+    block.className = "tier-block" + (locked ? " locked" : "");
+    block.style.background = TIER_BG[idx] || "var(--card)";
+    if(locked){
+      block.onclick = () => jumpToDepth(genre, idx);
+    }
+    block.innerHTML = `<h3>${TIER_LABELS[idx]} ${locked ? '<span class="hint">→ creuser ici</span>' : ""}</h3>` + entries.map(e => `
       <div class="entry">
         <div class="name">${e.artist}</div>
         <div class="trk">${e.track ? e.track + (e.year ? " · " + e.year : "") : ""}</div>
@@ -793,14 +1005,13 @@ function renderIceberg(genre){
     if(idx === currentDepth && currentDepth < tiers.length - 1){
       const btn = document.createElement("button");
       btn.className = "dive-btn";
-      btn.textContent = "⬇ Plonger plus profond";
-      btn.onclick = () => { currentDepth++; renderIceberg(genre); };
+      btn.textContent = "⛏ Creuser un peu plus";
+      btn.onclick = (ev) => { ev.stopPropagation(); jumpToDepth(genre, currentDepth+1); };
       col.appendChild(btn);
     }
   });
 
-  const pct = 8 + (currentDepth/(tiers.length-1))*84;
-  document.getElementById("depthDot").style.top = pct + "%";
+  document.getElementById("depthDot").style.top = depthPct(currentDepth, tiers.length) + "%";
 }
 
 // ---------- PWA install (service worker) ----------

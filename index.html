@@ -105,9 +105,63 @@
     color:var(--ink);
     font-weight:600;
   }
+
+  .mode-switch-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    margin:4px 0 6px;
+  }
+  .mode-switch-wrap span{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+  }
+  .mode-switch-wrap span.on{ color:var(--ink); }
+  .switch{
+    position:relative;
+    display:inline-block;
+    width:46px;
+    height:25px;
+    flex-shrink:0;
+  }
+  .switch input{
+    opacity:0;
+    width:0;
+    height:0;
+  }
+  .slider{
+    position:absolute;
+    cursor:pointer;
+    top:0;left:0;right:0;bottom:0;
+    background:#ffffff;
+    border:2px solid var(--line);
+    transition:.2s;
+    border-radius:24px;
+  }
+  .slider:before{
+    position:absolute;
+    content:"";
+    height:15px;
+    width:15px;
+    left:3px;
+    bottom:2px;
+    background:var(--ink);
+    transition:.2s;
+    border-radius:50%;
+  }
+  input:checked + .slider{
+    background:var(--ink);
+  }
+  input:checked + .slider:before{
+    transform:translateX(20px);
+    background:var(--paper);
+  }
+
   .roll-btn{
     display:block;
-    margin:22px auto 8px;
+    margin:18px auto 8px;
     background:var(--ink);
     color:var(--paper);
     border:2px solid var(--line);
@@ -139,6 +193,19 @@
     border:1.5px solid var(--line);
     border-radius:10px;
     color:var(--ink);
+    margin-bottom:10px;
+    font-weight:700;
+    margin-right:6px;
+  }
+  .format-badge{
+    display:inline-block;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    padding:4px 10px;
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:10px;
     margin-bottom:10px;
     font-weight:700;
   }
@@ -485,6 +552,14 @@
         <option value="4">La roche mère</option>
       </select>
     </div>
+    <div class="mode-switch-wrap">
+      <span id="labelSingle" class="on">Single</span>
+      <label class="switch">
+        <input type="checkbox" id="albumToggle">
+        <span class="slider"></span>
+      </label>
+      <span id="labelAlbum">Album</span>
+    </div>
     <button class="roll-btn" id="rollBtn">⛏ La taupe déterre un banger</button>
     <div id="recoResult"></div>
   </section>
@@ -541,7 +616,7 @@
 
 </main>
 
-<footer>MOLE V0.2 — data curée à la main sur 5 genres · Apple Music &amp; YouTube en liens externes</footer>
+<footer>MOLE V0.3 — data curée à la main sur 5 genres · Apple Music &amp; YouTube en liens externes</footer>
 
 <script>
 const TIER_LABELS = [
@@ -556,21 +631,21 @@ const TIER_SHORT = ["Surface", "Galeries", "Cœur", "Profond", "Roche mère"];
 const DATA = {
   "Techno": [
     [
-      {artist:"Kraftwerk", track:"Trans-Europe Express", year:1977, why:"Les Allemands qui ont inventé le vocabulaire électronique dont toute la techno descend."},
-      {artist:"Daft Punk", track:"Da Funk", year:1995, why:"L'entrée grand public de la French Touch dans la techno/house mondiale."},
-      {artist:"The Prodigy", track:"Breathe", year:1996, why:"La techno/rave portée jusqu'aux charts et aux stades."},
+      {artist:"Kraftwerk", track:"Trans-Europe Express", year:1977, album:"Trans-Europe Express", why:"Les Allemands qui ont inventé le vocabulaire électronique dont toute la techno descend."},
+      {artist:"Daft Punk", track:"Da Funk", year:1995, album:"Homework", why:"L'entrée grand public de la French Touch dans la techno/house mondiale."},
+      {artist:"The Prodigy", track:"Breathe", year:1996, album:"The Fat of the Land", why:"La techno/rave portée jusqu'aux charts et aux stades."},
       {artist:"Charlotte de Witte", track:"Doppler", year:2018, why:"Le visage actuel de la techno mainstream sur les gros festivals."}
     ],
     [
       {artist:"Jeff Mills", track:"The Bells", year:1997, why:"Le 'Wizard' de Detroit, un hymne que même les non-initiés reconnaissent en club."},
-      {artist:"Richie Hawtin", track:"Spastik", year:1993, why:"Minimal techno culte, référence absolue pour tout digger sérieux."},
+      {artist:"Richie Hawtin", track:"Spastik", year:1993, album:"Sheet One", why:"Minimal techno culte, référence absolue pour tout digger sérieux."},
       {artist:"Carl Craig", track:"At Les (Sandstorm)", year:1997, why:"Le pont entre la techno de Detroit et la scène electronica."},
       {artist:"Nina Kraviz", track:"Ghetto Kraviz", year:2012, why:"A ramené une nouvelle génération vers la techno underground."}
     ],
     [
       {artist:"Juan Atkins (Model 500)", track:"No UFO's", year:1985, why:"Un des trois fondateurs de la techno de Detroit, littéralement le point zéro du genre."},
       {artist:"Derrick May (Rhythim Is Rhythim)", track:"Strings of Life", year:1987, why:"Le morceau qui a défini l'âme mélancolique et futuriste de la techno."},
-      {artist:"Kevin Saunderson (Inner City)", track:"Big Fun", year:1988, why:"Le troisième du 'Belleville Three', a amené la techno vers la pop sans la trahir."},
+      {artist:"Kevin Saunderson (Inner City)", track:"Big Fun", year:1988, album:"Big Fun", why:"Le troisième du 'Belleville Three', a amené la techno vers la pop sans la trahir."},
       {artist:"Dr. Motte", track:"Der Klang der Familie (compil)", year:1997, why:"Fondateur de la Love Parade, pionnier de la scène techno berlinoise."}
     ],
     [
@@ -588,16 +663,16 @@ const DATA = {
   ],
   "House": [
     [
-      {artist:"Disclosure", track:"Latch", year:2012, why:"A remis la house dans les charts mondiaux pour toute une génération."},
+      {artist:"Disclosure", track:"Latch", year:2012, album:"Settle", why:"A remis la house dans les charts mondiaux pour toute une génération."},
       {artist:"Robin S.", track:"Show Me Love", year:1993, why:"Un des hymnes house les plus connus, encore joué partout aujourd'hui."},
-      {artist:"CeCe Peniston", track:"Finally", year:1991, why:"Un classique house-pop que tout le monde a déjà entendu sans savoir d'où il vient."},
+      {artist:"CeCe Peniston", track:"Finally", year:1991, album:"Finally", why:"Un classique house-pop que tout le monde a déjà entendu sans savoir d'où il vient."},
       {artist:"Duke Dumont", track:"Need U (100%)", year:2013, why:"House commerciale de qualité, énorme succès radio."}
     ],
     [
       {artist:"Masters at Work", track:"The Ha Dance", year:1991, why:"Duo culte (Louie Vega & Kenny Dope), référence pour toute la house new-yorkaise."},
       {artist:"Armand Van Helden", track:"You Don't Know Me", year:1999, why:"A façonné le son house filtré des années 90-2000."},
       {artist:"Todd Terry", track:"Bango (To The Batmobile)", year:1988, why:"Pionnier du sample house new-yorkais, adoré des connaisseurs."},
-      {artist:"Roger Sanchez", track:"Another Chance", year:2001, why:"Producteur incontournable de la house garage new-yorkaise."}
+      {artist:"Roger Sanchez", track:"Another Chance", year:2001, album:"First Contact", why:"Producteur incontournable de la house garage new-yorkaise."}
     ],
     [
       {artist:"Frankie Knuckles", track:"Your Love", year:1987, why:"Le 'Godfather of House', DJ résident du Warehouse de Chicago qui a donné son nom au genre."},
@@ -620,27 +695,27 @@ const DATA = {
   ],
   "Hip-Hop": [
     [
-      {artist:"Jay-Z", track:"99 Problems", year:2003, why:"Un des rappeurs les plus connus et influents commercialement de tous les temps."},
-      {artist:"Eminem", track:"Lose Yourself", year:2002, why:"Rap devenu culture pop mondiale, un des artistes les plus vendus de l'histoire."},
-      {artist:"Kendrick Lamar", track:"HUMBLE.", year:2017, why:"Le rap contemporain le plus acclamé critique ET grand public."},
-      {artist:"Kanye West", track:"Stronger", year:2007, why:"A redéfini le son mainstream du hip-hop des années 2000-2010."}
+      {artist:"Jay-Z", track:"99 Problems", year:2003, album:"The Black Album", why:"Un des rappeurs les plus connus et influents commercialement de tous les temps."},
+      {artist:"Eminem", track:"Lose Yourself", year:2002, album:"8 Mile (Music from and Inspired by the Motion Picture)", why:"Rap devenu culture pop mondiale, un des artistes les plus vendus de l'histoire."},
+      {artist:"Kendrick Lamar", track:"HUMBLE.", year:2017, album:"DAMN.", why:"Le rap contemporain le plus acclamé critique ET grand public."},
+      {artist:"Kanye West", track:"Stronger", year:2007, album:"Graduation", why:"A redéfini le son mainstream du hip-hop des années 2000-2010."}
     ],
     [
-      {artist:"Nas", track:"N.Y. State of Mind", year:1994, why:"'Illmatic' est considéré comme un des meilleurs albums de rap jamais écrits."},
-      {artist:"Wu-Tang Clan", track:"C.R.E.A.M.", year:1993, why:"Collectif culte de Staten Island, a redéfini le rap indépendant et l'esthétique lo-fi."},
-      {artist:"A Tribe Called Quest", track:"Can I Kick It?", year:1990, why:"Pionniers du jazz-rap, référence absolue pour les puristes."},
-      {artist:"MF DOOM", track:"Doomsday", year:1999, why:"Le rappeur masqué culte, vénéré par toute une génération de diggers hip-hop."}
+      {artist:"Nas", track:"N.Y. State of Mind", year:1994, album:"Illmatic", why:"'Illmatic' est considéré comme un des meilleurs albums de rap jamais écrits."},
+      {artist:"Wu-Tang Clan", track:"C.R.E.A.M.", year:1993, album:"Enter the Wu-Tang (36 Chambers)", why:"Collectif culte de Staten Island, a redéfini le rap indépendant et l'esthétique lo-fi."},
+      {artist:"A Tribe Called Quest", track:"Can I Kick It?", year:1990, album:"People's Instinctive Travels and the Paths of Rhythm", why:"Pionniers du jazz-rap, référence absolue pour les puristes."},
+      {artist:"MF DOOM", track:"Doomsday", year:1999, album:"Operation: Doomsday", why:"Le rappeur masqué culte, vénéré par toute une génération de diggers hip-hop."}
     ],
     [
       {artist:"DJ Kool Herc", track:"Back to School Jam (reconstitution)", year:1973, why:"Considéré comme l'inventeur du hip-hop lors d'une fête d'anniversaire dans le Bronx."},
       {artist:"Grandmaster Flash", track:"The Adventures of Grandmaster Flash on the Wheels of Steel", year:1981, why:"A inventé les techniques de scratch et de mixage fondatrices du DJing hip-hop."},
       {artist:"Afrika Bambaataa", track:"Planet Rock", year:1982, why:"A fusionné hip-hop et electro, fondateur de la Zulu Nation."},
-      {artist:"Sugarhill Gang", track:"Rapper's Delight", year:1979, why:"Le premier morceau de rap à connaître un succès commercial mondial."}
+      {artist:"Sugarhill Gang", track:"Rapper's Delight", year:1979, album:"Sugarhill Gang", why:"Le premier morceau de rap à connaître un succès commercial mondial."}
     ],
     [
       {artist:"Cold Crush Brothers", track:"Punk Rock Rap", year:1983, why:"Un des tout premiers crews à structurer le rap en groupe avec des routines vocales complexes."},
       {artist:"Rammellzee", track:"Beat Bop", year:1983, why:"Artiste graffeur/rappeur culte, disque devenu une pièce de collection légendaire."},
-      {artist:"Ultramagnetic MCs", track:"Ego Trippin'", year:1988, why:"Production et flow en avance sur leur temps, très respectés par les puristes."},
+      {artist:"Ultramagnetic MCs", track:"Ego Trippin'", year:1988, album:"Critical Beatdown", why:"Production et flow en avance sur leur temps, très respectés par les puristes."},
       {artist:"Marley Marl", track:"The Bridge (prod.)", year:1985, why:"Producteur fondateur du son 'Juice Crew', pionnier du sampling hip-hop."}
     ],
     [
@@ -652,16 +727,16 @@ const DATA = {
   ],
   "Jazz": [
     [
-      {artist:"Miles Davis", track:"So What", year:1959, why:"L'album 'Kind of Blue' est l'album de jazz le plus vendu de l'histoire."},
-      {artist:"John Coltrane", track:"A Love Supreme", year:1965, why:"Un sommet spirituel et technique du jazz, connu bien au-delà des amateurs du genre."},
+      {artist:"Miles Davis", track:"So What", year:1959, album:"Kind of Blue", why:"L'album 'Kind of Blue' est l'album de jazz le plus vendu de l'histoire."},
+      {artist:"John Coltrane", track:"A Love Supreme", year:1965, album:"A Love Supreme", why:"Un sommet spirituel et technique du jazz, connu bien au-delà des amateurs du genre."},
       {artist:"Louis Armstrong", track:"What a Wonderful World", year:1967, why:"Le visage le plus universellement reconnu du jazz dans le monde entier."},
-      {artist:"Herbie Hancock", track:"Cantaloupe Island", year:1964, why:"Jazz devenu référence pop culture, samplé dans d'innombrables morceaux hip-hop."}
+      {artist:"Herbie Hancock", track:"Cantaloupe Island", year:1964, album:"Empyrean Isles", why:"Jazz devenu référence pop culture, samplé dans d'innombrables morceaux hip-hop."}
     ],
     [
       {artist:"Thelonious Monk", track:"Round Midnight", year:1957, why:"Harmonies et rythmes uniques, un des compositeurs les plus repris du jazz."},
-      {artist:"Charles Mingus", track:"Goodbye Pork Pie Hat", year:1959, why:"Bassiste-compositeur culte, jazz chargé politiquement et émotionnellement."},
-      {artist:"Sun Ra", track:"Space Is the Place", year:1973, why:"Pionnier de l'afrofuturisme en musique, univers cosmique et théâtral unique."},
-      {artist:"Alice Coltrane", track:"Journey in Satchidananda", year:1971, why:"Jazz spirituel, harpe et modalité, très admirée des connaisseurs."}
+      {artist:"Charles Mingus", track:"Goodbye Pork Pie Hat", year:1959, album:"Mingus Ah Um", why:"Bassiste-compositeur culte, jazz chargé politiquement et émotionnellement."},
+      {artist:"Sun Ra", track:"Space Is the Place", year:1973, album:"Space Is the Place", why:"Pionnier de l'afrofuturisme en musique, univers cosmique et théâtral unique."},
+      {artist:"Alice Coltrane", track:"Journey in Satchidananda", year:1971, album:"Journey in Satchidananda", why:"Jazz spirituel, harpe et modalité, très admirée des connaisseurs."}
     ],
     [
       {artist:"Jelly Roll Morton", track:"Black Bottom Stomp", year:1926, why:"Un des tout premiers à composer et arranger le jazz plutôt que de simplement improviser."},
@@ -670,28 +745,28 @@ const DATA = {
       {artist:"Bessie Smith", track:"Down Hearted Blues", year:1923, why:"Reine du blues qui a directement nourri le langage vocal du jazz naissant."}
     ],
     [
-      {artist:"Eric Dolphy", track:"Out to Lunch!", year:1964, why:"Jazz d'avant-garde très exigeant, culte chez les auditeurs pointus."},
-      {artist:"Cecil Taylor", track:"Unit Structures", year:1966, why:"Pianiste extrême du free jazz, écoute difficile mais vénérée des puristes."},
-      {artist:"Andrew Hill", track:"Point of Departure", year:1965, why:"Compositeur sous-estimé de son vivant, redécouvert par les diggers plus tard."},
-      {artist:"Sam Rivers", track:"Fuchsia Swing Song", year:1964, why:"Saxophoniste d'avant-garde peu connu du grand public mais culte chez les collectionneurs."}
+      {artist:"Eric Dolphy", track:"Out to Lunch!", year:1964, album:"Out to Lunch!", why:"Jazz d'avant-garde très exigeant, culte chez les auditeurs pointus."},
+      {artist:"Cecil Taylor", track:"Unit Structures", year:1966, album:"Unit Structures", why:"Pianiste extrême du free jazz, écoute difficile mais vénérée des puristes."},
+      {artist:"Andrew Hill", track:"Point of Departure", year:1965, album:"Point of Departure", why:"Compositeur sous-estimé de son vivant, redécouvert par les diggers plus tard."},
+      {artist:"Sam Rivers", track:"Fuchsia Swing Song", year:1964, album:"Fuchsia Swing Song", why:"Saxophoniste d'avant-garde peu connu du grand public mais culte chez les collectionneurs."}
     ],
     [
-      {artist:"Horace Tapscott", track:"The Giant Is Awakened", year:1969, why:"Pianiste de Los Angeles resté quasi confidentiel toute sa carrière, culte tardif."},
+      {artist:"Horace Tapscott", track:"The Giant Is Awakened", year:1969, album:"The Giant Is Awakened", why:"Pianiste de Los Angeles resté quasi confidentiel toute sa carrière, culte tardif."},
       {artist:"Sun Ra Arkestra (pressages Saturn originaux)", track:"Saturn label rarities", why:"Pressages auto-produits en quantités infimes, aujourd'hui des Graals de collectionneurs."},
-      {artist:"Charles Gayle", track:"Homeless", year:1988, why:"A joué dans la rue pendant des années avant d'être reconnu, free jazz extrême."},
-      {artist:"Peter Brötzmann", track:"Machine Gun", year:1968, why:"Free jazz européen d'une violence sonore rare, réservé aux auditeurs les plus aguerris."}
+      {artist:"Charles Gayle", track:"Homeless", year:1988, album:"Homeless", why:"A joué dans la rue pendant des années avant d'être reconnu, free jazz extrême."},
+      {artist:"Peter Brötzmann", track:"Machine Gun", year:1968, album:"Machine Gun", why:"Free jazz européen d'une violence sonore rare, réservé aux auditeurs les plus aguerris."}
     ]
   ],
   "UK Bass (Jungle / Garage / Dubstep)": [
     [
-      {artist:"Burial", track:"Archangel", year:2007, why:"A porté le dubstep atmosphérique jusqu'à la reconnaissance critique mondiale."},
+      {artist:"Burial", track:"Archangel", year:2007, album:"Untrue", why:"A porté le dubstep atmosphérique jusqu'à la reconnaissance critique mondiale."},
       {artist:"Skepta", track:"Shutdown", year:2015, why:"Grime devenu phénomène mainstream international."},
-      {artist:"Disclosure", track:"White Noise", year:2013, why:"UK garage réintroduit dans les charts pop."},
-      {artist:"Chase & Status", track:"Blind Faith", year:2010, why:"Drum & bass/jungle amenée sur les grosses scènes de festival."}
+      {artist:"Disclosure", track:"White Noise", year:2013, album:"Settle", why:"UK garage réintroduit dans les charts pop."},
+      {artist:"Chase & Status", track:"Blind Faith", year:2010, album:"No More Idols", why:"Drum & bass/jungle amenée sur les grosses scènes de festival."}
     ],
     [
-      {artist:"Goldie", track:"Inner City Life", year:1994, why:"A donné à la jungle/drum & bass ses lettres de noblesse artistique."},
-      {artist:"Roni Size / Reprazent", track:"Brown Paper Bag", year:1997, why:"A gagné le Mercury Prize, jungle reconnue par la critique généraliste."},
+      {artist:"Goldie", track:"Inner City Life", year:1994, album:"Timeless", why:"A donné à la jungle/drum & bass ses lettres de noblesse artistique."},
+      {artist:"Roni Size / Reprazent", track:"Brown Paper Bag", year:1997, album:"New Forms", why:"A gagné le Mercury Prize, jungle reconnue par la critique généraliste."},
       {artist:"Wiley", track:"Eskimo", year:2002, why:"Le 'Godfather of Grime', a posé les bases sonores du genre."},
       {artist:"Benga & Skream", track:"Night", year:2007, why:"Duo fondateur du son dubstep de Croydon dans les années 2000."}
     ],
@@ -717,18 +792,19 @@ const DATA = {
 };
 
 // ---------- helpers ----------
-function amLink(artist, track){
-  const q = encodeURIComponent(artist + (track ? " " + track : ""));
+function amLink(artist, term){
+  const q = encodeURIComponent(artist + (term ? " " + term : ""));
   return "https://music.apple.com/us/search?term=" + q;
 }
-function ytLink(artist, track){
-  const q = encodeURIComponent(artist + (track ? " " + track : ""));
+function ytLink(artist, term){
+  const q = encodeURIComponent(artist + (term ? " " + term : ""));
   return "https://www.youtube.com/results?search_query=" + q;
 }
-function entryLinksHTML(e){
+function entryLinksHTML(e, useAlbum){
+  const term = useAlbum ? e.album : e.track;
   return `<div class="links">
-    <a class="am" href="${amLink(e.artist, e.track)}" target="_blank" rel="noopener">🎵 Apple Music</a>
-    <a class="yt" href="${ytLink(e.artist, e.track)}" target="_blank" rel="noopener">▶ YouTube</a>
+    <a class="am" href="${amLink(e.artist, term)}" target="_blank" rel="noopener">🎵 Apple Music</a>
+    <a class="yt" href="${ytLink(e.artist, term)}" target="_blank" rel="noopener">▶ YouTube</a>
   </div>`;
 }
 
@@ -877,6 +953,25 @@ function pickWeightedTier(genre, tiersLength){
   return tiersLength-1;
 }
 
+// cherche des entrées avec album : d'abord au palier/genre visé, sinon tout le genre, sinon partout.
+function collectAlbumEntries(genre, tierIdx){
+  const direct = DATA[genre][tierIdx].filter(e=>e.album).map(e=>({...e, tier:tierIdx, genre}));
+  if(direct.length) return direct;
+
+  let pool = [];
+  DATA[genre].forEach((entries, idx)=>{
+    entries.filter(e=>e.album).forEach(e=> pool.push({...e, tier:idx, genre}));
+  });
+  if(pool.length) return pool;
+
+  genreNames.forEach(g=>{
+    DATA[g].forEach((entries, idx)=>{
+      entries.filter(e=>e.album).forEach(e=> pool.push({...e, tier:idx, genre:g}));
+    });
+  });
+  return pool;
+}
+
 // ---------- tabs ----------
 document.querySelectorAll(".tab-btn").forEach(btn=>{
   btn.onclick = () => {
@@ -887,24 +982,52 @@ document.querySelectorAll(".tab-btn").forEach(btn=>{
   };
 });
 
+// ---------- single/album switch labels ----------
+const albumToggle = document.getElementById("albumToggle");
+const labelSingle = document.getElementById("labelSingle");
+const labelAlbum = document.getElementById("labelAlbum");
+albumToggle.addEventListener("change", () => {
+  labelSingle.classList.toggle("on", !albumToggle.checked);
+  labelAlbum.classList.toggle("on", albumToggle.checked);
+});
+
 // ---------- reco roll ----------
 document.getElementById("rollBtn").onclick = () => {
   const gSel = genreFilterEl.value;
   const dSel = document.getElementById("depthFilter").value;
-  const genre = gSel === "all" ? pickWeightedGenre() : gSel;
-  const tiers = DATA[genre];
-  const tierIdx = dSel === "all" ? pickWeightedTier(genre, tiers.length) : parseInt(dSel);
-  const entries = tiers[tierIdx];
-  const entry = entries[Math.floor(Math.random()*entries.length)];
+  const albumMode = albumToggle.checked;
+
+  let genre, tierIdx, entry;
+
+  if(albumMode){
+    const genrePick = gSel === "all" ? pickWeightedGenre() : gSel;
+    const tiersForPick = DATA[genrePick];
+    const wantedTier = dSel === "all" ? pickWeightedTier(genrePick, tiersForPick.length) : parseInt(dSel);
+    const pool = collectAlbumEntries(genrePick, wantedTier);
+    entry = pool[Math.floor(Math.random()*pool.length)];
+    genre = entry.genre;
+    tierIdx = entry.tier;
+  } else {
+    genre = gSel === "all" ? pickWeightedGenre() : gSel;
+    const tiers = DATA[genre];
+    tierIdx = dSel === "all" ? pickWeightedTier(genre, tiers.length) : parseInt(dSel);
+    const entries = tiers[tierIdx];
+    entry = entries[Math.floor(Math.random()*entries.length)];
+  }
+
+  const lineHTML = albumMode
+    ? `Album : ${entry.album}${entry.year ? " · " + entry.year : ""}`
+    : (entry.track ? entry.track + (entry.year ? " · " + entry.year : "") : "");
 
   document.getElementById("recoResult").innerHTML = `
     <div class="reco-card">
       <div class="reco-genre">${genre}</div>
       <div class="tier-badge">${TIER_LABELS[tierIdx]}</div>
+      <span class="format-badge">${albumMode ? "Album" : "Single"}</span>
       <h2>${entry.artist}</h2>
-      <div class="track">${entry.track ? entry.track + (entry.year ? " · " + entry.year : "") : ""}</div>
+      <div class="track">${lineHTML}</div>
       <div class="why">${entry.why}</div>
-      ${entryLinksHTML(entry)}
+      ${entryLinksHTML(entry, albumMode)}
     </div>
   `;
 };
@@ -997,7 +1120,7 @@ function renderIceberg(genre){
         <div class="name">${e.artist}</div>
         <div class="trk">${e.track ? e.track + (e.year ? " · " + e.year : "") : ""}</div>
         <div class="why">${e.why}</div>
-        ${entryLinksHTML(e)}
+        ${entryLinksHTML(e, false)}
       </div>
     `).join("");
     col.appendChild(block);

@@ -508,6 +508,82 @@
     font-size:14px;
     line-height:1.6;
   }
+  /* --- Chat view --- */
+  .chat-wrap{
+    display:flex;
+    flex-direction:column;
+    height:60vh;
+    min-height:340px;
+    margin-top:10px;
+  }
+  .chat-log{
+    flex:1;
+    overflow-y:auto;
+    padding:6px 2px 12px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .msg{
+    max-width:80%;
+    padding:10px 13px;
+    font-size:13.5px;
+    line-height:1.5;
+    border:2px solid var(--line);
+  }
+  .msg.mole{
+    align-self:flex-start;
+    background:var(--card);
+    border-radius:4px 14px 14px 14px;
+  }
+  .msg.user{
+    align-self:flex-end;
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:14px 4px 14px 14px;
+  }
+  .msg.mole .msg-tag{
+    display:block;
+    font-size:10.5px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--ink-soft);
+    margin-bottom:3px;
+  }
+  .msg.pending{color:var(--ink-soft);font-style:italic;}
+  .chat-input-row{
+    display:flex;
+    gap:8px;
+    padding-top:8px;
+    border-top:2px solid var(--line);
+  }
+  .chat-input-row input{
+    flex:1;
+    padding:11px 12px;
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
+    font-size:13.5px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .chat-send-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    padding:0 18px;
+    border-radius:4px 14px 4px 14px;
+    font-weight:800;
+    cursor:pointer;
+  }
+  .chat-send-btn:active{transform:translateY(1px);}
+  .chat-hint{
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin:8px 0 0;
+    line-height:1.4;
+  }
 </style>
 </head>
 <body>
@@ -533,6 +609,7 @@
   <button class="tab-btn" data-tab="explore">Le Tunnel</button>
   <button class="tab-btn" data-tab="actus">Actus</button>
   <button class="tab-btn" data-tab="profil">Mon Profil</button>
+  <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
 
 <main>
@@ -614,9 +691,23 @@
     <div class="profile-status" id="profileStatus"></div>
   </section>
 
+  <!-- ===== CHAT (LA TAUPE PARLE) VIEW ===== -->
+  <section id="view-chat" class="view">
+    <div class="chat-wrap">
+      <div class="chat-log" id="chatLog">
+        <div class="msg mole"><span class="msg-tag">La taupe</span>Salut, je suis la taupe de MOLE ! Demande-moi ce que tu veux sur la musique &mdash; artistes, genres, samples, matos, culture du digging... Je reste sous terre pour tout le reste. &#9935;</div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Demande un truc a la taupe..." maxlength="500">
+        <button class="chat-send-btn" id="chatSendBtn">Envoyer</button>
+      </div>
+      <p class="chat-hint">La taupe ne parle que musique &mdash; elle recadre gentiment le reste.</p>
+    </div>
+  </section>
+
 </main>
 
-<footer>MOLE V0.3 — data curée à la main sur 5 genres · Apple Music &amp; YouTube en liens externes</footer>
+<footer>MOLE V0.3 — data curée à la main sur 9 genres · Apple Music &amp; YouTube en liens externes</footer>
 
 <script>
 const TIER_LABELS = [
@@ -1264,6 +1355,73 @@ function renderIceberg(genre){
 
   document.getElementById("depthDot").style.top = depthPct(currentDepth, tiers.length) + "%";
 }
+
+// ---------- chat avec la taupe ----------
+// Colle ici l'URL de ton Worker Cloudflare une fois deploye (voir mole-chat-proxy-worker.js)
+const CHAT_PROXY_URL = ""; // ex: "https://mole-chat.ton-compte.workers.dev"
+
+const chatLog = document.getElementById("chatLog");
+const chatInput = document.getElementById("chatInput");
+const chatSendBtn = document.getElementById("chatSendBtn");
+let chatHistory = [];
+
+function escapeHtml(str){
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function appendMsg(role, text, pending){
+  const div = document.createElement("div");
+  div.className = "msg " + role + (pending ? " pending" : "");
+  if(role === "mole"){
+    div.innerHTML = '<span class="msg-tag">La taupe</span>' + text;
+  } else {
+    div.textContent = text;
+  }
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return div;
+}
+
+async function sendChatMessage(){
+  const text = chatInput.value.trim();
+  if(!text) return;
+  chatInput.value = "";
+  appendMsg("user", text);
+  chatHistory.push({role:"user", text});
+
+  if(!CHAT_PROXY_URL){
+    appendMsg("mole", "Je suis pas encore branchee a mon cerveau (le proxy Cloudflare n'est pas deploye) &mdash; regarde mole-chat-proxy-worker.js pour me connecter en 5 minutes &#9935;");
+    return;
+  }
+
+  const pendingEl = appendMsg("mole", "<em>creuse un peu...</em>", true);
+
+  try{
+    const res = await fetch(CHAT_PROXY_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ message: text, history: chatHistory })
+    });
+    const data = await res.json();
+    pendingEl.classList.remove("pending");
+    if(data.reply){
+      pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>' + escapeHtml(data.reply).replace(/\n/g, "<br>");
+      chatHistory.push({role:"mole", text:data.reply});
+    } else {
+      pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>Oups, un eboulement dans le tunnel &mdash; reessaie dans un instant.';
+    }
+  } catch(e){
+    pendingEl.classList.remove("pending");
+    pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>Impossible de creuser jusqu\'a mon cerveau la, reessaie plus tard.';
+  }
+}
+
+chatSendBtn.onclick = sendChatMessage;
+chatInput.addEventListener("keydown", (e) => {
+  if(e.key === "Enter") sendChatMessage();
+});
 
 // ---------- PWA install (service worker) ----------
 if("serviceWorker" in navigator){

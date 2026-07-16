@@ -1,4 +1,4 @@
-const CACHE_NAME = "mole-v3";
+const CACHE_NAME = "mole-v4";
 const ASSETS = [
   "./index.html",
   "./manifest.json",

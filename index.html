@@ -35,9 +35,82 @@
     min-height:100vh;
   }
   header{
+    position:relative;
     text-align:center;
     padding:26px 16px 8px;
   }
+  .header-search{
+    position:relative;
+    margin:14px auto 0;
+    width:min(260px, 90%);
+  }
+  @media (min-width:600px){
+    .header-search{
+      position:absolute;
+      top:20px;
+      right:16px;
+      margin:0;
+      width:220px;
+    }
+  }
+  .header-search input{
+    width:100%;
+    background:var(--paper);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:7px 10px;
+    font-size:13px;
+    color:var(--ink);
+    font-weight:600;
+  }
+  .header-search-results{
+    position:absolute;
+    top:100%;
+    right:0;
+    margin-top:6px;
+    width:280px;
+    max-width:90vw;
+    max-height:340px;
+    overflow-y:auto;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:3px 10px 3px 10px;
+    display:none;
+    text-align:left;
+    z-index:50;
+  }
+  .header-search-results.open{display:block;}
+  .hsr-item{
+    display:flex;
+    gap:8px;
+    padding:8px;
+    border-bottom:1px solid var(--paper-dim);
+    align-items:center;
+  }
+  .hsr-item:last-child{border-bottom:none;}
+  .hsr-cover{
+    width:40px;height:40px;
+    object-fit:cover;
+    border:1px solid var(--line);
+    background:var(--paper-dim);
+    flex-shrink:0;
+  }
+  .hsr-info{flex:1; min-width:0;}
+  .hsr-title{font-size:12.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hsr-sub{font-size:11px; color:var(--ink-soft);}
+  .hsr-add{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:50%;
+    width:24px;height:24px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .hsr-add:disabled{opacity:0.4; cursor:default;}
+  .hsr-empty, .hsr-loading{padding:10px; font-size:12px; color:var(--ink-soft);}
   .mole-logo{
     width:56px;
     height:56px;
@@ -496,6 +569,205 @@
     font-weight:700;
   }
 
+  .collection-block{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
+    padding:14px 16px;
+    margin-bottom:20px;
+  }
+  .collection-block h4{
+    margin:0 0 4px;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .collection-block > p{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin:2px 0 12px;
+    line-height:1.4;
+  }
+  /* --- Overlays plein écran (recherche & bibliothèque) --- */
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:var(--paper);
+    z-index:200;
+    overflow-y:auto;
+    display:none;
+  }
+  .overlay.open{display:block;}
+  .overlay-inner{
+    max-width:900px;
+    margin:0 auto;
+    padding:16px 16px 60px;
+  }
+  .overlay-topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 0 14px;
+    border-bottom:2px solid var(--line);
+    margin-bottom:16px;
+    position:sticky;
+    top:0;
+    background:var(--paper);
+  }
+  .overlay-topbar h3{
+    margin:0;
+    font-family:Georgia, "Times New Roman", serif;
+    font-size:18px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .overlay-close{
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    border-radius:50%;
+    width:34px;height:34px;
+    font-size:18px;
+    line-height:1;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .overlay-status{
+    font-size:13px;
+    color:var(--ink-soft);
+    padding:30px 10px;
+    text-align:center;
+  }
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+    gap:14px;
+  }
+  .res-card{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .res-cover{
+    width:100%;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border:1px solid var(--line);
+    background:var(--paper-dim);
+  }
+  .res-title{font-size:13px; font-weight:700; line-height:1.25;}
+  .res-sub{font-size:11.5px; color:var(--ink-soft);}
+  .res-stars{font-size:14px; letter-spacing:2px; color:var(--ink);}
+  .res-comment{font-size:11.5px; color:var(--ink-soft); font-style:italic; line-height:1.35;}
+  .res-actions{
+    display:flex;
+    gap:6px;
+    margin-top:auto;
+    padding-top:4px;
+  }
+  .res-btn{
+    flex:1;
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    border-radius:3px 10px 3px 10px;
+    padding:6px 6px;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .res-btn.ghost{
+    background:var(--paper);
+    color:var(--ink);
+  }
+
+  /* --- Modale de notation --- */
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(20,18,16,0.55);
+    z-index:300;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-backdrop.open{display:flex;}
+  .rating-modal{
+    background:var(--paper);
+    border:2px solid var(--line);
+    border-radius:4px 18px 4px 18px;
+    padding:20px;
+    width:100%;
+    max-width:340px;
+    text-align:center;
+  }
+  .rating-modal-album{
+    font-size:14px;
+    font-weight:700;
+    margin-bottom:2px;
+  }
+  .rating-modal-artist{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .star-row{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    margin-bottom:4px;
+  }
+  .star-btn{
+    background:none;
+    border:none;
+    font-size:30px;
+    line-height:1;
+    cursor:pointer;
+    color:var(--ink-soft);
+    padding:0;
+  }
+  .star-btn.filled{color:var(--ink);}
+  .rating-modal-hint{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    min-height:16px;
+    margin-bottom:8px;
+  }
+  .rating-modal textarea{
+    width:100%;
+    min-height:70px;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:6px;
+    padding:8px 10px;
+    font-size:12.5px;
+    font-family:inherit;
+    color:var(--ink);
+    resize:vertical;
+    margin-bottom:14px;
+  }
+  .rating-modal-actions{
+    display:flex;
+    gap:8px;
+  }
+  .rating-modal-actions button{
+    flex:1;
+    padding:10px;
+    border-radius:4px 14px 4px 14px;
+    border:2px solid var(--line);
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .rating-save-btn{background:var(--ink); color:var(--paper);}
+  .rating-cancel-btn{background:var(--paper); color:var(--ink);}
+
   /* --- Actus view --- */
   .actus-stub{
     background:var(--card);
@@ -602,6 +874,11 @@
   </svg>
   <h1>MOLE</h1>
   <p>Creuse ta culture musicale, un tunnel à la fois</p>
+
+  <div class="header-search">
+    <input type="text" id="albumSearchInput" placeholder="Rechercher un album..." autocomplete="off">
+    <div class="header-search-results" id="albumSearchResults"></div>
+  </div>
 </header>
 
 <div class="tabs">
@@ -674,6 +951,12 @@
   <section id="view-profil" class="view">
     <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
 
+    <div class="collection-block">
+      <h4>Ma Bibliothèque</h4>
+      <p id="libraryTeaser">Aucun album noté pour l'instant.</p>
+      <button class="save-btn" id="openLibraryBtn">Ouvrir ma bibliothèque</button>
+    </div>
+
     <div class="curiosity-block">
       <h4>Curiosity Bar</h4>
       <p>Joue uniquement sur le style : rester dans tes genres aimés, ou aller voir ailleurs. La profondeur n'est jamais bridée par ce curseur — tout niveau reste toujours pertinent.</p>
@@ -708,6 +991,46 @@
 </main>
 
 <footer>MOLE V0.3 — data curée à la main sur 9 genres · Apple Music &amp; YouTube en liens externes</footer>
+
+<div class="overlay" id="searchOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-topbar">
+      <h3 id="searchOverlayTitle">Résultats</h3>
+      <button class="overlay-close" id="searchOverlayClose" title="Fermer">&times;</button>
+    </div>
+    <div id="searchOverlayBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="libraryOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-topbar">
+      <h3>Ma Bibliothèque</h3>
+      <button class="overlay-close" id="libraryOverlayClose" title="Fermer">&times;</button>
+    </div>
+    <div id="libraryOverlayBody"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="ratingModalBackdrop">
+  <div class="rating-modal">
+    <div class="rating-modal-album" id="ratingModalTitle"></div>
+    <div class="rating-modal-artist" id="ratingModalArtist"></div>
+    <div class="star-row" id="ratingModalStars">
+      <button class="star-btn" data-v="1">&#9734;</button>
+      <button class="star-btn" data-v="2">&#9734;</button>
+      <button class="star-btn" data-v="3">&#9734;</button>
+      <button class="star-btn" data-v="4">&#9734;</button>
+      <button class="star-btn" data-v="5">&#9734;</button>
+    </div>
+    <div class="rating-modal-hint" id="ratingModalHint"></div>
+    <textarea id="ratingModalComment" placeholder="Un commentaire (optionnel)..." maxlength="500"></textarea>
+    <div class="rating-modal-actions">
+      <button class="rating-cancel-btn" id="ratingModalCancel">Annuler</button>
+      <button class="rating-save-btn" id="ratingModalSave">Enregistrer</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const TIER_LABELS = [
@@ -1422,6 +1745,289 @@ chatSendBtn.onclick = sendChatMessage;
 chatInput.addEventListener("keydown", (e) => {
   if(e.key === "Enter") sendChatMessage();
 });
+
+// ---------- Recherche d'albums (MusicBrainz), notation & Ma Bibliothèque ----------
+const COLLECTION_KEY = "mole_collection_v1";
+
+function loadCollection(){
+  try{
+    const raw = localStorage.getItem(COLLECTION_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveCollectionList(list){
+  localStorage.setItem(COLLECTION_KEY, JSON.stringify(list));
+}
+function removeFromCollection(mbid){
+  saveCollectionList(loadCollection().filter(a => a.mbid !== mbid));
+  updateLibraryTeaser();
+  if(libraryOverlay.classList.contains("open")) renderLibraryOverlay();
+}
+function starString(rating){
+  const r = rating || 0;
+  return "★".repeat(r) + "☆".repeat(5 - r);
+}
+
+// --- champ de recherche (header) ---
+const albumSearchInput = document.getElementById("albumSearchInput");
+const albumSearchResults = document.getElementById("albumSearchResults");
+let albumSearchDebounce = null;
+let albumSearchSeq = 0;
+
+albumSearchInput.addEventListener("input", () => {
+  const q = albumSearchInput.value.trim();
+  clearTimeout(albumSearchDebounce);
+  if(q.length < 2){
+    albumSearchResults.classList.remove("open");
+    albumSearchResults.innerHTML = "";
+    return;
+  }
+  albumSearchDebounce = setTimeout(() => runAlbumSearch(q), 400);
+});
+
+albumSearchInput.addEventListener("keydown", (e) => {
+  if(e.key !== "Enter") return;
+  e.preventDefault();
+  const q = albumSearchInput.value.trim();
+  if(q.length < 2) return;
+  clearTimeout(albumSearchDebounce);
+  albumSearchResults.classList.remove("open");
+  openSearchOverlay(q);
+});
+
+document.addEventListener("click", (e) => {
+  if(!e.target.closest(".header-search")) albumSearchResults.classList.remove("open");
+});
+
+async function runAlbumSearch(query){
+  const seq = ++albumSearchSeq;
+  albumSearchResults.innerHTML = '<div class="hsr-loading">Recherche...</div>';
+  albumSearchResults.classList.add("open");
+  try{
+    const url = "https://musicbrainz.org/ws/2/release-group/?query=" + encodeURIComponent(query) + "&fmt=json&limit=8";
+    const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    const json = await res.json();
+    if(seq !== albumSearchSeq) return;
+    renderAlbumSearchResults(json["release-groups"] || []);
+  }catch(err){
+    if(seq !== albumSearchSeq) return;
+    albumSearchResults.innerHTML = '<div class="hsr-empty">Recherche indisponible pour le moment.</div>';
+  }
+}
+
+function renderAlbumSearchResults(groups){
+  if(!groups.length){
+    albumSearchResults.innerHTML = '<div class="hsr-empty">Aucun album trouvé.</div>';
+    return;
+  }
+  albumSearchResults.innerHTML = "";
+  groups.forEach(g => {
+    const artist = (g["artist-credit"] || []).map(c => c.name).join(", ") || "Artiste inconnu";
+    const year = g["first-release-date"] ? g["first-release-date"].slice(0,4) : "";
+    const mbid = g.id;
+    const existing = loadCollection().find(a => a.mbid === mbid);
+
+    const item = document.createElement("div");
+    item.className = "hsr-item";
+    item.innerHTML = `
+      <img class="hsr-cover" src="https://coverartarchive.org/release-group/${mbid}/front-250" onerror="this.style.visibility='hidden'" alt="">
+      <div class="hsr-info">
+        <div class="hsr-title">${escapeHtml(g.title)}</div>
+        <div class="hsr-sub">${escapeHtml(artist)}${year ? " · " + year : ""}</div>
+      </div>
+      <button class="hsr-add" title="${existing ? "Modifier ma note" : "Noter cet album"}">${existing ? "&#9998;" : "+"}</button>
+    `;
+    item.querySelector(".hsr-add").addEventListener("click", () => {
+      albumSearchResults.classList.remove("open");
+      openRatingModal({ mbid, title: g.title, artist, year });
+    });
+    albumSearchResults.appendChild(item);
+  });
+}
+
+// --- overlay plein écran : résultats de recherche (touche Entrée) ---
+const searchOverlay = document.getElementById("searchOverlay");
+const searchOverlayTitle = document.getElementById("searchOverlayTitle");
+const searchOverlayBody = document.getElementById("searchOverlayBody");
+document.getElementById("searchOverlayClose").addEventListener("click", () => searchOverlay.classList.remove("open"));
+
+async function openSearchOverlay(query){
+  searchOverlay.classList.add("open");
+  searchOverlayTitle.textContent = `Résultats pour « ${query} »`;
+  searchOverlayBody.innerHTML = '<div class="overlay-status">Recherche...</div>';
+  try{
+    const url = "https://musicbrainz.org/ws/2/release-group/?query=" + encodeURIComponent(query) + "&fmt=json&limit=24";
+    const res = await fetch(url, { headers: { "Accept": "application/json" } });
+    const json = await res.json();
+    renderSearchOverlayResults(json["release-groups"] || []);
+  }catch(err){
+    searchOverlayBody.innerHTML = '<div class="overlay-status">Recherche indisponible pour le moment.</div>';
+  }
+}
+
+function renderSearchOverlayResults(groups){
+  if(!groups.length){
+    searchOverlayBody.innerHTML = '<div class="overlay-status">Aucun album trouvé.</div>';
+    return;
+  }
+  const grid = document.createElement("div");
+  grid.className = "card-grid";
+  groups.forEach(g => {
+    const artist = (g["artist-credit"] || []).map(c => c.name).join(", ") || "Artiste inconnu";
+    const year = g["first-release-date"] ? g["first-release-date"].slice(0,4) : "";
+    const mbid = g.id;
+    const existing = loadCollection().find(a => a.mbid === mbid);
+
+    const card = document.createElement("div");
+    card.className = "res-card";
+    card.dataset.mbid = mbid;
+    card.innerHTML = `
+      <img class="res-cover" src="https://coverartarchive.org/release-group/${mbid}/front-250" onerror="this.style.visibility='hidden'" alt="">
+      <div class="res-title">${escapeHtml(g.title)}</div>
+      <div class="res-sub">${escapeHtml(artist)}${year ? " · " + year : ""}</div>
+      ${existing ? `<div class="res-stars">${starString(existing.rating)}</div>` : ""}
+      <div class="res-actions">
+        <button class="res-btn">${existing ? "Modifier ma note" : "Noter"}</button>
+      </div>
+    `;
+    card.querySelector(".res-btn").addEventListener("click", () => {
+      openRatingModal({ mbid, title: g.title, artist, year });
+    });
+    grid.appendChild(card);
+  });
+  searchOverlayBody.innerHTML = "";
+  searchOverlayBody.appendChild(grid);
+}
+
+// --- modale de notation (étoiles + commentaire) ---
+const ratingModalBackdrop = document.getElementById("ratingModalBackdrop");
+const ratingModalTitle = document.getElementById("ratingModalTitle");
+const ratingModalArtist = document.getElementById("ratingModalArtist");
+const ratingModalStars = document.getElementById("ratingModalStars");
+const ratingModalHint = document.getElementById("ratingModalHint");
+const ratingModalComment = document.getElementById("ratingModalComment");
+const ratingModalSaveBtn = document.getElementById("ratingModalSave");
+const ratingModalCancelBtn = document.getElementById("ratingModalCancel");
+
+let currentRatingAlbum = null;
+let currentRatingValue = 0;
+
+function openRatingModal(album){
+  currentRatingAlbum = album;
+  const existing = loadCollection().find(a => a.mbid === album.mbid);
+  currentRatingValue = existing ? existing.rating : 0;
+  ratingModalTitle.textContent = album.title;
+  ratingModalArtist.textContent = album.artist + (album.year ? " · " + album.year : "");
+  ratingModalComment.value = existing ? (existing.comment || "") : "";
+  ratingModalHint.textContent = "";
+  paintStars();
+  ratingModalBackdrop.classList.add("open");
+}
+function closeRatingModal(){
+  ratingModalBackdrop.classList.remove("open");
+  currentRatingAlbum = null;
+}
+function paintStars(){
+  ratingModalStars.querySelectorAll(".star-btn").forEach(btn => {
+    const on = Number(btn.dataset.v) <= currentRatingValue;
+    btn.classList.toggle("filled", on);
+    btn.textContent = on ? "★" : "☆";
+  });
+}
+ratingModalStars.querySelectorAll(".star-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    currentRatingValue = Number(btn.dataset.v);
+    paintStars();
+  });
+});
+ratingModalCancelBtn.addEventListener("click", closeRatingModal);
+ratingModalBackdrop.addEventListener("click", (e) => {
+  if(e.target === ratingModalBackdrop) closeRatingModal();
+});
+ratingModalSaveBtn.addEventListener("click", () => {
+  if(!currentRatingAlbum) return;
+  if(currentRatingValue < 1){
+    ratingModalHint.textContent = "Choisis au moins une étoile.";
+    return;
+  }
+  const list = loadCollection();
+  const idx = list.findIndex(a => a.mbid === currentRatingAlbum.mbid);
+  const entry = {
+    mbid: currentRatingAlbum.mbid,
+    title: currentRatingAlbum.title,
+    artist: currentRatingAlbum.artist,
+    year: currentRatingAlbum.year,
+    rating: currentRatingValue,
+    comment: ratingModalComment.value.trim(),
+    addedAt: idx >= 0 ? list[idx].addedAt : Date.now()
+  };
+  if(idx >= 0) list[idx] = entry; else list.unshift(entry);
+  saveCollectionList(list);
+  updateLibraryTeaser();
+
+  const searchCard = searchOverlayBody.querySelector(`.res-card[data-mbid="${entry.mbid}"]`);
+  if(searchCard){
+    searchCard.querySelector(".res-btn").textContent = "Modifier ma note";
+    let starsEl = searchCard.querySelector(".res-stars");
+    if(!starsEl){
+      starsEl = document.createElement("div");
+      starsEl.className = "res-stars";
+      searchCard.insertBefore(starsEl, searchCard.querySelector(".res-actions"));
+    }
+    starsEl.textContent = starString(entry.rating);
+  }
+  if(libraryOverlay.classList.contains("open")) renderLibraryOverlay();
+
+  closeRatingModal();
+});
+
+// --- overlay plein écran : Ma Bibliothèque ---
+const libraryOverlay = document.getElementById("libraryOverlay");
+const libraryOverlayBody = document.getElementById("libraryOverlayBody");
+document.getElementById("libraryOverlayClose").addEventListener("click", () => libraryOverlay.classList.remove("open"));
+document.getElementById("openLibraryBtn").addEventListener("click", () => {
+  libraryOverlay.classList.add("open");
+  renderLibraryOverlay();
+});
+
+function renderLibraryOverlay(){
+  const list = loadCollection();
+  if(!list.length){
+    libraryOverlayBody.innerHTML = '<div class="overlay-status">Ta bibliothèque est vide &mdash; cherche un album en haut de page et note-le pour le voir apparaître ici.</div>';
+    return;
+  }
+  const grid = document.createElement("div");
+  grid.className = "card-grid";
+  list.forEach(a => {
+    const card = document.createElement("div");
+    card.className = "res-card";
+    card.innerHTML = `
+      <img class="res-cover" src="https://coverartarchive.org/release-group/${a.mbid}/front-250" onerror="this.style.visibility='hidden'" alt="">
+      <div class="res-title">${escapeHtml(a.title)}</div>
+      <div class="res-sub">${escapeHtml(a.artist)}${a.year ? " · " + escapeHtml(a.year) : ""}</div>
+      <div class="res-stars">${starString(a.rating)}</div>
+      ${a.comment ? `<div class="res-comment">${escapeHtml(a.comment)}</div>` : ""}
+      <div class="res-actions">
+        <button class="res-btn">Modifier</button>
+        <button class="res-btn ghost">Retirer</button>
+      </div>
+    `;
+    const [editBtn, removeBtn] = card.querySelectorAll(".res-btn");
+    editBtn.addEventListener("click", () => openRatingModal({ mbid:a.mbid, title:a.title, artist:a.artist, year:a.year }));
+    removeBtn.addEventListener("click", () => removeFromCollection(a.mbid));
+    grid.appendChild(card);
+  });
+  libraryOverlayBody.innerHTML = "";
+  libraryOverlayBody.appendChild(grid);
+}
+
+function updateLibraryTeaser(){
+  const el = document.getElementById("libraryTeaser");
+  if(!el) return;
+  const n = loadCollection().length;
+  el.textContent = n ? `${n} album${n>1?"s":""} noté${n>1?"s":""}.` : "Aucun album noté pour l'instant.";
+}
+updateLibraryTeaser();
 
 // ---------- PWA install (service worker) ----------
 if("serviceWorker" in navigator){

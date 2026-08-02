@@ -68,6 +68,11 @@
       width:220px;
     }
   }
+  .overlay-topbar-row .header-search{
+    flex:1 1 auto;
+    width:auto;
+    max-width:420px;
+  }
   .header-search input{
     width:100%;
     background:var(--paper);
@@ -1225,8 +1230,7 @@
 <div class="overlay" id="searchOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
-      <div class="overlay-topbar-row">
-        <h3 id="searchOverlayTitle">Résultats</h3>
+      <div class="overlay-topbar-row" id="searchOverlayTopRow">
         <button class="overlay-close" id="searchOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
@@ -1838,8 +1842,19 @@ function collectAlbumEntries(genre, tierIdx){
   return pool;
 }
 
+// ---------- barre de recherche : ancrée dans le coin, ou dans la page résultats ----------
+const topBarEl = document.querySelector(".top-bar");
+const headerSearchEl = document.querySelector(".header-search");
+function dockSearchHome(){
+  if(headerSearchEl.parentElement !== topBarEl) topBarEl.appendChild(headerSearchEl);
+}
+function dockSearchInOverlay(rowEl){
+  rowEl.insertBefore(headerSearchEl, rowEl.firstChild);
+}
+
 // ---------- tabs ----------
 function closeAllOverlays(){
+  dockSearchHome();
   document.getElementById("searchOverlay").classList.remove("open");
   document.getElementById("libraryOverlay").classList.remove("open");
   document.getElementById("artistOverlay").classList.remove("open");
@@ -2306,13 +2321,18 @@ function renderAlbumSearchResults(artists){
 
 // --- overlay plein écran : résultats de recherche (touche Entrée) ---
 const searchOverlay = document.getElementById("searchOverlay");
-const searchOverlayTitle = document.getElementById("searchOverlayTitle");
+const searchOverlayTopRow = document.getElementById("searchOverlayTopRow");
 const searchOverlayBody = document.getElementById("searchOverlayBody");
-document.getElementById("searchOverlayClose").addEventListener("click", () => searchOverlay.classList.remove("open"));
+document.getElementById("searchOverlayClose").addEventListener("click", () => {
+  searchOverlay.classList.remove("open");
+  dockSearchHome();
+});
 
 async function openSearchOverlay(query){
   searchOverlay.classList.add("open");
-  searchOverlayTitle.textContent = `Résultats pour « ${query} »`;
+  dockSearchInOverlay(searchOverlayTopRow);
+  albumSearchInput.value = query;
+  albumSearchResults.classList.remove("open");
   searchOverlayBody.innerHTML = '<div class="overlay-status">Recherche...</div>';
   try{
     const artists = await searchArtistsUnified(query, 15);
@@ -2358,6 +2378,7 @@ const artistProfileBio = document.getElementById("artistProfileBio");
 document.getElementById("artistOverlayClose").addEventListener("click", () => artistOverlay.classList.remove("open"));
 
 async function openArtistOverlay(artistMbid, artistName){
+  dockSearchHome();
   artistOverlay.classList.add("open");
   artistOverlayTitle.textContent = artistName;
   artistOverlayBody.innerHTML = '<div class="overlay-status">Chargement de la discographie...</div>';
@@ -2579,6 +2600,7 @@ function formatDuration(ms){
 }
 
 async function openAlbumOverlay(rgMbid, albumTitle, artistName, year){
+  dockSearchHome();
   albumOverlay.classList.add("open");
   albumOverlayTitle.textContent = albumTitle;
   albumCoverBig.src = `https://coverartarchive.org/release-group/${rgMbid}/front-500`;
@@ -2648,6 +2670,7 @@ const libraryOverlay = document.getElementById("libraryOverlay");
 const libraryOverlayBody = document.getElementById("libraryOverlayBody");
 document.getElementById("libraryOverlayClose").addEventListener("click", () => libraryOverlay.classList.remove("open"));
 document.getElementById("openLibraryBtn").addEventListener("click", () => {
+  dockSearchHome();
   libraryOverlay.classList.add("open");
   renderLibraryOverlay();
 });

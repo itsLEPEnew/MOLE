@@ -1008,6 +1008,16 @@
     text-align:center;
     margin:-8px 0 16px;
   }
+  .terrain-style-desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.5;
+    text-align:center;
+    max-width:520px;
+    margin:0 auto 14px;
+    min-height:0;
+  }
+  .terrain-style-desc:empty{ margin:0; }
   .terrain-status{
     font-size:13px;
     color:var(--ink-soft);
@@ -1238,7 +1248,7 @@
     <ellipse cx="50" cy="76" rx="34" ry="4" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
   </svg>
   <h1>MOLE</h1>
-  <p>Creuse ta culture musicale, un tunnel à la fois</p>
+  <p>Dig the culture</p>
 </header>
 
 <div class="top-bar">
@@ -1322,8 +1332,9 @@
         <option value="Rock">Rock</option>
         <option value="Latin">Latin</option>
       </select>
-      <input type="text" id="terrainStyle" placeholder="Sous-genre (ex: Dub Techno, Boogie, Deep House...)">
+      <select id="terrainStyle"></select>
     </div>
+    <div id="terrainStyleDesc" class="terrain-style-desc"></div>
     <p class="terrain-hint">Plus le sous-genre est précis, plus la découverte sera obscure — un genre large seul (ex: "Jazz") remonte encore des trucs relativement connus.</p>
     <button class="save-btn" id="unearthBtn">⛏ Déterrer l'inconnu</button>
     <div id="terrainResult"></div>
@@ -2427,6 +2438,24 @@ async function fetchWikiSummaryForEntity(entityType, mbid){
 }
 function fetchArtistWikiInfo(artistMbid){ return fetchWikiSummaryForEntity("artist", artistMbid); }
 
+// --- courte description d'un sous-genre, via Wikipédia directement (pas de MBID pour un style) ---
+const genreDescCache = new Map();
+async function fetchGenreDescription(styleName){
+  if(genreDescCache.has(styleName)) return genreDescCache.get(styleName);
+  let bio = null;
+  for(const lang of ["fr", "en"]){
+    try{
+      const res = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(styleName.replace(/ /g, "_"))}`);
+      if(res.ok){
+        const data = await res.json();
+        if(data.extract){ bio = data.extract; break; }
+      }
+    }catch(e){ /* on tente la langue suivante */ }
+  }
+  genreDescCache.set(styleName, bio);
+  return bio;
+}
+
 // --- artistes associés (relations factuelles MusicBrainz : membres, collaborations...) ---
 const RELATION_LABELS = {
   "member of band": "Membre de",
@@ -2895,8 +2924,44 @@ updateLibraryTeaser();
 // ---------- Terrain vague : découverte brute via une base de données factuelle ----------
 const terrainGenre = document.getElementById("terrainGenre");
 const terrainStyle = document.getElementById("terrainStyle");
+const terrainStyleDesc = document.getElementById("terrainStyleDesc");
 const terrainResult = document.getElementById("terrainResult");
 const unearthBtn = document.getElementById("unearthBtn");
+
+// Sous-genres réels (tags de style déjà utilisés par le filtre de recherche) —
+// une sélection curée, pas la liste exhaustive de plusieurs centaines de tags existants.
+const SUBGENRES_BY_GENRE = {
+  "Electronic": ["Techno","Dub Techno","Detroit Techno","Minimal","Deep House","Chicago House","Acid House","Tech House","Progressive House","Nu-Disco","Electro","Ambient","Dark Ambient","Drum n Bass","Jungle","Dubstep","UK Garage","Future Garage","Breakbeat","Big Beat","Trance","Psy-Trance","Downtempo","Trip Hop","IDM","Experimental","Industrial","EBM","Synth-pop","Italo-Disco","Hi NRG","Ghetto House","Footwork","Bassline","Grime","Gabber","Vaporwave"],
+  "Hip Hop": ["Hip Hop","Conscious","Gangsta","Boom Bap","Trap","Cloud Rap","Instrumental","Turntablism","RnB/Swing","Miami Bass","Bass Music"],
+  "Funk / Soul": ["Soul","Funk","Disco","Boogie","Rhythm & Blues","Northern Soul","Deep Funk","P.Funk","New Jack Swing","Neo Soul","Gospel","Afrobeat"],
+  "Jazz": ["Bebop","Hard Bop","Modal","Free Jazz","Fusion","Latin Jazz","Cool Jazz","Smooth Jazz","Swing","Big Band","Post Bop","Avant-garde Jazz","Dixieland"],
+  "Reggae": ["Dub","Roots Reggae","Dancehall","Ska","Rocksteady","Ragga","Lovers Rock","Dub Poetry"],
+  "Rock": ["Punk","Post-Punk","Indie Rock","Shoegaze","Psychedelic Rock","Prog Rock","Krautrock","Garage Rock","Noise","Goth Rock","Industrial Rock","No Wave","Math Rock"],
+  "Latin": ["Salsa","Cumbia","Bossa Nova","Samba","Boogaloo","Merengue","Tango","MPB"]
+};
+
+function allSubgenres(){
+  return Object.values(SUBGENRES_BY_GENRE).flat().sort();
+}
+
+function populateStyleSelect(){
+  const genre = terrainGenre.value;
+  const list = genre ? SUBGENRES_BY_GENRE[genre] : allSubgenres();
+  terrainStyle.innerHTML = '<option value="">Tous sous-genres</option>' +
+    list.map(s => `<option value="${s}">${s}</option>`).join("");
+  terrainStyleDesc.textContent = "";
+}
+populateStyleSelect();
+terrainGenre.addEventListener("change", populateStyleSelect);
+
+terrainStyle.addEventListener("change", async () => {
+  const style = terrainStyle.value;
+  terrainStyleDesc.textContent = "";
+  if(!style) return;
+  terrainStyleDesc.textContent = "Recherche d'une description...";
+  const desc = await fetchGenreDescription(style);
+  terrainStyleDesc.textContent = desc || "";
+});
 
 function formatTrackDuration(str){
   return str && str.trim() ? str.trim() : "";

@@ -23,33 +23,48 @@
     --card:#f7f4ec;
     --card-border:#141210;
   }
+  :root[data-theme="dark"]{
+    --paper:#16140f;
+    --paper-dim:#221f19;
+    --ink:#f2eee4;
+    --ink-soft:#b8b0a0;
+    --line:#f2eee4;
+    --accent:#f2eee4;
+    --card:#1e1b15;
+    --card-border:#f2eee4;
+  }
   *{box-sizing:border-box;}
   body{
     margin:0;
     font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
     background:var(--paper);
     background-image:
-      repeating-linear-gradient(0deg, rgba(20,18,16,0.02) 0px, rgba(20,18,16,0.02) 1px, transparent 1px, transparent 3px),
-      repeating-linear-gradient(90deg, rgba(20,18,16,0.015) 0px, rgba(20,18,16,0.015) 1px, transparent 1px, transparent 3px);
+      repeating-linear-gradient(0deg, rgba(128,120,105,0.05) 0px, rgba(128,120,105,0.05) 1px, transparent 1px, transparent 3px),
+      repeating-linear-gradient(90deg, rgba(128,120,105,0.04) 0px, rgba(128,120,105,0.04) 1px, transparent 1px, transparent 3px);
     color:var(--ink);
     min-height:100vh;
+    transition:background-color .2s, color .2s;
   }
   header{
     position:relative;
     text-align:center;
-    padding:26px 16px 8px;
+    padding:64px 16px 8px;
+  }
+  .top-bar{
+    position:fixed;
+    top:12px;
+    right:14px;
+    z-index:260;
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
   }
   .header-search{
     position:relative;
-    margin:14px auto 0;
-    width:min(260px, 90%);
+    width:min(190px, 46vw);
   }
   @media (min-width:600px){
     .header-search{
-      position:absolute;
-      top:20px;
-      right:16px;
-      margin:0;
       width:220px;
     }
   }
@@ -62,6 +77,17 @@
     font-size:13px;
     color:var(--ink);
     font-weight:600;
+  }
+  .theme-toggle-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    border-radius:50%;
+    width:33px;height:33px;
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    flex-shrink:0;
   }
   .header-search-results{
     position:absolute;
@@ -603,7 +629,7 @@
   .overlay-inner{
     max-width:900px;
     margin:0 auto;
-    padding:16px 16px 60px;
+    padding:64px 16px 60px;
   }
   .overlay-topbar{
     display:flex;
@@ -613,7 +639,7 @@
     border-bottom:2px solid var(--line);
     margin-bottom:16px;
     position:sticky;
-    top:0;
+    top:48px;
     background:var(--paper);
     z-index:5;
   }
@@ -1063,24 +1089,27 @@
 
 <header>
   <svg class="mole-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="50" cy="52" rx="30" ry="22" fill="#141210"/>
-    <polygon points="24,50 10,58 26,64" fill="#141210"/>
-    <circle cx="11" cy="58" r="2.4" fill="#f2eee4"/>
-    <line x1="38" y1="44" x2="45" y2="44" stroke="#f2eee4" stroke-width="3" stroke-linecap="round"/>
-    <ellipse cx="60" cy="72" rx="9" ry="7" fill="#141210"/>
-    <line x1="56" y1="76" x2="56" y2="80" stroke="#141210" stroke-width="2.5"/>
-    <line x1="60" y1="77" x2="60" y2="81" stroke="#141210" stroke-width="2.5"/>
-    <line x1="64" y1="76" x2="64" y2="80" stroke="#141210" stroke-width="2.5"/>
-    <ellipse cx="50" cy="76" rx="34" ry="4" fill="none" stroke="#141210" stroke-width="1.5"/>
+    <ellipse cx="50" cy="52" rx="30" ry="22" fill="var(--ink)"/>
+    <polygon points="24,50 10,58 26,64" fill="var(--ink)"/>
+    <circle cx="11" cy="58" r="2.4" fill="var(--paper)"/>
+    <line x1="38" y1="44" x2="45" y2="44" stroke="var(--paper)" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="60" cy="72" rx="9" ry="7" fill="var(--ink)"/>
+    <line x1="56" y1="76" x2="56" y2="80" stroke="var(--ink)" stroke-width="2.5"/>
+    <line x1="60" y1="77" x2="60" y2="81" stroke="var(--ink)" stroke-width="2.5"/>
+    <line x1="64" y1="76" x2="64" y2="80" stroke="var(--ink)" stroke-width="2.5"/>
+    <ellipse cx="50" cy="76" rx="34" ry="4" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
   </svg>
   <h1>MOLE</h1>
   <p>Creuse ta culture musicale, un tunnel à la fois</p>
+</header>
 
+<div class="top-bar">
+  <button class="theme-toggle-btn" id="themeToggleBtn" title="Mode nuit">&#9789;</button>
   <div class="header-search">
     <input type="text" id="albumSearchInput" placeholder="Rechercher un album..." autocomplete="off">
     <div class="header-search-results" id="albumSearchResults"></div>
   </div>
-</header>
+</div>
 
 <div class="tabs">
   <button class="tab-btn active" data-tab="reco">Recos de la taupe</button>
@@ -1302,6 +1331,32 @@
 </div>
 
 <script>
+// ---------- mode nuit ----------
+const THEME_KEY = "mole_theme";
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+function applyTheme(theme){
+  if(theme === "dark"){
+    document.documentElement.setAttribute("data-theme", "dark");
+    themeToggleBtn.innerHTML = "&#9788;";
+    themeToggleBtn.title = "Mode jour";
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+    themeToggleBtn.innerHTML = "&#9789;";
+    themeToggleBtn.title = "Mode nuit";
+  }
+}
+function loadInitialTheme(){
+  const saved = localStorage.getItem(THEME_KEY);
+  if(saved) return saved;
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+applyTheme(loadInitialTheme());
+themeToggleBtn.addEventListener("click", () => {
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+});
+
 const TIER_LABELS = [
   "Surface — à l'air libre",
   "Premières galeries",

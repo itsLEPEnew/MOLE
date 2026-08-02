@@ -960,25 +960,29 @@
     display:inline-block;
     width:32px;
     height:32px;
-    font-size:30px;
-    line-height:1;
     cursor:pointer;
     transition:transform .15s cubic-bezier(.34,1.56,.64,1);
   }
   .star-slot:hover{ transform:scale(1.2); }
-  .star-empty, .star-fill{
+  .star-slot svg{
     position:absolute;
     top:0; left:0;
-    white-space:nowrap;
+    width:32px;
+    height:32px;
+    display:block;
     pointer-events:none;
   }
-  .star-empty{ color:var(--ink-soft); }
-  .star-fill{
+  .star-empty-icon{ fill:var(--ink-soft); }
+  .star-fill-wrap{
+    position:absolute;
+    top:0; left:0;
     width:0%;
+    height:32px;
     overflow:hidden;
-    color:#f5c518;
     transition:width .18s ease;
+    pointer-events:none;
   }
+  .star-fill-wrap svg{ fill:#f5c518; }
   .rating-modal-hint{
     font-size:11.5px;
     color:var(--ink-soft);
@@ -1274,42 +1278,14 @@
 </div>
 
 <div class="tabs">
-  <button class="tab-btn active" data-tab="reco">Recos de la taupe</button>
+  <button class="tab-btn active" data-tab="terrain">Terrain vague</button>
   <button class="tab-btn" data-tab="explore">Le Tunnel</button>
-  <button class="tab-btn" data-tab="terrain">Terrain vague</button>
   <button class="tab-btn" data-tab="actus">Actus</button>
   <button class="tab-btn" data-tab="profil">Mon Profil</button>
   <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
 
 <main>
-
-  <!-- ===== RECO VIEW ===== -->
-  <section id="view-reco" class="view active">
-    <div class="filters">
-      <select id="genreFilter">
-        <option value="all">Tous les genres</option>
-      </select>
-      <select id="depthFilter">
-        <option value="all">N'importe quelle profondeur</option>
-        <option value="0">Surface</option>
-        <option value="1">Premières galeries</option>
-        <option value="2">Le cœur du tunnel</option>
-        <option value="3">Galeries profondes</option>
-        <option value="4">La roche mère</option>
-      </select>
-    </div>
-    <div class="mode-switch-wrap">
-      <span id="labelSingle" class="on">Single</span>
-      <label class="switch">
-        <input type="checkbox" id="albumToggle">
-        <span class="slider"></span>
-      </label>
-      <span id="labelAlbum">Album</span>
-    </div>
-    <button class="roll-btn" id="rollBtn">⛏ La taupe déterre un banger</button>
-    <div id="recoResult"></div>
-  </section>
 
   <!-- ===== TUNNEL (EXPLORE) VIEW ===== -->
   <section id="view-explore" class="view">
@@ -1333,7 +1309,7 @@
   </section>
 
   <!-- ===== TERRAIN VAGUE VIEW ===== -->
-  <section id="view-terrain" class="view">
+  <section id="view-terrain" class="view active">
     <p class="profil-intro">Zone brute, non filtrée : la taupe déterre un disque que (presque) personne n'a jamais documenté. Aucune garantie de qualité — pas de "why", juste le contexte factuel. À toi de juger à l'oreille.</p>
     <div class="filters">
       <select id="terrainGenre">
@@ -1347,13 +1323,9 @@
         <option value="Latin">Latin</option>
       </select>
       <select id="terrainStyle"></select>
-      <select id="terrainMode">
-        <option value="obscure">Le plus obscur</option>
-        <option value="grail">Rare &amp; convoité</option>
-      </select>
     </div>
     <div id="terrainStyleDesc" class="terrain-style-desc"></div>
-    <p class="terrain-hint" id="terrainModeHint">Plus le sous-genre est précis, plus la découverte sera obscure — un genre large seul (ex: "Jazz") remonte encore des trucs relativement connus.</p>
+    <p class="terrain-hint">Combine obscurité (peu documenté) et rareté convoitée (peu possédé, très souhaité) — un sous-genre précis donne toujours de meilleurs résultats qu'un genre large seul.</p>
     <button class="save-btn" id="unearthBtn">⛏ Déterrer l'inconnu</button>
     <div id="terrainResult"></div>
   </section>
@@ -1418,7 +1390,6 @@
         <button class="overlay-close" id="searchOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
@@ -1438,7 +1409,6 @@
         <button class="overlay-close" id="libraryOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
@@ -1458,7 +1428,6 @@
         <button class="overlay-close" id="artistOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
@@ -1482,7 +1451,6 @@
         <button class="overlay-close" id="albumOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
@@ -1507,11 +1475,11 @@
     <div class="rating-modal-album" id="ratingModalTitle"></div>
     <div class="rating-modal-artist" id="ratingModalArtist"></div>
     <div class="star-row" id="ratingModalStars">
-      <span class="star-slot" data-v="1"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
-      <span class="star-slot" data-v="2"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
-      <span class="star-slot" data-v="3"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
-      <span class="star-slot" data-v="4"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
-      <span class="star-slot" data-v="5"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
+      <span class="star-slot" data-v="1"><svg class="star-empty-icon" viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg><span class="star-fill-wrap"><svg viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg></span></span>
+      <span class="star-slot" data-v="2"><svg class="star-empty-icon" viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg><span class="star-fill-wrap"><svg viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg></span></span>
+      <span class="star-slot" data-v="3"><svg class="star-empty-icon" viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg><span class="star-fill-wrap"><svg viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg></span></span>
+      <span class="star-slot" data-v="4"><svg class="star-empty-icon" viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg><span class="star-fill-wrap"><svg viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg></span></span>
+      <span class="star-slot" data-v="5"><svg class="star-empty-icon" viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg><span class="star-fill-wrap"><svg viewBox="0 0 24 24"><path d="M12 2L14.9 8.9L22 9.5L16.5 14.3L18.2 21.5L12 17.5L5.8 21.5L7.5 14.3L2 9.5L9.1 8.9Z"/></svg></span></span>
     </div>
     <div class="rating-modal-hint" id="ratingModalHint"></div>
     <textarea id="ratingModalComment" placeholder="Un commentaire (optionnel)..." maxlength="500"></textarea>
@@ -1884,15 +1852,8 @@ function entryLinksHTML(e, useAlbum){
   </div>`;
 }
 
-// ---------- populate genre filter + grid ----------
+// ---------- populate genre grid ----------
 const genreNames = Object.keys(DATA);
-const genreFilterEl = document.getElementById("genreFilter");
-genreNames.forEach(g=>{
-  const opt = document.createElement("option");
-  opt.value = g; opt.textContent = g;
-  genreFilterEl.appendChild(opt);
-});
-
 const genreGrid = document.getElementById("genreGrid");
 genreNames.forEach(g=>{
   const div = document.createElement("div");
@@ -1998,56 +1959,6 @@ document.getElementById("saveProfileBtn").onclick = () => {
   setTimeout(()=>{ status.textContent = ""; }, 3000);
 };
 
-// distribution de base jamais dominée par le mainstream (10/15/25/25/25)
-const NICHE_BIAS_5 = [0.10, 0.15, 0.25, 0.25, 0.25];
-
-function pickWeightedGenre(){
-  if(profile.liked.length === 0) return genreNames[Math.floor(Math.random()*genreNames.length)];
-  const explorationRate = (profile.curiosity ?? 30) / 100;
-  if(Math.random() < explorationRate){
-    return genreNames[Math.floor(Math.random()*genreNames.length)];
-  }
-  return profile.liked[Math.floor(Math.random()*profile.liked.length)];
-}
-
-function pickWeightedTier(genre, tiersLength){
-  const known = profile.known[genre];
-  let weights;
-  if(known === undefined){
-    weights = (tiersLength === 5) ? NICHE_BIAS_5.slice() : Array.from({length:tiersLength}, ()=>1/tiersLength);
-  } else {
-    const target = Math.min(known+1, tiersLength-1);
-    weights = [];
-    for(let i=0;i<tiersLength;i++) weights.push(1/(1+Math.abs(i-target)));
-  }
-  const total = weights.reduce((a,b)=>a+b,0);
-  let r = Math.random()*total;
-  for(let i=0;i<tiersLength;i++){
-    r -= weights[i];
-    if(r<=0) return i;
-  }
-  return tiersLength-1;
-}
-
-// cherche des entrées avec album : d'abord au palier/genre visé, sinon tout le genre, sinon partout.
-function collectAlbumEntries(genre, tierIdx){
-  const direct = DATA[genre][tierIdx].filter(e=>e.album).map(e=>({...e, tier:tierIdx, genre}));
-  if(direct.length) return direct;
-
-  let pool = [];
-  DATA[genre].forEach((entries, idx)=>{
-    entries.filter(e=>e.album).forEach(e=> pool.push({...e, tier:idx, genre}));
-  });
-  if(pool.length) return pool;
-
-  genreNames.forEach(g=>{
-    DATA[g].forEach((entries, idx)=>{
-      entries.filter(e=>e.album).forEach(e=> pool.push({...e, tier:idx, genre:g}));
-    });
-  });
-  return pool;
-}
-
 // ---------- barre de recherche : ancrée dans le coin, ou dans la page résultats ----------
 const topBarEl = document.querySelector(".top-bar");
 const headerSearchEl = document.querySelector(".header-search");
@@ -2076,56 +1987,6 @@ function switchTab(tabName){
 document.querySelectorAll(".tab-btn[data-tab]").forEach(btn=>{
   btn.onclick = () => switchTab(btn.dataset.tab);
 });
-
-// ---------- single/album switch labels ----------
-const albumToggle = document.getElementById("albumToggle");
-const labelSingle = document.getElementById("labelSingle");
-const labelAlbum = document.getElementById("labelAlbum");
-albumToggle.addEventListener("change", () => {
-  labelSingle.classList.toggle("on", !albumToggle.checked);
-  labelAlbum.classList.toggle("on", albumToggle.checked);
-});
-
-// ---------- reco roll ----------
-document.getElementById("rollBtn").onclick = () => {
-  const gSel = genreFilterEl.value;
-  const dSel = document.getElementById("depthFilter").value;
-  const albumMode = albumToggle.checked;
-
-  let genre, tierIdx, entry;
-
-  if(albumMode){
-    const genrePick = gSel === "all" ? pickWeightedGenre() : gSel;
-    const tiersForPick = DATA[genrePick];
-    const wantedTier = dSel === "all" ? pickWeightedTier(genrePick, tiersForPick.length) : parseInt(dSel);
-    const pool = collectAlbumEntries(genrePick, wantedTier);
-    entry = pool[Math.floor(Math.random()*pool.length)];
-    genre = entry.genre;
-    tierIdx = entry.tier;
-  } else {
-    genre = gSel === "all" ? pickWeightedGenre() : gSel;
-    const tiers = DATA[genre];
-    tierIdx = dSel === "all" ? pickWeightedTier(genre, tiers.length) : parseInt(dSel);
-    const entries = tiers[tierIdx];
-    entry = entries[Math.floor(Math.random()*entries.length)];
-  }
-
-  const lineHTML = albumMode
-    ? `Album : ${entry.album}${entry.year ? " · " + entry.year : ""}`
-    : (entry.track ? entry.track + (entry.year ? " · " + entry.year : "") : "");
-
-  document.getElementById("recoResult").innerHTML = `
-    <div class="reco-card">
-      <div class="reco-genre">${genre}</div>
-      <div class="tier-badge">${TIER_LABELS[tierIdx]}</div>
-      <span class="format-badge">${albumMode ? "Album" : "Single"}</span>
-      <h2>${entry.artist}</h2>
-      <div class="track">${lineHTML}</div>
-      <div class="why">${entry.why}</div>
-      ${entryLinksHTML(entry, albumMode)}
-    </div>
-  `;
-};
 
 // ---------- Le Tunnel (explore) ----------
 let currentDepth = 0;
@@ -2753,7 +2614,7 @@ function paintStars(value){
     let pct = 0;
     if(v >= idx) pct = 100;
     else if(v >= idx - 0.5) pct = 50;
-    slot.querySelector(".star-fill").style.width = pct + "%";
+    slot.querySelector(".star-fill-wrap").style.width = pct + "%";
   });
 }
 function starValueFromEvent(e, slot){
@@ -3001,15 +2862,17 @@ terrainStyle.addEventListener("change", async () => {
   terrainStyleDesc.textContent = desc || "";
 });
 
-const terrainMode = document.getElementById("terrainMode");
-const terrainModeHint = document.getElementById("terrainModeHint");
-const TERRAIN_MODE_HINTS = {
-  obscure: "Plus le sous-genre est précis, plus la découverte sera obscure — un genre large seul (ex: \"Jazz\") remonte encore des trucs relativement connus.",
-  grail: "Cherche les disques peu possédés mais très désirés (ratio souhaits/possessions élevé) — les vraies raretés que les collectionneurs chassent, pas juste de l'inconnu au hasard."
-};
-terrainMode.addEventListener("change", () => {
-  terrainModeHint.textContent = TERRAIN_MODE_HINTS[terrainMode.value] || "";
-});
+// score combiné : récompense à la fois l'obscurité (peu de want+have) et la rareté
+// convoitée (ratio want/have élevé) — sans mode séparé à choisir, tout est mélangé.
+function terrainScore(r){
+  const want = r.community.want || 0;
+  const have = r.community.have || 0;
+  const total = want + have;
+  const ratio = have > 0 ? (want / have) : want;
+  const obscurityScore = 1 / (1 + total);
+  const ratioScore = ratio / (1 + ratio);
+  return obscurityScore + ratioScore;
+}
 
 function formatTrackDuration(str){
   return str && str.trim() ? str.trim() : "";
@@ -3039,21 +2902,8 @@ async function unearthRandom(){
       terrainResult.innerHTML = '<div class="terrain-status">Rien trouvé dans ce coin — essaie un autre sous-genre ou un autre genre.</div>';
       return;
     }
-    const mode = terrainMode.value;
-    let pool;
-    if(mode === "grail"){
-      const withHave = results.filter(r => (r.community.have || 0) >= 1);
-      const base = withHave.length ? withHave : results;
-      const ranked = base.slice().sort((a, b) => {
-        const ratioA = (a.community.want || 0) / (a.community.have || 1);
-        const ratioB = (b.community.want || 0) / (b.community.have || 1);
-        return ratioB - ratioA;
-      });
-      pool = ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.3)));
-    } else {
-      const ranked = results.slice().sort((a, b) => ((a.community.want||0) + (a.community.have||0)) - ((b.community.want||0) + (b.community.have||0)));
-      pool = ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.3)));
-    }
+    const ranked = results.slice().sort((a, b) => terrainScore(b) - terrainScore(a));
+    const pool = ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.3)));
     const pick = pool[Math.floor(Math.random() * pool.length)];
 
     await new Promise(r => setTimeout(r, 300));

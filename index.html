@@ -2081,28 +2081,60 @@ async function runAlbumSearch(query){
   albumSearchResults.innerHTML = '<div class="hsr-loading">Recherche...</div>';
   albumSearchResults.classList.add("open");
   try{
-    const url = "https://musicbrainz.org/ws/2/release-group/?query=" + encodeURIComponent(query) + "&fmt=json&limit=8";
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
-    const json = await res.json();
+    const artists = await searchArtistsUnified(query, 8);
     if(seq !== albumSearchSeq) return;
-    renderAlbumSearchResults(json["release-groups"] || []);
+    renderAlbumSearchResults(artists);
   }catch(err){
     if(seq !== albumSearchSeq) return;
     albumSearchResults.innerHTML = '<div class="hsr-empty">Recherche indisponible pour le moment.</div>';
   }
 }
 
-// --- déduplication des artistes à partir des résultats d'albums ---
-function dedupeArtistsFromReleaseGroups(groups){
-  const seen = new Map();
-  groups.forEach(g => {
-    const ac = (g["artist-credit"] && g["artist-credit"][0] && g["artist-credit"][0].artist) || null;
-    if(!ac) return;
-    if(!seen.has(ac.id)) seen.set(ac.id, { id: ac.id, name: ac.name, matches: [] });
-    const entry = seen.get(ac.id);
-    if(entry.matches.length < 3) entry.matches.push(g.title);
-  });
-  return Array.from(seen.values());
+// --- recherche unifiée : d'abord par nom d'artiste (propre, peu de bruit),
+//     repli sur les titres d'albums/morceaux seulement si aucun artiste ne matche ---
+async function searchArtistsUnified(query, limit){
+  const qNorm = query.trim().toLowerCase();
+  try{
+    const res = await fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&fmt=json&limit=${limit}`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const artists = (data.artists || []).filter(a => {
+      if((a.score || 0) < 60) return false;
+      if(a.type === "Character") return false;
+      // le nom doit vraiment se retrouver dans ce qui a été tapé (ou l'inverse) :
+      // évite qu'un titre d'album entier ("The Rise and Fall of Ziggy Stardust")
+      // ne remonte de petits groupes sans rapport juste par chevauchement de mots
+      const nameNorm = (a.name || "").trim().toLowerCase();
+      if(!nameNorm) return false;
+      return qNorm.includes(nameNorm) || nameNorm.includes(qNorm);
+    });
+    if(artists.length){
+      return artists.map(a => ({
+        id: a.id,
+        name: a.name,
+        subtitle: [a.type, a.country].filter(Boolean).join(" · ") || a.disambiguation || ""
+      }));
+    }
+  }catch(e){ /* on tente le repli ci-dessous */ }
+
+  try{
+    const res = await fetch(`https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(query)}&fmt=json&limit=25`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const seen = new Map();
+    (data["release-groups"] || []).forEach(g => {
+      const ac = (g["artist-credit"] && g["artist-credit"][0] && g["artist-credit"][0].artist) || null;
+      if(!ac) return;
+      if(!seen.has(ac.id)) seen.set(ac.id, { id: ac.id, name: ac.name, score: g.score || 0, matches: [] });
+      const entry = seen.get(ac.id);
+      entry.score = Math.max(entry.score, g.score || 0);
+      if(entry.matches.length < 3 && !entry.matches.includes(g.title)) entry.matches.push(g.title);
+    });
+    return Array.from(seen.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map(e => ({ id: e.id, name: e.name, subtitle: e.matches.join(", ") }));
+  }catch(e){
+    return [];
+  }
 }
 
 // --- résolution d'un lien wiki (direct ou via Wikidata) en {lang, title} ---
@@ -2190,8 +2222,7 @@ function renderAvatarInto(el, artistId, artistName){
   });
 }
 
-function renderAlbumSearchResults(groups){
-  const artists = dedupeArtistsFromReleaseGroups(groups);
+function renderAlbumSearchResults(artists){
   if(!artists.length){
     albumSearchResults.innerHTML = '<div class="hsr-empty">Aucun artiste trouvé.</div>';
     return;
@@ -2205,7 +2236,7 @@ function renderAlbumSearchResults(groups){
       <div class="avatar sm"></div>
       <div class="hsr-info">
         <div class="hsr-title">${escapeHtml(a.name)}</div>
-        <div class="hsr-sub">${escapeHtml(a.matches.join(", "))}</div>
+        <div class="hsr-sub">${escapeHtml(a.subtitle)}</div>
       </div>
       <button class="hsr-add" title="Voir le profil de l'artiste">&#8594;</button>
     `;
@@ -2229,17 +2260,14 @@ async function openSearchOverlay(query){
   searchOverlayTitle.textContent = `Résultats pour « ${query} »`;
   searchOverlayBody.innerHTML = '<div class="overlay-status">Recherche...</div>';
   try{
-    const url = "https://musicbrainz.org/ws/2/release-group/?query=" + encodeURIComponent(query) + "&fmt=json&limit=24";
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
-    const json = await res.json();
-    renderSearchOverlayResults(json["release-groups"] || []);
+    const artists = await searchArtistsUnified(query, 15);
+    renderSearchOverlayResults(artists);
   }catch(err){
     searchOverlayBody.innerHTML = '<div class="overlay-status">Recherche indisponible pour le moment.</div>';
   }
 }
 
-function renderSearchOverlayResults(groups){
-  const artists = dedupeArtistsFromReleaseGroups(groups);
+function renderSearchOverlayResults(artists){
   if(!artists.length){
     searchOverlayBody.innerHTML = '<div class="overlay-status">Aucun artiste trouvé.</div>';
     return;
@@ -2252,7 +2280,7 @@ function renderSearchOverlayResults(groups){
     card.innerHTML = `
       <div class="avatar md"></div>
       <div class="res-title">${escapeHtml(a.name)}</div>
-      <div class="res-sub artist-matches">${escapeHtml(a.matches.join(", "))}</div>
+      <div class="res-sub artist-matches">${escapeHtml(a.subtitle)}</div>
       <div class="res-actions">
         <button class="res-btn">Voir le profil</button>
       </div>

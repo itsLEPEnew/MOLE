@@ -651,6 +651,25 @@
     font-size:11px;
     border-radius:3px 8px 3px 8px;
   }
+  /* --- Avatars (photo si trouvée, sinon initiale de secours) --- */
+  .avatar{
+    border-radius:50%;
+    border:1px solid var(--line);
+    background-color:var(--ink);
+    background-size:cover;
+    background-position:center;
+    color:var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-family:Georgia, "Times New Roman", serif;
+    flex-shrink:0;
+  }
+  .avatar.sm{ width:40px; height:40px; font-size:16px; }
+  .avatar.md{ width:100%; aspect-ratio:1/1; font-size:32px; border-width:2px; }
+  .avatar.lg{ width:84px; height:84px; font-size:28px; border-width:2px; }
+
   /* --- Profil artiste : bio + discographie en rangées horizontales --- */
   .artist-bio-block{
     display:none;
@@ -661,14 +680,6 @@
     border-bottom:1px solid var(--paper-dim);
   }
   .artist-bio-block.show{ display:flex; }
-  .artist-photo{
-    width:84px;height:84px;
-    object-fit:cover;
-    border:2px solid var(--line);
-    border-radius:50%;
-    flex-shrink:0;
-    background:var(--paper-dim);
-  }
   .artist-bio-text{
     font-size:12.5px;
     color:var(--ink-soft);
@@ -687,6 +698,7 @@
   }
   .disco-row-scroll{
     display:flex;
+    align-items:stretch;
     gap:12px;
     overflow-x:auto;
     padding-bottom:8px;
@@ -709,8 +721,9 @@
     object-fit:cover;
     border:1px solid var(--line);
     background:var(--paper-dim);
+    cursor:pointer;
   }
-  .disco-card .disco-title{ font-size:12px; font-weight:700; line-height:1.25; }
+  .disco-card .disco-title{ font-size:12px; font-weight:700; line-height:1.25; cursor:pointer; }
   .disco-card .disco-year{ font-size:11px; color:var(--ink-soft); }
   .disco-card .disco-stars{ font-size:11px; letter-spacing:1px; color:var(--ink); }
   .disco-card .disco-rate-btn{
@@ -723,9 +736,22 @@
     font-size:10.5px;
     font-weight:700;
     cursor:pointer;
-    margin-top:2px;
+    margin-top:auto;
+    padding-top:5px;
   }
-  .artist-avatar{ border-radius:50%; }
+  .related-card{
+    flex:0 0 96px;
+    scroll-snap-align:start;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    text-align:center;
+    cursor:pointer;
+  }
+  .related-card .avatar{ width:72px; height:72px; font-size:24px; }
+  .related-name{ font-size:11.5px; font-weight:700; line-height:1.25; }
+  .related-label{ font-size:10px; color:var(--ink-soft); }
   .artist-card .res-title{ text-align:center; }
   .artist-matches{
     font-size:11px;
@@ -733,6 +759,81 @@
     font-style:italic;
     text-align:center;
   }
+
+  /* --- Page album : cover, description, tracklist --- */
+  #albumOverlay{ z-index:220; }
+  .album-header{
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
+    margin-bottom:22px;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .album-cover-big{
+    width:120px;height:120px;
+    object-fit:cover;
+    border:2px solid var(--line);
+    background:var(--paper-dim);
+    flex-shrink:0;
+  }
+  .album-header-info{ min-width:0; }
+  .album-header-title{
+    font-size:17px;
+    font-weight:800;
+    font-family:Georgia, "Times New Roman", serif;
+  }
+  .album-header-artist{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:2px 0 8px;
+  }
+  .album-header-desc{
+    font-size:12px;
+    color:var(--ink-soft);
+    line-height:1.5;
+    margin:0;
+  }
+  .track-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 0;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .track-row:last-child{ border-bottom:none; }
+  .track-num{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    width:20px;
+    flex-shrink:0;
+    text-align:right;
+  }
+  .track-title{
+    flex:1;
+    min-width:0;
+    font-size:13px;
+    font-weight:600;
+  }
+  .track-duration{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    flex-shrink:0;
+  }
+  .track-add-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    border-radius:50%;
+    width:26px;height:26px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    flex-shrink:0;
+    line-height:1;
+    padding:0;
+  }
+  .track-add-btn.added{ background:var(--paper); color:var(--ink); }
   .overlay-status{
     font-size:13px;
     color:var(--ink-soft);
@@ -1146,10 +1247,37 @@
       </div>
     </div>
     <div class="artist-bio-block" id="artistBioBlock">
-      <img class="artist-photo" id="artistProfilePhoto" alt="" style="display:none;">
+      <div class="avatar lg" id="artistProfileAvatar"></div>
       <p class="artist-bio-text" id="artistProfileBio"></p>
     </div>
     <div id="artistOverlayBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="albumOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-topbar">
+      <div class="overlay-topbar-row">
+        <h3 id="albumOverlayTitle">Album</h3>
+        <button class="overlay-close" id="albumOverlayClose" title="Fermer">&times;</button>
+      </div>
+      <div class="mini-tabs">
+        <button class="tab-btn mini" data-tab="reco">Recos</button>
+        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
+        <button class="tab-btn mini" data-tab="actus">Actus</button>
+        <button class="tab-btn mini" data-tab="profil">Profil</button>
+        <button class="tab-btn mini" data-tab="chat">Discute</button>
+      </div>
+    </div>
+    <div class="album-header">
+      <img class="album-cover-big" id="albumCoverBig" alt="">
+      <div class="album-header-info">
+        <div class="album-header-title" id="albumHeaderTitle"></div>
+        <div class="album-header-artist" id="albumHeaderArtist"></div>
+        <p class="album-header-desc" id="albumHeaderDesc"></p>
+      </div>
+    </div>
+    <div id="albumTracklistBody"></div>
   </div>
 </div>
 
@@ -1660,6 +1788,7 @@ function closeAllOverlays(){
   document.getElementById("searchOverlay").classList.remove("open");
   document.getElementById("libraryOverlay").classList.remove("open");
   document.getElementById("artistOverlay").classList.remove("open");
+  document.getElementById("albumOverlay").classList.remove("open");
   document.getElementById("ratingModalBackdrop").classList.remove("open");
 }
 function switchTab(tabName){
@@ -1976,38 +2105,35 @@ function dedupeArtistsFromReleaseGroups(groups){
   return Array.from(seen.values());
 }
 
-// --- photo + courte bio d'artiste (via Wikipédia, référencé depuis MusicBrainz) ---
-const artistWikiCache = new Map();
-async function fetchArtistWikiInfo(artistMbid){
-  if(artistWikiCache.has(artistMbid)) return artistWikiCache.get(artistMbid);
+// --- résolution d'un lien wiki (direct ou via Wikidata) en {lang, title} ---
+async function resolveWikiLangTitle(relations){
+  const wikiRel = relations.find(r => r.type === "wikipedia" && r.url && r.url.resource);
+  if(wikiRel){
+    const u = new URL(wikiRel.url.resource);
+    return { lang: u.hostname.split(".")[0], title: decodeURIComponent(u.pathname.replace(/^\/wiki\//, "")) };
+  }
+  const wikidataRel = relations.find(r => r.type === "wikidata" && r.url && r.url.resource);
+  if(wikidataRel){
+    const qid = wikidataRel.url.resource.split("/").pop();
+    const wdRes = await fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${qid}&props=sitelinks&format=json&origin=*`);
+    const wdData = await wdRes.json();
+    const sitelinks = (wdData.entities && wdData.entities[qid] && wdData.entities[qid].sitelinks) || {};
+    const preferred = sitelinks.frwiki || sitelinks.enwiki;
+    if(preferred) return { lang: preferred.site.replace(/wiki$/, ""), title: preferred.title };
+  }
+  return { lang: null, title: null };
+}
+
+// --- courte description via Wikipédia, pour un artiste ou un release-group ---
+const wikiSummaryCache = new Map();
+async function fetchWikiSummaryForEntity(entityType, mbid){
+  const cacheKey = `${entityType}:${mbid}`;
+  if(wikiSummaryCache.has(cacheKey)) return wikiSummaryCache.get(cacheKey);
   const result = { image: null, bio: null };
   try{
-    const res = await fetch(`https://musicbrainz.org/ws/2/artist/${artistMbid}?inc=url-rels&fmt=json`, { headers: { "Accept": "application/json" } });
+    const res = await fetch(`https://musicbrainz.org/ws/2/${entityType}/${mbid}?inc=url-rels&fmt=json`, { headers: { "Accept": "application/json" } });
     const data = await res.json();
-    const relations = data.relations || [];
-    let lang = null, title = null;
-
-    // MusicBrainz relie surtout les artistes à Wikidata plutôt qu'à Wikipédia directement
-    const wikiRel = relations.find(r => r.type === "wikipedia" && r.url && r.url.resource);
-    if(wikiRel){
-      const u = new URL(wikiRel.url.resource);
-      lang = u.hostname.split(".")[0];
-      title = decodeURIComponent(u.pathname.replace(/^\/wiki\//, ""));
-    } else {
-      const wikidataRel = relations.find(r => r.type === "wikidata" && r.url && r.url.resource);
-      if(wikidataRel){
-        const qid = wikidataRel.url.resource.split("/").pop();
-        const wdRes = await fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${qid}&props=sitelinks&format=json&origin=*`);
-        const wdData = await wdRes.json();
-        const sitelinks = (wdData.entities && wdData.entities[qid] && wdData.entities[qid].sitelinks) || {};
-        const preferred = sitelinks.frwiki || sitelinks.enwiki;
-        if(preferred){
-          lang = preferred.site.replace(/wiki$/, "");
-          title = preferred.title;
-        }
-      }
-    }
-
+    const { lang, title } = await resolveWikiLangTitle(data.relations || []);
     if(lang && title){
       const sumRes = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, "_"))}`);
       if(sumRes.ok){
@@ -2017,8 +2143,51 @@ async function fetchArtistWikiInfo(artistMbid){
       }
     }
   }catch(e){ /* pas grave, on affichera sans photo/bio */ }
-  artistWikiCache.set(artistMbid, result);
+  wikiSummaryCache.set(cacheKey, result);
   return result;
+}
+function fetchArtistWikiInfo(artistMbid){ return fetchWikiSummaryForEntity("artist", artistMbid); }
+
+// --- artistes associés (relations factuelles MusicBrainz : membres, collaborations...) ---
+const RELATION_LABELS = {
+  "member of band": "Membre de",
+  "founder": "Fondateur de",
+  "collaboration": "Collaboration",
+  "remixer": "Remix",
+  "composer": "Compositeur",
+  "conductor": "Chef d'orchestre",
+  "is person": "Alias de",
+  "voice actor": "Voix"
+};
+const artistRelatedCache = new Map();
+async function fetchRelatedArtists(artistMbid){
+  if(artistRelatedCache.has(artistMbid)) return artistRelatedCache.get(artistMbid);
+  let related = [];
+  try{
+    const res = await fetch(`https://musicbrainz.org/ws/2/artist/${artistMbid}?inc=artist-rels&fmt=json`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const seen = new Map();
+    (data.relations || []).forEach(r => {
+      if(!r.artist || !r.artist.id || r.artist.id === artistMbid) return;
+      if(seen.has(r.artist.id)) return;
+      seen.set(r.artist.id, { id: r.artist.id, name: r.artist.name, label: RELATION_LABELS[r.type] || r.type });
+    });
+    related = Array.from(seen.values()).slice(0, 12);
+  }catch(e){ /* pas grave */ }
+  artistRelatedCache.set(artistMbid, related);
+  return related;
+}
+
+// --- avatar : photo si trouvée, sinon initiale en fond ---
+function renderAvatarInto(el, artistId, artistName){
+  el.textContent = (artistName || "?").trim().charAt(0).toUpperCase();
+  el.style.backgroundImage = "";
+  fetchArtistWikiInfo(artistId).then(info => {
+    if(info.image){
+      el.style.backgroundImage = `url("${info.image}")`;
+      el.textContent = "";
+    }
+  });
 }
 
 function renderAlbumSearchResults(groups){
@@ -2033,17 +2202,14 @@ function renderAlbumSearchResults(groups){
     item.className = "hsr-item";
     item.style.cursor = "pointer";
     item.innerHTML = `
-      <img class="hsr-cover" alt="" style="visibility:hidden;">
+      <div class="avatar sm"></div>
       <div class="hsr-info">
         <div class="hsr-title">${escapeHtml(a.name)}</div>
         <div class="hsr-sub">${escapeHtml(a.matches.join(", "))}</div>
       </div>
       <button class="hsr-add" title="Voir le profil de l'artiste">&#8594;</button>
     `;
-    const img = item.querySelector(".hsr-cover");
-    fetchArtistWikiInfo(a.id).then(info => {
-      if(info.image){ img.src = info.image; img.style.visibility = "visible"; }
-    });
+    renderAvatarInto(item.querySelector(".avatar"), a.id, a.name);
     item.addEventListener("click", () => {
       albumSearchResults.classList.remove("open");
       openArtistOverlay(a.id, a.name);
@@ -2084,17 +2250,14 @@ function renderSearchOverlayResults(groups){
     const card = document.createElement("div");
     card.className = "res-card artist-card";
     card.innerHTML = `
-      <img class="res-cover artist-avatar" alt="" style="visibility:hidden;">
+      <div class="avatar md"></div>
       <div class="res-title">${escapeHtml(a.name)}</div>
       <div class="res-sub artist-matches">${escapeHtml(a.matches.join(", "))}</div>
       <div class="res-actions">
         <button class="res-btn">Voir le profil</button>
       </div>
     `;
-    const img = card.querySelector(".res-cover");
-    fetchArtistWikiInfo(a.id).then(info => {
-      if(info.image){ img.src = info.image; img.style.visibility = "visible"; }
-    });
+    renderAvatarInto(card.querySelector(".avatar"), a.id, a.name);
     card.querySelector(".res-btn").addEventListener("click", () => openArtistOverlay(a.id, a.name));
     grid.appendChild(card);
   });
@@ -2107,7 +2270,7 @@ const artistOverlay = document.getElementById("artistOverlay");
 const artistOverlayTitle = document.getElementById("artistOverlayTitle");
 const artistOverlayBody = document.getElementById("artistOverlayBody");
 const artistBioBlock = document.getElementById("artistBioBlock");
-const artistProfilePhoto = document.getElementById("artistProfilePhoto");
+const artistProfileAvatar = document.getElementById("artistProfileAvatar");
 const artistProfileBio = document.getElementById("artistProfileBio");
 document.getElementById("artistOverlayClose").addEventListener("click", () => artistOverlay.classList.remove("open"));
 
@@ -2115,29 +2278,50 @@ async function openArtistOverlay(artistMbid, artistName){
   artistOverlay.classList.add("open");
   artistOverlayTitle.textContent = artistName;
   artistOverlayBody.innerHTML = '<div class="overlay-status">Chargement de la discographie...</div>';
-  artistBioBlock.classList.remove("show");
-  artistProfilePhoto.style.display = "none";
+  artistBioBlock.classList.add("show");
+  renderAvatarInto(artistProfileAvatar, artistMbid, artistName);
   artistProfileBio.textContent = "";
 
   fetchArtistWikiInfo(artistMbid).then(info => {
-    if(info.bio || info.image){
-      artistBioBlock.classList.add("show");
-      if(info.image){
-        artistProfilePhoto.src = info.image;
-        artistProfilePhoto.style.display = "block";
-      }
-      artistProfileBio.textContent = info.bio || "";
-    }
+    artistProfileBio.textContent = info.bio || "";
   });
+
+  const relatedPromise = fetchRelatedArtists(artistMbid);
 
   try{
     const url = `https://musicbrainz.org/ws/2/release-group?artist=${artistMbid}&limit=100&fmt=json`;
     const res = await fetch(url, { headers: { "Accept": "application/json" } });
     const json = await res.json();
-    renderArtistDiscography(json["release-groups"] || [], artistName);
+    renderArtistDiscography(json["release-groups"] || [], artistName, artistMbid);
   }catch(err){
     artistOverlayBody.innerHTML = '<div class="overlay-status">Impossible de charger la discographie pour le moment.</div>';
+    return;
   }
+
+  relatedPromise.then(related => {
+    if(!related.length) return;
+    const section = document.createElement("div");
+    section.className = "disco-section";
+    const h4 = document.createElement("h4");
+    h4.textContent = "Artistes associés";
+    section.appendChild(h4);
+    const row = document.createElement("div");
+    row.className = "disco-row-scroll";
+    related.forEach(r => {
+      const card = document.createElement("div");
+      card.className = "related-card";
+      card.innerHTML = `
+        <div class="avatar"></div>
+        <div class="related-name">${escapeHtml(r.name)}</div>
+        <div class="related-label">${escapeHtml(r.label)}</div>
+      `;
+      renderAvatarInto(card.querySelector(".avatar"), r.id, r.name);
+      card.addEventListener("click", () => openArtistOverlay(r.id, r.name));
+      row.appendChild(card);
+    });
+    section.appendChild(row);
+    artistOverlayBody.appendChild(section);
+  });
 }
 
 function renderArtistDiscography(groups, artistName){
@@ -2190,6 +2374,9 @@ function renderArtistDiscography(groups, artistName){
       card.querySelector(".disco-rate-btn").addEventListener("click", () => {
         openRatingModal({ mbid, title: g.title, artist: artistName, year });
       });
+      const openAlbum = () => openAlbumOverlay(mbid, g.title, artistName, year);
+      card.querySelector(".disco-cover").addEventListener("click", openAlbum);
+      card.querySelector(".disco-title").addEventListener("click", openAlbum);
       scrollRow.appendChild(card);
     });
     section.appendChild(scrollRow);
@@ -2258,6 +2445,7 @@ ratingModalSaveBtn.addEventListener("click", () => {
     title: currentRatingAlbum.title,
     artist: currentRatingAlbum.artist,
     year: currentRatingAlbum.year,
+    coverMbid: currentRatingAlbum.coverMbid || currentRatingAlbum.mbid,
     rating: currentRatingValue,
     comment: ratingModalComment.value.trim(),
     addedAt: idx >= 0 ? list[idx].addedAt : Date.now()
@@ -2277,10 +2465,100 @@ ratingModalSaveBtn.addEventListener("click", () => {
     }
     starsEl.textContent = starString(entry.rating);
   }
+  const trackRow = albumTracklistBody.querySelector(`.track-row[data-recording-id="${entry.mbid}"]`);
+  if(trackRow){
+    const btn = trackRow.querySelector(".track-add-btn");
+    btn.classList.add("added");
+    btn.innerHTML = "&#10003;";
+    btn.title = "Modifier ma note";
+  }
   if(libraryOverlay.classList.contains("open")) renderLibraryOverlay();
 
   closeRatingModal();
 });
+
+// --- overlay plein écran : page album (cover, description, tracklist) ---
+const albumOverlay = document.getElementById("albumOverlay");
+const albumOverlayTitle = document.getElementById("albumOverlayTitle");
+const albumCoverBig = document.getElementById("albumCoverBig");
+const albumHeaderTitle = document.getElementById("albumHeaderTitle");
+const albumHeaderArtist = document.getElementById("albumHeaderArtist");
+const albumHeaderDesc = document.getElementById("albumHeaderDesc");
+const albumTracklistBody = document.getElementById("albumTracklistBody");
+document.getElementById("albumOverlayClose").addEventListener("click", () => albumOverlay.classList.remove("open"));
+
+function formatDuration(ms){
+  if(!ms) return "";
+  const totalSec = Math.round(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}:${String(sec).padStart(2, "0")}`;
+}
+
+async function openAlbumOverlay(rgMbid, albumTitle, artistName, year){
+  albumOverlay.classList.add("open");
+  albumOverlayTitle.textContent = albumTitle;
+  albumCoverBig.src = `https://coverartarchive.org/release-group/${rgMbid}/front-500`;
+  albumCoverBig.style.visibility = "visible";
+  albumCoverBig.onerror = () => { albumCoverBig.style.visibility = "hidden"; };
+  albumHeaderTitle.textContent = albumTitle;
+  albumHeaderArtist.textContent = artistName + (year ? ` · ${year}` : "");
+  albumHeaderDesc.textContent = "";
+  albumTracklistBody.innerHTML = '<div class="overlay-status">Chargement des morceaux...</div>';
+
+  fetchWikiSummaryForEntity("release-group", rgMbid).then(info => {
+    albumHeaderDesc.textContent = info.bio || "";
+  });
+
+  try{
+    const res = await fetch(`https://musicbrainz.org/ws/2/release?release-group=${rgMbid}&inc=recordings&fmt=json&limit=10`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const releases = data.releases || [];
+    const best = releases.find(r => r.status === "Official" && r.media && r.media.length) || releases.find(r => r.media && r.media.length);
+    if(!best){
+      albumTracklistBody.innerHTML = '<div class="overlay-status">Pas de tracklist disponible.</div>';
+      return;
+    }
+    const tracks = [];
+    best.media.forEach(m => (m.tracks || []).forEach(t => tracks.push(t)));
+    renderAlbumTracklist(tracks, rgMbid, artistName, year);
+  }catch(err){
+    albumTracklistBody.innerHTML = '<div class="overlay-status">Impossible de charger la tracklist.</div>';
+  }
+}
+
+function renderAlbumTracklist(tracks, rgMbid, artistName, year){
+  if(!tracks.length){
+    albumTracklistBody.innerHTML = '<div class="overlay-status">Pas de tracklist disponible.</div>';
+    return;
+  }
+  albumTracklistBody.innerHTML = "";
+  const collection = loadCollection();
+  tracks.forEach(t => {
+    const recordingId = t.recording && t.recording.id;
+    const trackTitle = t.title || (t.recording && t.recording.title) || "";
+    const existing = recordingId ? collection.find(a => a.mbid === recordingId) : null;
+
+    const row = document.createElement("div");
+    row.className = "track-row";
+    if(recordingId) row.dataset.recordingId = recordingId;
+    row.innerHTML = `
+      <div class="track-num">${t.number || t.position || ""}</div>
+      <div class="track-title">${escapeHtml(trackTitle)}</div>
+      <div class="track-duration">${formatDuration(t.length || (t.recording && t.recording.length))}</div>
+      <button class="track-add-btn${existing ? " added" : ""}" title="${existing ? "Modifier ma note" : "Noter ce morceau"}">${existing ? "&#10003;" : "+"}</button>
+    `;
+    const btn = row.querySelector(".track-add-btn");
+    if(recordingId){
+      btn.addEventListener("click", () => {
+        openRatingModal({ mbid: recordingId, title: trackTitle, artist: artistName, year, coverMbid: rgMbid });
+      });
+    } else {
+      btn.disabled = true;
+    }
+    albumTracklistBody.appendChild(row);
+  });
+}
 
 // --- overlay plein écran : Ma Bibliothèque ---
 const libraryOverlay = document.getElementById("libraryOverlay");
@@ -2303,7 +2581,7 @@ function renderLibraryOverlay(){
     const card = document.createElement("div");
     card.className = "res-card";
     card.innerHTML = `
-      <img class="res-cover" src="https://coverartarchive.org/release-group/${a.mbid}/front-250" onerror="this.style.visibility='hidden'" alt="">
+      <img class="res-cover" src="https://coverartarchive.org/release-group/${a.coverMbid || a.mbid}/front-250" onerror="this.style.visibility='hidden'" alt="">
       <div class="res-title">${escapeHtml(a.title)}</div>
       <div class="res-sub">${escapeHtml(a.artist)}${a.year ? " · " + escapeHtml(a.year) : ""}</div>
       <div class="res-stars">${starString(a.rating)}</div>

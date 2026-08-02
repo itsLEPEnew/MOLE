@@ -1000,7 +1000,7 @@
   .rating-save-btn{background:var(--ink); color:var(--paper);}
   .rating-cancel-btn{background:var(--paper); color:var(--ink);}
 
-  /* --- Terrain vague : découverte brute Discogs --- */
+  /* --- Terrain vague : découverte brute --- */
   .terrain-hint{
     font-size:11.5px;
     color:var(--ink-soft);
@@ -1059,6 +1059,35 @@
     padding:3px 8px;
     margin-top:4px;
   }
+  .terrain-preview{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .terrain-preview:empty{ margin-bottom:0; }
+  .terrain-preview-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    border-radius:3px 10px 3px 10px;
+    padding:8px 14px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-block;
+  }
+  .terrain-preview-btn.ghost{
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .terrain-preview-frame{
+    width:100%;
+    aspect-ratio:16/9;
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
+  }
   .terrain-track-row{
     display:flex;
     gap:10px;
@@ -1072,11 +1101,12 @@
   .terrain-track-duration{color:var(--ink-soft); flex-shrink:0;}
   .terrain-actions{
     display:flex;
+    flex-wrap:wrap;
     gap:8px;
     margin-top:16px;
   }
   .terrain-actions a, .terrain-actions button{
-    flex:1;
+    flex:1 1 140px;
     text-align:center;
     text-decoration:none;
     background:var(--ink);
@@ -1088,9 +1118,19 @@
     font-weight:700;
     cursor:pointer;
   }
-  .terrain-actions a.ghost{
+  .terrain-actions a.ghost, .terrain-actions button.ghost{
     background:var(--paper);
     color:var(--ink);
+  }
+  .terrain-preview-loading{
+    font-size:12px;
+    color:var(--ink-soft);
+    font-style:italic;
+    align-self:center;
+  }
+  .terrain-audio{
+    width:100%;
+    height:36px;
   }
 
   /* --- Actus view --- */
@@ -1270,7 +1310,7 @@
 
   <!-- ===== TERRAIN VAGUE VIEW ===== -->
   <section id="view-terrain" class="view">
-    <p class="profil-intro">Zone brute, non filtrée : la taupe déterre un disque que (presque) personne n'a jamais documenté sur Discogs. Aucune garantie de qualité — pas de "why", juste le contexte factuel. À toi de juger à l'oreille.</p>
+    <p class="profil-intro">Zone brute, non filtrée : la taupe déterre un disque que (presque) personne n'a jamais documenté. Aucune garantie de qualité — pas de "why", juste le contexte factuel. À toi de juger à l'oreille.</p>
     <div class="filters">
       <select id="terrainGenre">
         <option value="">Tous genres</option>
@@ -2852,13 +2892,13 @@ function updateLibraryTeaser(){
 }
 updateLibraryTeaser();
 
-// ---------- Terrain vague : découverte brute via Discogs ----------
+// ---------- Terrain vague : découverte brute via une base de données factuelle ----------
 const terrainGenre = document.getElementById("terrainGenre");
 const terrainStyle = document.getElementById("terrainStyle");
 const terrainResult = document.getElementById("terrainResult");
 const unearthBtn = document.getElementById("unearthBtn");
 
-function formatDiscogsDuration(str){
+function formatTrackDuration(str){
   return str && str.trim() ? str.trim() : "";
 }
 
@@ -2895,10 +2935,36 @@ async function unearthRandom(){
     const detail = await detailRes.json();
     renderTerrainResult(pick, detail);
   }catch(err){
-    terrainResult.innerHTML = '<div class="terrain-status">Impossible de creuser pour le moment (Discogs limite le nombre de requêtes/minute) — réessaie dans un instant.</div>';
+    terrainResult.innerHTML = '<div class="terrain-status">Impossible de creuser pour le moment (trop de requêtes en peu de temps) — réessaie dans un instant.</div>';
   }finally{
     unearthBtn.disabled = false;
   }
+}
+
+function extractYoutubeId(uri){
+  const m = (uri || "").match(/(?:v=|youtu\.be\/)([\w-]{6,})/);
+  return m ? m[1] : null;
+}
+
+async function fetchAudioPreviewUrl(artistName, trackTitle){
+  try{
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&media=music&entity=song&limit=25`);
+    const data = await res.json();
+    const artistMatches = (data.results || []).filter(r => r.artistName && r.artistName.toLowerCase() === artistName.toLowerCase());
+    const pool = artistMatches.length ? artistMatches : (data.results || []);
+    const titleNorm = (trackTitle || "").toLowerCase();
+    const best = pool.find(r => r.trackName && (r.trackName.toLowerCase().includes(titleNorm) || titleNorm.includes(r.trackName.toLowerCase()))) || pool[0];
+    return (best && best.previewUrl) || null;
+  }catch(e){ return null; }
+}
+
+async function findArtistMbidByName(name){
+  try{
+    const res = await fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(name)}&fmt=json&limit=5`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const match = (data.artists || []).find(a => a.name.toLowerCase() === name.toLowerCase() && (a.score || 0) >= 60);
+    return match ? match.id : null;
+  }catch(e){ return null; }
 }
 
 function renderTerrainResult(summary, detail){
@@ -2909,6 +2975,12 @@ function renderTerrainResult(summary, detail){
   const want = summary.community.want || 0;
   const have = summary.community.have || 0;
   const tracklist = detail.tracklist || [];
+  const previewTitle = detail.title || summary.title;
+
+  const videos = (detail.videos || [])
+    .map(v => ({ id: extractYoutubeId(v.uri), title: v.title }))
+    .filter(v => v.id)
+    .slice(0, 2);
 
   const wrap = document.createElement("div");
   wrap.className = "terrain-card";
@@ -2916,33 +2988,73 @@ function renderTerrainResult(summary, detail){
     <div class="terrain-head">
       ${cover ? `<img class="terrain-cover" src="${cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
       <div>
-        <div class="terrain-title">${escapeHtml(artistNames)} – ${escapeHtml(detail.title || summary.title)}</div>
+        <div class="terrain-title">${escapeHtml(artistNames)} – ${escapeHtml(previewTitle)}</div>
         <div class="terrain-meta">${escapeHtml(labelNames)}${detail.year ? " · " + detail.year : ""}</div>
         <div class="terrain-meta">${escapeHtml(styles)}</div>
-        <div class="terrain-obscurity">${have} possession(s) · ${want} souhait(s) recensé(s) sur Discogs</div>
+        <div class="terrain-obscurity">${have} possession(s) recensée(s) · ${want} souhait(s)</div>
       </div>
     </div>
+    <div class="terrain-preview" id="terrainPreview"></div>
     <div class="terrain-tracklist">
       ${tracklist.map(t => `
         <div class="terrain-track-row">
           <div class="terrain-track-num">${escapeHtml(t.position || "")}</div>
           <div class="terrain-track-title">${escapeHtml(t.title || "")}</div>
-          <div class="terrain-track-duration">${escapeHtml(formatDiscogsDuration(t.duration))}</div>
+          <div class="terrain-track-duration">${escapeHtml(formatTrackDuration(t.duration))}</div>
         </div>
       `).join("") || '<div class="terrain-status">Pas de tracklist renseignée.</div>'}
     </div>
     <div class="terrain-actions">
-      <a href="https://www.discogs.com${detail.uri || summary.uri || ""}" target="_blank" rel="noopener" class="ghost">Voir sur Discogs</a>
+      <a href="${detail.uri ? "https://www.discogs.com" + detail.uri : (summary.uri ? "https://www.discogs.com" + summary.uri : "#")}" target="_blank" rel="noopener" class="ghost">Voir la fiche complète</a>
+      <button id="terrainArtistBtn" class="ghost">Voir le profil de l'artiste</button>
       <button id="terrainRateBtn">Noter</button>
     </div>
   `;
   terrainResult.innerHTML = "";
   terrainResult.appendChild(wrap);
 
+  const firstArtist = (artistNames.split(",")[0] || artistNames).trim();
+
+  const previewEl = wrap.querySelector("#terrainPreview");
+  const ytUrl = videos.length ? `https://www.youtube.com/watch?v=${videos[0].id}` : ytLink(firstArtist, previewTitle);
+  previewEl.innerHTML = `
+    <a class="terrain-preview-btn ghost" href="${ytUrl}" target="_blank" rel="noopener">▶ Écouter sur YouTube</a>
+    <span class="terrain-preview-loading" id="terrainAudioSlot">Recherche d'un extrait audio...</span>
+  `;
+  fetchAudioPreviewUrl(firstArtist, previewTitle).then(url => {
+    const slot = wrap.querySelector("#terrainAudioSlot");
+    if(!slot) return;
+    if(url){
+      const audio = document.createElement("audio");
+      audio.className = "terrain-audio";
+      audio.controls = true;
+      audio.src = url;
+      slot.replaceWith(audio);
+    } else {
+      slot.remove();
+    }
+  });
+
+  wrap.querySelector("#terrainArtistBtn").addEventListener("click", async () => {
+    const btn = wrap.querySelector("#terrainArtistBtn");
+    btn.textContent = "Recherche du profil...";
+    btn.disabled = true;
+    const mbid = await findArtistMbidByName(firstArtist);
+    if(mbid){
+      openArtistOverlay(mbid, firstArtist);
+    } else {
+      btn.textContent = "Profil introuvable pour cet artiste";
+      setTimeout(() => {
+        btn.textContent = "Voir le profil de l'artiste";
+        btn.disabled = false;
+      }, 2500);
+    }
+  });
+
   wrap.querySelector("#terrainRateBtn").addEventListener("click", () => {
     openRatingModal({
       mbid: `discogs-${summary.id}`,
-      title: detail.title || summary.title,
+      title: previewTitle,
       artist: artistNames,
       year: detail.year || "",
       coverUrl: cover || null

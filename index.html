@@ -1000,6 +1000,99 @@
   .rating-save-btn{background:var(--ink); color:var(--paper);}
   .rating-cancel-btn{background:var(--paper); color:var(--ink);}
 
+  /* --- Terrain vague : découverte brute Discogs --- */
+  .terrain-hint{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-style:italic;
+    text-align:center;
+    margin:-8px 0 16px;
+  }
+  .terrain-status{
+    font-size:13px;
+    color:var(--ink-soft);
+    text-align:center;
+    padding:24px 10px;
+  }
+  .terrain-card{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:4px 18px 4px 18px;
+    padding:18px;
+    margin-top:20px;
+  }
+  .terrain-head{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    margin-bottom:14px;
+    padding-bottom:14px;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .terrain-cover{
+    width:100px;height:100px;
+    object-fit:cover;
+    border:2px solid var(--line);
+    background:var(--paper-dim);
+    flex-shrink:0;
+  }
+  .terrain-title{
+    font-size:16px;
+    font-weight:800;
+    font-family:Georgia, "Times New Roman", serif;
+    line-height:1.3;
+  }
+  .terrain-meta{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:4px 0;
+  }
+  .terrain-obscurity{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:3px 8px 3px 8px;
+    padding:3px 8px;
+    margin-top:4px;
+  }
+  .terrain-track-row{
+    display:flex;
+    gap:10px;
+    padding:6px 0;
+    font-size:12.5px;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .terrain-track-row:last-child{border-bottom:none;}
+  .terrain-track-num{color:var(--ink-soft); width:22px; flex-shrink:0;}
+  .terrain-track-title{flex:1; min-width:0;}
+  .terrain-track-duration{color:var(--ink-soft); flex-shrink:0;}
+  .terrain-actions{
+    display:flex;
+    gap:8px;
+    margin-top:16px;
+  }
+  .terrain-actions a, .terrain-actions button{
+    flex:1;
+    text-align:center;
+    text-decoration:none;
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
+    padding:10px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .terrain-actions a.ghost{
+    background:var(--paper);
+    color:var(--ink);
+  }
+
   /* --- Actus view --- */
   .actus-stub{
     background:var(--card);
@@ -1119,6 +1212,7 @@
 <div class="tabs">
   <button class="tab-btn active" data-tab="reco">Recos de la taupe</button>
   <button class="tab-btn" data-tab="explore">Le Tunnel</button>
+  <button class="tab-btn" data-tab="terrain">Terrain vague</button>
   <button class="tab-btn" data-tab="actus">Actus</button>
   <button class="tab-btn" data-tab="profil">Mon Profil</button>
   <button class="tab-btn" data-tab="chat">Discute</button>
@@ -1172,6 +1266,27 @@
         <div class="tiers-col" id="tiersCol"></div>
       </div>
     </div>
+  </section>
+
+  <!-- ===== TERRAIN VAGUE VIEW ===== -->
+  <section id="view-terrain" class="view">
+    <p class="profil-intro">Zone brute, non filtrée : la taupe déterre un disque que (presque) personne n'a jamais documenté sur Discogs. Aucune garantie de qualité — pas de "why", juste le contexte factuel. À toi de juger à l'oreille.</p>
+    <div class="filters">
+      <select id="terrainGenre">
+        <option value="">Tous genres</option>
+        <option value="Electronic">Electronic</option>
+        <option value="Hip Hop">Hip Hop</option>
+        <option value="Funk / Soul">Funk / Soul</option>
+        <option value="Jazz">Jazz</option>
+        <option value="Reggae">Reggae</option>
+        <option value="Rock">Rock</option>
+        <option value="Latin">Latin</option>
+      </select>
+      <input type="text" id="terrainStyle" placeholder="Sous-genre (ex: Dub Techno, Boogie, Deep House...)">
+    </div>
+    <p class="terrain-hint">Plus le sous-genre est précis, plus la découverte sera obscure — un genre large seul (ex: "Jazz") remonte encore des trucs relativement connus.</p>
+    <button class="save-btn" id="unearthBtn">⛏ Déterrer l'inconnu</button>
+    <div id="terrainResult"></div>
   </section>
 
   <!-- ===== ACTUS VIEW (placeholder) ===== -->
@@ -1236,6 +1351,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
+        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
@@ -1255,6 +1371,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
+        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
@@ -1274,6 +1391,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
+        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
@@ -1297,6 +1415,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="reco">Recos</button>
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
+        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
@@ -1376,31 +1495,49 @@ const DATA = {
       {artist:"Kraftwerk", track:"Trans-Europe Express", year:1977, album:"Trans-Europe Express", why:"Les Allemands qui ont inventé le vocabulaire électronique dont toute la techno descend."},
       {artist:"Daft Punk", track:"Da Funk", year:1995, album:"Homework", why:"L'entrée grand public de la French Touch dans la techno/house mondiale."},
       {artist:"The Prodigy", track:"Breathe", year:1996, album:"The Fat of the Land", why:"La techno/rave portée jusqu'aux charts et aux stades."},
-      {artist:"Charlotte de Witte", track:"Doppler", year:2018, why:"Le visage actuel de la techno mainstream sur les gros festivals."}
+      {artist:"Charlotte de Witte", track:"Doppler", year:2018, why:"Le visage actuel de la techno mainstream sur les gros festivals."},
+      {artist:"Underworld", track:"Born Slippy .NUXX", year:1996, why:"Le hit techno absolu via Trainspotting, porte d'entrée de toute une génération."},
+      {artist:"Orbital", track:"Chime", year:1989, why:"Premier single des frères Hartnoll, écrit et pressé en une nuit, acte fondateur de la rave anglaise."},
+      {artist:"Moby", track:"Go", year:1991, why:"Son tout premier single, sample du thème de Twin Peaks, pont entre pop et acid house."},
+      {artist:"Paul van Dyk", track:"For An Angel", year:1998, why:"Hymne trance-techno qui a rempli les plus gros festivals européens de la fin des 90s."}
     ],
     [
       {artist:"Jeff Mills", track:"The Bells", year:1997, why:"Le 'Wizard' de Detroit, un hymne que même les non-initiés reconnaissent en club."},
       {artist:"Richie Hawtin", track:"Spastik", year:1993, album:"Sheet One", why:"Minimal techno culte, référence absolue pour tout digger sérieux."},
       {artist:"Carl Craig", track:"At Les (Sandstorm)", year:1997, why:"Le pont entre la techno de Detroit et la scène electronica."},
-      {artist:"Nina Kraviz", track:"Ghetto Kraviz", year:2012, why:"A ramené une nouvelle génération vers la techno underground."}
+      {artist:"Nina Kraviz", track:"Ghetto Kraviz", year:2012, why:"A ramené une nouvelle génération vers la techno underground."},
+      {artist:"Sven Väth", track:"L'Esperanza", year:1993, why:"Signature du parrain de la scène de Francfort, pilier du label Eye Q."},
+      {artist:"Laurent Garnier", track:"Crispy Bacon", year:1997, why:"Le tube techno French Touch le plus connu, encore joué partout."},
+      {artist:"Adam Beyer", track:"Space Date", year:1996, why:"Un des premiers jalons du son Drumcode."},
+      {artist:"Amelie Lens", track:"In My Mind", year:2018, why:"A lancé la nouvelle génération belge de la techno underground grand public."}
     ],
     [
       {artist:"Juan Atkins (Model 500)", track:"No UFO's", year:1985, why:"Un des trois fondateurs de la techno de Detroit, littéralement le point zéro du genre."},
       {artist:"Derrick May (Rhythim Is Rhythim)", track:"Strings of Life", year:1987, why:"Le morceau qui a défini l'âme mélancolique et futuriste de la techno."},
       {artist:"Kevin Saunderson (Inner City)", track:"Big Fun", year:1988, album:"Big Fun", why:"Le troisième du 'Belleville Three', a amené la techno vers la pop sans la trahir."},
-      {artist:"Dr. Motte", track:"Der Klang der Familie (compil)", year:1997, why:"Fondateur de la Love Parade, pionnier de la scène techno berlinoise."}
+      {artist:"Dr. Motte", track:"Der Klang der Familie (compil)", year:1997, why:"Fondateur de la Love Parade, pionnier de la scène techno berlinoise."},
+      {artist:"Robert Hood", track:"Minus", year:1994, why:"Épure minimaliste popularisée après son passage chez Underground Resistance."},
+      {artist:"Blake Baxter", track:"Work That Motherfucker", year:1986, why:"Classique culte de la deuxième vague de Detroit."},
+      {artist:"Eddie Fowlkes", track:"Goodbye Kiss", year:1986, why:"Signé par l'un des 'Originators' de Detroit."},
+      {artist:"Octave One", track:"Blackwater", year:2000, why:"Le duo des frères Lenoir, institution deep techno de Detroit."}
     ],
     [
       {artist:"Drexciya", track:"Wave Jumper", year:1997, why:"Duo masqué de Detroit, mythologie afrofuturiste sous-marine, culte absolu chez les diggers."},
       {artist:"Underground Resistance", track:"Sonic Destroyer", year:1991, why:"Collectif activiste, techno comme résistance politique et sociale."},
       {artist:"Basic Channel", track:"Phylyps Trak", year:1994, why:"Le son dub-techno le plus minimal et le plus révéré de Berlin."},
-      {artist:"DJ Stingray", track:"Elements of Extinction", year:2007, why:"Héritier direct d'UR, techno électro froide et technique, très niche."}
+      {artist:"DJ Stingray", track:"Elements of Extinction", year:2007, why:"Héritier direct d'UR, techno électro froide et technique, très niche."},
+      {artist:"The Aztec Mystic", track:"Knights of the Jaguar", year:1999, why:"Alias de DJ Rolando, pont mythique Detroit-Berlin."},
+      {artist:"Function", track:"Incendiary", year:2013, why:"Dave Sumner, pilier de la techno industrielle berlinoise, résident historique de Berghain."}
     ],
     [
       {artist:"Anthony 'Shake' Shakir", track:"Frictionalism 1994-2009", year:2009, why:"Un des pionniers de Detroit les plus sous-estimés, jamais vraiment sorti de l'ombre."},
       {artist:"Terrence Dixon", track:"From the Far Future", year:2000, why:"Minimalisme extrême, culte chez les collectionneurs de vinyles Detroit."},
       {artist:"Sea Lion", track:"Untitled EPs", year:2015, why:"Productions ultra confidentielles, presque introuvables, cultissimes dans les cercles très pointus."},
-      {artist:"Aardvarck", track:"Meccano Mixup", year:2001, why:"Techno/glitch hollandaise expérimentale, connue quasi uniquement des diggers hardcore."}
+      {artist:"Aardvarck", track:"Meccano Mixup", year:2001, why:"Techno/glitch hollandaise expérimentale, connue quasi uniquement des diggers hardcore."},
+      {artist:"Convextion", track:"2129 A.D.", year:1994, why:"Deep techno hollandaise ultra confidentielle, culte chez les collectionneurs de Chain Reaction/Peacefrog."},
+      {artist:"Vril", track:"Torus IV", year:2014, why:"Projet berlinois resté anonyme des années, série de EPs quasi mythique chez les diggers."},
+      {artist:"DeepChord presents Echospace", track:"Liumeeting", year:2004, why:"Dub techno ultra minimale, référence absolue du label Modern Love."},
+      {artist:"Developer", track:"Immerse", year:2010, why:"Alias de Tadd Mullinix, dub techno confidentielle du même cercle Modern Love/Echospace."}
     ]
   ],
   "House": [
@@ -2550,6 +2687,7 @@ ratingModalSaveBtn.addEventListener("click", () => {
     artist: currentRatingAlbum.artist,
     year: currentRatingAlbum.year,
     coverMbid: currentRatingAlbum.coverMbid || currentRatingAlbum.mbid,
+    coverUrl: currentRatingAlbum.coverUrl || null,
     rating: currentRatingValue,
     comment: ratingModalComment.value.trim(),
     addedAt: idx >= 0 ? list[idx].addedAt : Date.now()
@@ -2687,7 +2825,7 @@ function renderLibraryOverlay(){
     const card = document.createElement("div");
     card.className = "res-card";
     card.innerHTML = `
-      <img class="res-cover" src="https://coverartarchive.org/release-group/${a.coverMbid || a.mbid}/front-250" onerror="this.style.visibility='hidden'" alt="">
+      <img class="res-cover" src="${a.coverUrl || `https://coverartarchive.org/release-group/${a.coverMbid || a.mbid}/front-250`}" onerror="this.style.visibility='hidden'" alt="">
       <div class="res-title">${escapeHtml(a.title)}</div>
       <div class="res-sub">${escapeHtml(a.artist)}${a.year ? " · " + escapeHtml(a.year) : ""}</div>
       <div class="res-stars">${starString(a.rating)}</div>
@@ -2713,6 +2851,106 @@ function updateLibraryTeaser(){
   el.textContent = n ? `${n} album${n>1?"s":""} noté${n>1?"s":""}.` : "Aucun album noté pour l'instant.";
 }
 updateLibraryTeaser();
+
+// ---------- Terrain vague : découverte brute via Discogs ----------
+const terrainGenre = document.getElementById("terrainGenre");
+const terrainStyle = document.getElementById("terrainStyle");
+const terrainResult = document.getElementById("terrainResult");
+const unearthBtn = document.getElementById("unearthBtn");
+
+function formatDiscogsDuration(str){
+  return str && str.trim() ? str.trim() : "";
+}
+
+async function unearthRandom(){
+  unearthBtn.disabled = true;
+  terrainResult.innerHTML = '<div class="terrain-status">La taupe creuse...</div>';
+  try{
+    const genre = terrainGenre.value.trim();
+    const style = terrainStyle.value.trim();
+    if(!genre && !style){
+      terrainResult.innerHTML = '<div class="terrain-status">Choisis au moins un genre ou tape un sous-genre avant de creuser.</div>';
+      return;
+    }
+    const params = new URLSearchParams({ type: "release", per_page: "50" });
+    if(genre) params.set("genre", genre);
+    if(style) params.set("style", style);
+    const page = 1 + Math.floor(Math.random() * 15);
+    params.set("page", String(page));
+
+    const res = await fetch(`https://api.discogs.com/database/search?${params.toString()}`, { headers: { "Accept": "application/json" } });
+    if(!res.ok) throw new Error("discogs search failed");
+    const data = await res.json();
+    let results = (data.results || []).filter(r => !/^various/i.test(r.title));
+    if(!results.length){
+      terrainResult.innerHTML = '<div class="terrain-status">Rien trouvé dans ce coin — essaie un autre sous-genre ou un autre genre.</div>';
+      return;
+    }
+    results.sort((a, b) => ((a.community.want||0) + (a.community.have||0)) - ((b.community.want||0) + (b.community.have||0)));
+    const obscurePool = results.slice(0, Math.max(1, Math.ceil(results.length * 0.3)));
+    const pick = obscurePool[Math.floor(Math.random() * obscurePool.length)];
+
+    await new Promise(r => setTimeout(r, 300));
+    const detailRes = await fetch(`https://api.discogs.com/releases/${pick.id}`, { headers: { "Accept": "application/json" } });
+    const detail = await detailRes.json();
+    renderTerrainResult(pick, detail);
+  }catch(err){
+    terrainResult.innerHTML = '<div class="terrain-status">Impossible de creuser pour le moment (Discogs limite le nombre de requêtes/minute) — réessaie dans un instant.</div>';
+  }finally{
+    unearthBtn.disabled = false;
+  }
+}
+
+function renderTerrainResult(summary, detail){
+  const artistNames = (detail.artists || []).map(a => a.name).join(", ") || "Artiste inconnu";
+  const labelNames = (detail.labels || []).map(l => l.name).join(", ");
+  const styles = (detail.styles || []).join(", ");
+  const cover = (detail.images && detail.images[0] && detail.images[0].uri) || summary.cover_image || summary.thumb || "";
+  const want = summary.community.want || 0;
+  const have = summary.community.have || 0;
+  const tracklist = detail.tracklist || [];
+
+  const wrap = document.createElement("div");
+  wrap.className = "terrain-card";
+  wrap.innerHTML = `
+    <div class="terrain-head">
+      ${cover ? `<img class="terrain-cover" src="${cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
+      <div>
+        <div class="terrain-title">${escapeHtml(artistNames)} – ${escapeHtml(detail.title || summary.title)}</div>
+        <div class="terrain-meta">${escapeHtml(labelNames)}${detail.year ? " · " + detail.year : ""}</div>
+        <div class="terrain-meta">${escapeHtml(styles)}</div>
+        <div class="terrain-obscurity">${have} possession(s) · ${want} souhait(s) recensé(s) sur Discogs</div>
+      </div>
+    </div>
+    <div class="terrain-tracklist">
+      ${tracklist.map(t => `
+        <div class="terrain-track-row">
+          <div class="terrain-track-num">${escapeHtml(t.position || "")}</div>
+          <div class="terrain-track-title">${escapeHtml(t.title || "")}</div>
+          <div class="terrain-track-duration">${escapeHtml(formatDiscogsDuration(t.duration))}</div>
+        </div>
+      `).join("") || '<div class="terrain-status">Pas de tracklist renseignée.</div>'}
+    </div>
+    <div class="terrain-actions">
+      <a href="https://www.discogs.com${detail.uri || summary.uri || ""}" target="_blank" rel="noopener" class="ghost">Voir sur Discogs</a>
+      <button id="terrainRateBtn">Noter</button>
+    </div>
+  `;
+  terrainResult.innerHTML = "";
+  terrainResult.appendChild(wrap);
+
+  wrap.querySelector("#terrainRateBtn").addEventListener("click", () => {
+    openRatingModal({
+      mbid: `discogs-${summary.id}`,
+      title: detail.title || summary.title,
+      artist: artistNames,
+      year: detail.year || "",
+      coverUrl: cover || null
+    });
+  });
+}
+
+unearthBtn.addEventListener("click", unearthRandom);
 
 // ---------- PWA install (service worker) ----------
 if("serviceWorker" in navigator){

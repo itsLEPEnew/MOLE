@@ -955,16 +955,30 @@
     gap:6px;
     margin-bottom:4px;
   }
-  .star-btn{
-    background:none;
-    border:none;
+  .star-slot{
+    position:relative;
+    display:inline-block;
+    width:32px;
+    height:32px;
     font-size:30px;
     line-height:1;
     cursor:pointer;
-    color:var(--ink-soft);
-    padding:0;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1);
   }
-  .star-btn.filled{color:var(--ink);}
+  .star-slot:hover{ transform:scale(1.2); }
+  .star-empty, .star-fill{
+    position:absolute;
+    top:0; left:0;
+    white-space:nowrap;
+    pointer-events:none;
+  }
+  .star-empty{ color:var(--ink-soft); }
+  .star-fill{
+    width:0%;
+    overflow:hidden;
+    color:#f5c518;
+    transition:width .18s ease;
+  }
   .rating-modal-hint{
     font-size:11.5px;
     color:var(--ink-soft);
@@ -1333,9 +1347,13 @@
         <option value="Latin">Latin</option>
       </select>
       <select id="terrainStyle"></select>
+      <select id="terrainMode">
+        <option value="obscure">Le plus obscur</option>
+        <option value="grail">Rare &amp; convoité</option>
+      </select>
     </div>
     <div id="terrainStyleDesc" class="terrain-style-desc"></div>
-    <p class="terrain-hint">Plus le sous-genre est précis, plus la découverte sera obscure — un genre large seul (ex: "Jazz") remonte encore des trucs relativement connus.</p>
+    <p class="terrain-hint" id="terrainModeHint">Plus le sous-genre est précis, plus la découverte sera obscure — un genre large seul (ex: "Jazz") remonte encore des trucs relativement connus.</p>
     <button class="save-btn" id="unearthBtn">⛏ Déterrer l'inconnu</button>
     <div id="terrainResult"></div>
   </section>
@@ -1489,11 +1507,11 @@
     <div class="rating-modal-album" id="ratingModalTitle"></div>
     <div class="rating-modal-artist" id="ratingModalArtist"></div>
     <div class="star-row" id="ratingModalStars">
-      <button class="star-btn" data-v="1">&#9734;</button>
-      <button class="star-btn" data-v="2">&#9734;</button>
-      <button class="star-btn" data-v="3">&#9734;</button>
-      <button class="star-btn" data-v="4">&#9734;</button>
-      <button class="star-btn" data-v="5">&#9734;</button>
+      <span class="star-slot" data-v="1"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
+      <span class="star-slot" data-v="2"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
+      <span class="star-slot" data-v="3"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
+      <span class="star-slot" data-v="4"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
+      <span class="star-slot" data-v="5"><span class="star-empty">&#9733;</span><span class="star-fill">&#9733;</span></span>
     </div>
     <div class="rating-modal-hint" id="ratingModalHint"></div>
     <textarea id="ratingModalComment" placeholder="Un commentaire (optionnel)..." maxlength="500"></textarea>
@@ -2300,7 +2318,10 @@ function removeFromCollection(mbid){
 }
 function starString(rating){
   const r = rating || 0;
-  return "★".repeat(r) + "☆".repeat(5 - r);
+  const full = Math.floor(r);
+  const hasHalf = (r - full) >= 0.5;
+  const empty = Math.max(0, 5 - full - (hasHalf ? 1 : 0));
+  return "★".repeat(full) + (hasHalf ? "½" : "") + "☆".repeat(empty);
 }
 
 // --- champ de recherche (header) ---
@@ -2725,18 +2746,35 @@ function closeRatingModal(){
   ratingModalBackdrop.classList.remove("open");
   currentRatingAlbum = null;
 }
-function paintStars(){
-  ratingModalStars.querySelectorAll(".star-btn").forEach(btn => {
-    const on = Number(btn.dataset.v) <= currentRatingValue;
-    btn.classList.toggle("filled", on);
-    btn.textContent = on ? "★" : "☆";
+function paintStars(value){
+  const v = value === undefined ? currentRatingValue : value;
+  ratingModalStars.querySelectorAll(".star-slot").forEach(slot => {
+    const idx = Number(slot.dataset.v);
+    let pct = 0;
+    if(v >= idx) pct = 100;
+    else if(v >= idx - 0.5) pct = 50;
+    slot.querySelector(".star-fill").style.width = pct + "%";
   });
 }
-ratingModalStars.querySelectorAll(".star-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    currentRatingValue = Number(btn.dataset.v);
-    paintStars();
-  });
+function starValueFromEvent(e, slot){
+  const idx = Number(slot.dataset.v);
+  const rect = slot.getBoundingClientRect();
+  const frac = (e.clientX - rect.left) / rect.width;
+  return frac <= 0.5 ? idx - 0.5 : idx;
+}
+ratingModalStars.addEventListener("mousemove", (e) => {
+  const slot = e.target.closest(".star-slot");
+  if(!slot) return;
+  paintStars(starValueFromEvent(e, slot));
+});
+ratingModalStars.addEventListener("mouseleave", () => {
+  paintStars(currentRatingValue);
+});
+ratingModalStars.addEventListener("click", (e) => {
+  const slot = e.target.closest(".star-slot");
+  if(!slot) return;
+  currentRatingValue = starValueFromEvent(e, slot);
+  paintStars(currentRatingValue);
 });
 ratingModalCancelBtn.addEventListener("click", closeRatingModal);
 ratingModalBackdrop.addEventListener("click", (e) => {
@@ -2744,7 +2782,7 @@ ratingModalBackdrop.addEventListener("click", (e) => {
 });
 ratingModalSaveBtn.addEventListener("click", () => {
   if(!currentRatingAlbum) return;
-  if(currentRatingValue < 1){
+  if(currentRatingValue < 0.5){
     ratingModalHint.textContent = "Choisis au moins une étoile.";
     return;
   }
@@ -2963,6 +3001,16 @@ terrainStyle.addEventListener("change", async () => {
   terrainStyleDesc.textContent = desc || "";
 });
 
+const terrainMode = document.getElementById("terrainMode");
+const terrainModeHint = document.getElementById("terrainModeHint");
+const TERRAIN_MODE_HINTS = {
+  obscure: "Plus le sous-genre est précis, plus la découverte sera obscure — un genre large seul (ex: \"Jazz\") remonte encore des trucs relativement connus.",
+  grail: "Cherche les disques peu possédés mais très désirés (ratio souhaits/possessions élevé) — les vraies raretés que les collectionneurs chassent, pas juste de l'inconnu au hasard."
+};
+terrainMode.addEventListener("change", () => {
+  terrainModeHint.textContent = TERRAIN_MODE_HINTS[terrainMode.value] || "";
+});
+
 function formatTrackDuration(str){
   return str && str.trim() ? str.trim() : "";
 }
@@ -2991,9 +3039,22 @@ async function unearthRandom(){
       terrainResult.innerHTML = '<div class="terrain-status">Rien trouvé dans ce coin — essaie un autre sous-genre ou un autre genre.</div>';
       return;
     }
-    results.sort((a, b) => ((a.community.want||0) + (a.community.have||0)) - ((b.community.want||0) + (b.community.have||0)));
-    const obscurePool = results.slice(0, Math.max(1, Math.ceil(results.length * 0.3)));
-    const pick = obscurePool[Math.floor(Math.random() * obscurePool.length)];
+    const mode = terrainMode.value;
+    let pool;
+    if(mode === "grail"){
+      const withHave = results.filter(r => (r.community.have || 0) >= 1);
+      const base = withHave.length ? withHave : results;
+      const ranked = base.slice().sort((a, b) => {
+        const ratioA = (a.community.want || 0) / (a.community.have || 1);
+        const ratioB = (b.community.want || 0) / (b.community.have || 1);
+        return ratioB - ratioA;
+      });
+      pool = ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.3)));
+    } else {
+      const ranked = results.slice().sort((a, b) => ((a.community.want||0) + (a.community.have||0)) - ((b.community.want||0) + (b.community.have||0)));
+      pool = ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.3)));
+    }
+    const pick = pool[Math.floor(Math.random() * pool.length)];
 
     await new Promise(r => setTimeout(r, 300));
     const detailRes = await fetch(`https://api.discogs.com/releases/${pick.id}`, { headers: { "Accept": "application/json" } });
@@ -3056,7 +3117,7 @@ function renderTerrainResult(summary, detail){
         <div class="terrain-title">${escapeHtml(artistNames)} – ${escapeHtml(previewTitle)}</div>
         <div class="terrain-meta">${escapeHtml(labelNames)}${detail.year ? " · " + detail.year : ""}</div>
         <div class="terrain-meta">${escapeHtml(styles)}</div>
-        <div class="terrain-obscurity">${have} possession(s) recensée(s) · ${want} souhait(s)</div>
+        <div class="terrain-obscurity">${have} possession(s) recensée(s) · ${want} souhait(s)${have > 0 && want > have ? ` · ratio ${(want/have).toFixed(1)}` : ""}</div>
       </div>
     </div>
     <div class="terrain-preview" id="terrainPreview"></div>

@@ -50,14 +50,36 @@
     text-align:center;
     padding:64px 16px 8px;
   }
-  .top-bar{
+  .top-bar-left{
     position:fixed;
     top:12px;
-    right:14px;
+    left:14px;
     z-index:260;
     display:flex;
     align-items:flex-start;
     gap:8px;
+  }
+  .profile-icon-btn{
+    position:fixed;
+    top:12px;
+    right:14px;
+    z-index:260;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    overflow:hidden;
+    background:#000;
+    border:2px solid #fff;
+    cursor:pointer;
+    padding:0;
+  }
+  .profile-icon-btn img{
+    position:absolute;
+    top:50%; left:50%;
+    width:180%; height:180%;
+    transform:translate(-50%,-50%);
+    object-fit:cover;
+    pointer-events:none;
   }
   .header-search{
     position:relative;
@@ -97,7 +119,7 @@
   .header-search-results{
     position:absolute;
     top:100%;
-    right:0;
+    left:0;
     margin-top:6px;
     width:280px;
     max-width:90vw;
@@ -127,9 +149,14 @@
     background:var(--paper-dim);
     flex-shrink:0;
   }
+  .hsr-cover.square{ border-radius:4px; }
   .hsr-info{flex:1; min-width:0;}
   .hsr-title{font-size:12.5px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .hsr-sub{font-size:11px; color:var(--ink-soft);}
+  .hsr-type{
+    font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--ink-soft); margin-right:5px;
+  }
   .hsr-add{
     background:var(--ink);
     color:var(--paper);
@@ -145,53 +172,86 @@
   .hsr-empty, .hsr-loading{padding:10px; font-size:12px; color:var(--ink-soft);}
   .mole-logo-wrap{
     position:relative;
-    width:96px;
-    height:96px;
+    width:140px;
+    height:140px;
     margin:0 auto 6px;
-  }
-  .mole-logo{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    display:block;
-    mix-blend-mode:screen;
     animation:molePopIn 1.1s cubic-bezier(.34,1.56,.64,1) 1 both;
   }
+  .mole-logo-wrap .mole-note{
+    position:absolute;
+    color:var(--ink-soft);
+    animation:noteOrbit 5s ease-in-out infinite;
+  }
+  .mole-logo-wrap .mole-note.n1{ top:19%; right:20%; font-size:15px; animation-delay:0s; }
+  .mole-logo-wrap .mole-note.n2{ top:15%; right:38%; font-size:9px; animation-delay:.6s; }
+  .mole-logo-wrap .mole-note.n3{ top:29%; right:10%; font-size:7px; animation-delay:1.1s; }
+  .mole-layer{
+    position:absolute;
+    inset:0;
+    background-color:var(--ink);
+    -webkit-mask-size:contain;
+    mask-size:contain;
+    -webkit-mask-repeat:no-repeat;
+    mask-repeat:no-repeat;
+    -webkit-mask-position:center;
+    mask-position:center;
+  }
+  .mole-paws{
+    -webkit-mask-image:url('./mole-paws.png');
+    mask-image:url('./mole-paws.png');
+  }
+  .mole-head{
+    -webkit-mask-image:url('./mole-head.png');
+    mask-image:url('./mole-head.png');
+    animation:headSway 2.4s ease-in-out infinite;
+    transform-origin:50% 85%;
+  }
+  @keyframes headSway{
+    0%, 100%{ transform:translate(-1px,0) rotate(-0.8deg); }
+    50%{ transform:translate(1px,-0.6px) rotate(0.8deg); }
+  }
   @keyframes molePopIn{
-    0%{ transform:translateY(60px) scale(.7); opacity:0; }
-    55%{ transform:translateY(-14px) scale(1.06); opacity:1; }
-    75%{ transform:translateY(4px) scale(.98); }
+    0%{ transform:translateY(30px) scale(.7); opacity:0; }
+    55%{ transform:translateY(-7px) scale(1.06); opacity:1; }
+    75%{ transform:translateY(2px) scale(.98); }
     100%{ transform:translateY(0) scale(1); }
   }
-  .mole-wink{
+  #splashScreen{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:opacity .7s ease;
+  }
+  #splashScreen.fade-out{
+    opacity:0;
+    pointer-events:none;
+  }
+  .splash-stage{
+    position:relative;
+    width:min(300px, 66vw);
+    height:min(300px, 66vw);
+  }
+  .splash-stage .mole-layer{
+    animation:none;
+  }
+  .splash-stage .mole-head{
+    animation:headSway 2.4s ease-in-out infinite;
+  }
+  .splash-note{
     position:absolute;
-    left:50%; top:50%;
-    width:7.7%; height:2.3%;
-    margin-left:14.6%; margin-top:-4.6%;
-    background:#000;
-    border-radius:50%;
-    animation:moleWink 3.2s ease-in-out 1.3s infinite;
+    color:var(--ink-soft);
+    animation:noteOrbit 5s ease-in-out infinite;
   }
-  .mole-sparkle{
-    position:absolute;
-    left:50%; top:50%;
-    width:1.5%; height:1.5%;
-    margin-left:19.2%; margin-top:-6.15%;
-    background:#fff;
-    border-radius:50%;
-    animation:moleSparkle 3.2s ease-in-out 1.3s infinite;
-  }
-  @keyframes moleWink{
-    0%, 40% { transform:scaleY(1); }
-    46% { transform:scaleY(0.08); }
-    52% { transform:scaleY(1); }
-    100% { transform:scaleY(1); }
-  }
-  @keyframes moleSparkle{
-    0%, 40% { transform:translate(0,0) scale(.4); opacity:0; }
-    47% { transform:translate(4px,-4px) scale(1); opacity:1; }
-    58% { transform:translate(14px,-13px) scale(.4); opacity:0; }
-    100% { transform:translate(14px,-13px) scale(.4); opacity:0; }
+  .splash-note.n1{ top:19%; right:20%; font-size:26px; animation-delay:0s; }
+  .splash-note.n2{ top:15%; right:38%; font-size:16px; animation-delay:.6s; }
+  .splash-note.n3{ top:29%; right:10%; font-size:13px; animation-delay:1.1s; }
+  @keyframes noteOrbit{
+    0%, 100%{ transform:translate(0,0) rotate(-4deg); }
+    50%{ transform:translate(-6px,-8px) rotate(6deg); }
   }
   header h1{
     margin:0;
@@ -938,6 +998,24 @@
   }
   .res-title{font-size:13px; font-weight:700; line-height:1.25;}
   .res-sub{font-size:11.5px; color:var(--ink-soft);}
+  .search-filter-tabs{
+    display:flex; gap:8px; flex-wrap:wrap;
+    margin:0 0 14px;
+  }
+  .search-filter-tab{
+    background:var(--paper);
+    color:var(--ink);
+    border:2px solid var(--line);
+    border-radius:20px;
+    padding:5px 13px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .search-filter-tab.active{
+    background:var(--ink);
+    color:var(--paper);
+  }
   .res-stars{font-size:14px; letter-spacing:2px; color:var(--ink);}
   .res-comment{font-size:11.5px; color:var(--ink-soft); font-style:italic; line-height:1.35;}
   .res-actions{
@@ -1297,17 +1375,29 @@
 </head>
 <body>
 
+<div id="splashScreen">
+  <div class="splash-stage">
+    <div class="mole-layer mole-paws"></div>
+    <div class="mole-layer mole-head"></div>
+    <span class="splash-note n1">&#9834;</span>
+    <span class="splash-note n2">&#9835;</span>
+    <span class="splash-note n3">&#9834;</span>
+  </div>
+</div>
+
 <header>
   <div class="mole-logo-wrap">
-    <img class="mole-logo" src="./mole-logo-standalone.png" alt="MOLE">
-    <span class="mole-wink"></span>
-    <span class="mole-sparkle"></span>
+    <div class="mole-layer mole-paws"></div>
+    <div class="mole-layer mole-head"></div>
+    <span class="mole-note n1">&#9834;</span>
+    <span class="mole-note n2">&#9835;</span>
+    <span class="mole-note n3">&#9834;</span>
   </div>
   <h1>MOLE</h1>
   <p>Dig the culture</p>
 </header>
 
-<div class="top-bar">
+<div class="top-bar-left" id="topBarLeft">
   <button class="theme-toggle-btn" id="themeToggleBtn" title="Mode nuit">&#9789;</button>
   <div class="header-search">
     <input type="text" id="albumSearchInput" placeholder="Rechercher un album..." autocomplete="off">
@@ -1315,11 +1405,15 @@
   </div>
 </div>
 
+<button class="profile-icon-btn" id="profileIconBtn" title="Mon Profil">
+  <img src="./mole-paws.png" alt="">
+  <img src="./mole-head.png" alt="">
+</button>
+
 <div class="tabs">
   <button class="tab-btn active" data-tab="terrain">Terrain vague</button>
   <button class="tab-btn" data-tab="explore">Le Tunnel</button>
   <button class="tab-btn" data-tab="actus">Actus</button>
-  <button class="tab-btn" data-tab="profil">Mon Profil</button>
   <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
 
@@ -1374,32 +1468,6 @@
     </div>
   </section>
 
-  <!-- ===== PROFIL VIEW ===== -->
-  <section id="view-profil" class="view">
-    <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
-
-    <div class="collection-block">
-      <h4>Ma Bibliothèque</h4>
-      <p id="libraryTeaser">Aucun album noté pour l'instant.</p>
-      <button class="save-btn" id="openLibraryBtn">Ouvrir ma bibliothèque</button>
-    </div>
-
-    <div class="curiosity-block">
-      <h4>Curiosity Bar</h4>
-      <p>Joue uniquement sur le style : rester dans tes genres aimés, ou aller voir ailleurs. La profondeur n'est jamais bridée par ce curseur — tout niveau reste toujours pertinent.</p>
-      <div class="curiosity-row">
-        <span>Mes genres</span>
-        <input type="range" id="curiositySlider" min="0" max="100" value="30">
-        <span>Explorer</span>
-      </div>
-      <div class="curiosity-value" id="curiosityValue">30% de découverte</div>
-    </div>
-
-    <div id="genreChips" class="chip-row"></div>
-    <div id="knownArtists"></div>
-    <button class="save-btn" id="saveProfileBtn">Enregistrer mon profil</button>
-    <div class="profile-status" id="profileStatus"></div>
-  </section>
 
   <!-- ===== CHAT (LA TAUPE PARLE) VIEW ===== -->
   <section id="view-chat" class="view">
@@ -1429,11 +1497,51 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
-        <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
+    <div class="search-filter-tabs" id="searchFilterTabs"></div>
     <div id="searchOverlayBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="profileOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-topbar">
+      <div class="overlay-topbar-row">
+        <h3>Mon Profil</h3>
+        <button class="overlay-close" id="profileOverlayClose" title="Fermer">&times;</button>
+      </div>
+      <div class="mini-tabs">
+        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
+        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
+        <button class="tab-btn mini" data-tab="actus">Actus</button>
+        <button class="tab-btn mini" data-tab="chat">Discute</button>
+      </div>
+    </div>
+    <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
+
+    <div class="collection-block">
+      <h4>Ma Bibliothèque</h4>
+      <p id="libraryTeaser">Aucun album noté pour l'instant.</p>
+      <button class="save-btn" id="openLibraryBtn">Ouvrir ma bibliothèque</button>
+    </div>
+
+    <div class="curiosity-block">
+      <h4>Curiosity Bar</h4>
+      <p>Joue uniquement sur le style : rester dans tes genres aimés, ou aller voir ailleurs. La profondeur n'est jamais bridée par ce curseur — tout niveau reste toujours pertinent.</p>
+      <div class="curiosity-row">
+        <span>Mes genres</span>
+        <input type="range" id="curiositySlider" min="0" max="100" value="30">
+        <span>Explorer</span>
+      </div>
+      <div class="curiosity-value" id="curiosityValue">30% de découverte</div>
+    </div>
+
+    <div id="genreChips" class="chip-row"></div>
+    <div id="knownArtists"></div>
+    <button class="save-btn" id="saveProfileBtn">Enregistrer mon profil</button>
+    <div class="profile-status" id="profileStatus"></div>
   </div>
 </div>
 
@@ -1448,7 +1556,6 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
-        <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1467,7 +1574,6 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
-        <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1490,7 +1596,6 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
-        <button class="tab-btn mini" data-tab="profil">Profil</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1527,6 +1632,14 @@
 </div>
 
 <script>
+// ---------- écran d'ouverture ----------
+setTimeout(() => {
+  const splash = document.getElementById("splashScreen");
+  if(!splash) return;
+  splash.classList.add("fade-out");
+  setTimeout(() => splash.remove(), 700);
+}, 3000);
+
 // ---------- mode nuit ----------
 const THEME_KEY = "mole_theme";
 const themeToggleBtn = document.getElementById("themeToggleBtn");
@@ -1996,7 +2109,7 @@ document.getElementById("saveProfileBtn").onclick = () => {
 };
 
 // ---------- barre de recherche : ancrée dans le coin, ou dans la page résultats ----------
-const topBarEl = document.querySelector(".top-bar");
+const topBarEl = document.getElementById("topBarLeft");
 const headerSearchEl = document.querySelector(".header-search");
 function dockSearchHome(){
   if(headerSearchEl.parentElement !== topBarEl) topBarEl.appendChild(headerSearchEl);
@@ -2012,8 +2125,17 @@ function closeAllOverlays(){
   document.getElementById("libraryOverlay").classList.remove("open");
   document.getElementById("artistOverlay").classList.remove("open");
   document.getElementById("albumOverlay").classList.remove("open");
+  document.getElementById("profileOverlay").classList.remove("open");
   document.getElementById("ratingModalBackdrop").classList.remove("open");
 }
+
+document.getElementById("profileIconBtn").addEventListener("click", () => {
+  closeAllOverlays();
+  document.getElementById("profileOverlay").classList.add("open");
+});
+document.getElementById("profileOverlayClose").addEventListener("click", () => {
+  document.getElementById("profileOverlay").classList.remove("open");
+});
 function switchTab(tabName){
   document.querySelectorAll(".tab-btn[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab === tabName));
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -2257,60 +2379,104 @@ async function runAlbumSearch(query){
   albumSearchResults.innerHTML = '<div class="hsr-loading">Recherche...</div>';
   albumSearchResults.classList.add("open");
   try{
-    const artists = await searchArtistsUnified(query, 8);
+    const items = await searchEverything(query, 8);
     if(seq !== albumSearchSeq) return;
-    renderAlbumSearchResults(artists);
+    renderAlbumSearchResults(items);
   }catch(err){
     if(seq !== albumSearchSeq) return;
     albumSearchResults.innerHTML = '<div class="hsr-empty">Recherche indisponible pour le moment.</div>';
   }
 }
 
-// --- recherche unifiée : d'abord par nom d'artiste (propre, peu de bruit),
-//     repli sur les titres d'albums/morceaux seulement si aucun artiste ne matche ---
-async function searchArtistsUnified(query, limit){
-  const qNorm = query.trim().toLowerCase();
-  try{
-    const res = await fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&fmt=json&limit=${limit}`, { headers: { "Accept": "application/json" } });
-    const data = await res.json();
-    const artists = (data.artists || []).filter(a => {
-      if((a.score || 0) < 60) return false;
-      if(a.type === "Character") return false;
-      // le nom doit vraiment se retrouver dans ce qui a été tapé (ou l'inverse) :
-      // évite qu'un titre d'album entier ("The Rise and Fall of Ziggy Stardust")
-      // ne remonte de petits groupes sans rapport juste par chevauchement de mots
-      const nameNorm = (a.name || "").trim().toLowerCase();
-      if(!nameNorm) return false;
-      return qNorm.includes(nameNorm) || nameNorm.includes(qNorm);
-    });
-    if(artists.length){
-      return artists.map(a => ({
-        id: a.id,
-        name: a.name,
-        subtitle: [a.type, a.country].filter(Boolean).join(" · ") || a.disambiguation || ""
-      }));
-    }
-  }catch(e){ /* on tente le repli ci-dessous */ }
+// --- recherche combinée : artistes + albums + singles en parallèle, triés par pertinence
+//     (tape un artiste -> son profil remonte ; tape un titre -> l'album/single + son artiste remontent) ---
+// vrai si "name" est une correspondance solide de ce qui a été tapé : soit on est en train
+// de taper son début, soit il compose une part substantielle de la recherche (évite qu'un nom
+// très court ne matche par pur hasard de sous-chaîne dans une requête plus longue/différente)
+function looseNameMatch(nameNorm, qNorm, minRatio){
+  if(!nameNorm || !qNorm) return false;
+  if(nameNorm.includes(qNorm)) return true;
+  if(qNorm.includes(nameNorm)) return (nameNorm.length / qNorm.length) >= minRatio;
+  return false;
+}
 
-  try{
-    const res = await fetch(`https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(query)}&fmt=json&limit=25`, { headers: { "Accept": "application/json" } });
-    const data = await res.json();
-    const seen = new Map();
-    (data["release-groups"] || []).forEach(g => {
-      const ac = (g["artist-credit"] && g["artist-credit"][0] && g["artist-credit"][0].artist) || null;
-      if(!ac) return;
-      if(!seen.has(ac.id)) seen.set(ac.id, { id: ac.id, name: ac.name, score: g.score || 0, matches: [] });
-      const entry = seen.get(ac.id);
-      entry.score = Math.max(entry.score, g.score || 0);
-      if(entry.matches.length < 3 && !entry.matches.includes(g.title)) entry.matches.push(g.title);
-    });
-    return Array.from(seen.values())
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
-      .map(e => ({ id: e.id, name: e.name, subtitle: e.matches.join(", ") }));
-  }catch(e){
-    return [];
+// pour les TITRES : contrairement à un nom d'artiste, un titre qui contient juste la requête
+// en sous-chaîne n'est pas forcément le même "sujet" (ex. "Daft Punk Suite" contient "Daft Punk"
+// mais n'est pas une sortie de Daft Punk) — on exige donc toujours un vrai rapport de longueur
+function titleCloseMatch(titleNorm, qNorm, minRatio){
+  if(!titleNorm || !qNorm) return false;
+  if(titleNorm === qNorm) return true;
+  if(titleNorm.includes(qNorm) || qNorm.includes(titleNorm)){
+    return (Math.min(titleNorm.length, qNorm.length) / Math.max(titleNorm.length, qNorm.length)) >= minRatio;
   }
+  return false;
+}
+
+async function searchEverything(query, limit){
+  const qNorm = query.trim().toLowerCase();
+  const perTypeLimit = Math.max(limit, 12);
+
+  const [artistData, rgData] = await Promise.all([
+    fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&fmt=json&limit=${perTypeLimit}`, { headers: { "Accept": "application/json" } })
+      .then(r => r.json()).catch(() => ({ artists: [] })),
+    fetch(`https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(query)}&fmt=json&limit=${perTypeLimit}`, { headers: { "Accept": "application/json" } })
+      .then(r => r.json()).catch(() => ({ "release-groups": [] }))
+  ]);
+
+  const items = [];
+
+  (artistData.artists || []).forEach(a => {
+    if((a.score || 0) < 60) return;
+    if(a.type === "Character") return;
+    const nameNorm = (a.name || "").trim().toLowerCase();
+    if(!looseNameMatch(nameNorm, qNorm, 0.6)) return;
+    items.push({
+      type: "artist",
+      id: a.id,
+      name: a.name,
+      subtitle: [a.type, a.country].filter(Boolean).join(" · ") || a.disambiguation || "",
+      score: a.score || 0
+    });
+  });
+
+  (rgData["release-groups"] || []).forEach(g => {
+    if((g.score || 0) < 55) return;
+    const primary = g["primary-type"];
+    if(primary !== "Album" && primary !== "EP" && primary !== "Single") return;
+    const ac = (g["artist-credit"] && g["artist-credit"][0] && g["artist-credit"][0].artist) || null;
+    if(!ac) return;
+    if(/^various artists$/i.test(ac.name)) return;
+    // on ne garde ce résultat que si c'est vraiment une sortie DE cet artiste (nom qui matche
+    // la recherche) ou si le TITRE lui-même correspond de près à ce qui a été tapé — ça exclut
+    // les reprises/tributes/remixes tiers qui mentionnent juste l'artiste dans leur titre
+    const artistNameNorm = (ac.name || "").trim().toLowerCase();
+    const artistMatchesQuery = looseNameMatch(artistNameNorm, qNorm, 0.6);
+    const titleNorm = (g.title || "").trim().toLowerCase();
+    const titleMatchesQuery = titleCloseMatch(titleNorm, qNorm, 0.7);
+    if(!artistMatchesQuery && !titleMatchesQuery) return;
+    const year = g["first-release-date"] ? g["first-release-date"].slice(0, 4) : "";
+    items.push({
+      type: primary === "Single" ? "single" : "album",
+      id: g.id,
+      name: g.title,
+      subtitle: ac.name + (year ? " · " + year : ""),
+      artistId: ac.id,
+      artistName: ac.name,
+      year,
+      score: (g.score || 0) + (artistMatchesQuery ? 25 : 0)
+    });
+  });
+
+  const seen = new Set();
+  const deduped = items.filter(it => {
+    const key = it.type + ":" + it.id;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  deduped.sort((a, b) => (b.score || 0) - (a.score || 0));
+  return deduped.slice(0, limit);
 }
 
 // --- résolution d'un lien wiki (direct ou via Wikidata) en {lang, title} ---
@@ -2416,29 +2582,46 @@ function renderAvatarInto(el, artistId, artistName){
   });
 }
 
-function renderAlbumSearchResults(artists){
-  if(!artists.length){
-    albumSearchResults.innerHTML = '<div class="hsr-empty">Aucun artiste trouvé.</div>';
+const TYPE_LABELS = { artist: "Artiste", album: "Album", single: "Single" };
+
+function renderAlbumSearchResults(items){
+  if(!items.length){
+    albumSearchResults.innerHTML = '<div class="hsr-empty">Aucun résultat.</div>';
     return;
   }
   albumSearchResults.innerHTML = "";
-  artists.forEach(a => {
+  items.forEach(it => {
     const item = document.createElement("div");
     item.className = "hsr-item";
     item.style.cursor = "pointer";
-    item.innerHTML = `
-      <div class="avatar sm"></div>
-      <div class="hsr-info">
-        <div class="hsr-title">${escapeHtml(a.name)}</div>
-        <div class="hsr-sub">${escapeHtml(a.subtitle)}</div>
-      </div>
-      <button class="hsr-add" title="Voir le profil de l'artiste">&#8594;</button>
-    `;
-    renderAvatarInto(item.querySelector(".avatar"), a.id, a.name);
-    item.addEventListener("click", () => {
-      albumSearchResults.classList.remove("open");
-      openArtistOverlay(a.id, a.name);
-    });
+    if(it.type === "artist"){
+      item.innerHTML = `
+        <div class="avatar sm"></div>
+        <div class="hsr-info">
+          <div class="hsr-title">${escapeHtml(it.name)}</div>
+          <div class="hsr-sub"><span class="hsr-type">${TYPE_LABELS[it.type]}</span>${escapeHtml(it.subtitle)}</div>
+        </div>
+        <button class="hsr-add" title="Voir le profil de l'artiste">&#8594;</button>
+      `;
+      renderAvatarInto(item.querySelector(".avatar"), it.id, it.name);
+      item.addEventListener("click", () => {
+        albumSearchResults.classList.remove("open");
+        openArtistOverlay(it.id, it.name);
+      });
+    } else {
+      item.innerHTML = `
+        <img class="hsr-cover square" src="https://coverartarchive.org/release-group/${it.id}/front-250" onerror="this.style.visibility='hidden'" alt="">
+        <div class="hsr-info">
+          <div class="hsr-title">${escapeHtml(it.name)}</div>
+          <div class="hsr-sub"><span class="hsr-type">${TYPE_LABELS[it.type]}</span>${escapeHtml(it.subtitle)}</div>
+        </div>
+        <button class="hsr-add" title="Voir l'album">&#8594;</button>
+      `;
+      item.addEventListener("click", () => {
+        albumSearchResults.classList.remove("open");
+        openAlbumOverlay(it.id, it.name, it.artistName, it.year);
+      });
+    }
     albumSearchResults.appendChild(item);
   });
 }
@@ -2452,40 +2635,90 @@ document.getElementById("searchOverlayClose").addEventListener("click", () => {
   dockSearchHome();
 });
 
+const searchFilterTabs = document.getElementById("searchFilterTabs");
+let searchOverlayItems = [];
+let searchOverlayFilter = "all";
+
 async function openSearchOverlay(query){
   searchOverlay.classList.add("open");
   dockSearchInOverlay(searchOverlayTopRow);
   albumSearchInput.value = query;
   albumSearchResults.classList.remove("open");
+  searchFilterTabs.innerHTML = "";
   searchOverlayBody.innerHTML = '<div class="overlay-status">Recherche...</div>';
   try{
-    const artists = await searchArtistsUnified(query, 15);
-    renderSearchOverlayResults(artists);
+    searchOverlayItems = await searchEverything(query, 24);
+    searchOverlayFilter = "all";
+    renderSearchFilterTabs();
+    renderSearchOverlayResults();
   }catch(err){
     searchOverlayBody.innerHTML = '<div class="overlay-status">Recherche indisponible pour le moment.</div>';
   }
 }
 
-function renderSearchOverlayResults(artists){
-  if(!artists.length){
-    searchOverlayBody.innerHTML = '<div class="overlay-status">Aucun artiste trouvé.</div>';
+function renderSearchFilterTabs(){
+  if(!searchOverlayItems.length){
+    searchFilterTabs.innerHTML = "";
+    return;
+  }
+  const counts = { all: searchOverlayItems.length, artist: 0, album: 0, single: 0 };
+  searchOverlayItems.forEach(it => { counts[it.type] = (counts[it.type] || 0) + 1; });
+  const filters = [
+    ["all", "Tous"],
+    ["artist", "Artistes"],
+    ["album", "Albums"],
+    ["single", "Singles"]
+  ].filter(([key]) => key === "all" || counts[key] > 0);
+  searchFilterTabs.innerHTML = "";
+  filters.forEach(([key, label]) => {
+    const btn = document.createElement("button");
+    btn.className = "search-filter-tab" + (searchOverlayFilter === key ? " active" : "");
+    btn.textContent = `${label} (${counts[key]})`;
+    btn.addEventListener("click", () => {
+      searchOverlayFilter = key;
+      renderSearchFilterTabs();
+      renderSearchOverlayResults();
+    });
+    searchFilterTabs.appendChild(btn);
+  });
+}
+
+function renderSearchOverlayResults(){
+  const items = searchOverlayFilter === "all"
+    ? searchOverlayItems
+    : searchOverlayItems.filter(it => it.type === searchOverlayFilter);
+  if(!items.length){
+    searchOverlayBody.innerHTML = '<div class="overlay-status">Aucun résultat.</div>';
     return;
   }
   const grid = document.createElement("div");
   grid.className = "card-grid";
-  artists.forEach(a => {
+  items.forEach(it => {
     const card = document.createElement("div");
-    card.className = "res-card artist-card";
-    card.innerHTML = `
-      <div class="avatar md"></div>
-      <div class="res-title">${escapeHtml(a.name)}</div>
-      <div class="res-sub artist-matches">${escapeHtml(a.subtitle)}</div>
-      <div class="res-actions">
-        <button class="res-btn">Voir le profil</button>
-      </div>
-    `;
-    renderAvatarInto(card.querySelector(".avatar"), a.id, a.name);
-    card.querySelector(".res-btn").addEventListener("click", () => openArtistOverlay(a.id, a.name));
+    if(it.type === "artist"){
+      card.className = "res-card artist-card";
+      card.innerHTML = `
+        <div class="avatar md"></div>
+        <div class="res-title"><span class="hsr-type">${TYPE_LABELS[it.type]}</span>${escapeHtml(it.name)}</div>
+        <div class="res-sub artist-matches">${escapeHtml(it.subtitle)}</div>
+        <div class="res-actions">
+          <button class="res-btn">Voir le profil</button>
+        </div>
+      `;
+      renderAvatarInto(card.querySelector(".avatar"), it.id, it.name);
+      card.querySelector(".res-btn").addEventListener("click", () => openArtistOverlay(it.id, it.name));
+    } else {
+      card.className = "res-card";
+      card.innerHTML = `
+        <img class="res-cover" src="https://coverartarchive.org/release-group/${it.id}/front-250" onerror="this.style.visibility='hidden'" alt="">
+        <div class="res-title"><span class="hsr-type">${TYPE_LABELS[it.type]}</span>${escapeHtml(it.name)}</div>
+        <div class="res-sub">${escapeHtml(it.subtitle)}</div>
+        <div class="res-actions">
+          <button class="res-btn">Voir l'album</button>
+        </div>
+      `;
+      card.querySelector(".res-btn").addEventListener("click", () => openAlbumOverlay(it.id, it.name, it.artistName, it.year));
+    }
     grid.appendChild(card);
   });
   searchOverlayBody.innerHTML = "";
@@ -2951,13 +3184,28 @@ async function unearthRandom(){
     }
     const ranked = results.slice().sort((a, b) => terrainScore(b) - terrainScore(a));
     const pool = ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.3)));
-    const pick = pool[Math.floor(Math.random() * pool.length)];
-    const depthLabel = terrainDepthLabel(ranked.indexOf(pick), ranked.length);
+    const shuffled = pool.slice().sort(() => Math.random() - 0.5);
 
-    await new Promise(r => setTimeout(r, 300));
-    const detailRes = await fetch(`https://api.discogs.com/releases/${pick.id}`, { headers: { "Accept": "application/json" } });
-    const detail = await detailRes.json();
-    renderTerrainResult(pick, detail, depthLabel);
+    const maxAttempts = Math.min(6, shuffled.length);
+    for(let i = 0; i < maxAttempts; i++){
+      const candidate = shuffled[i];
+      terrainResult.innerHTML = `<div class="terrain-status">La taupe creuse... (vérification présence plateforme ${i + 1}/${maxAttempts})</div>`;
+      if(i > 0) await new Promise(r => setTimeout(r, 300));
+      const detailRes = await fetch(`https://api.discogs.com/releases/${candidate.id}`, { headers: { "Accept": "application/json" } });
+      const detail = await detailRes.json();
+      const artistNames = (detail.artists || []).map(a => a.name).join(", ") || "";
+      const firstArtist = (artistNames.split(",")[0] || artistNames).trim();
+      const trackTitle = detail.title || candidate.title;
+
+      await new Promise(r => setTimeout(r, 200));
+      const platformMatch = await checkPlatformAvailability(firstArtist, trackTitle, detail.videos);
+      if(platformMatch){
+        const depthLabel = terrainDepthLabel(ranked.indexOf(candidate), ranked.length);
+        renderTerrainResult(candidate, detail, depthLabel, platformMatch);
+        return;
+      }
+    }
+    terrainResult.innerHTML = '<div class="terrain-status">Aucune version trouvée sur les plateformes pour ce sous-genre — réessaie, ou choisis un sous-genre différent.</div>';
   }catch(err){
     terrainResult.innerHTML = '<div class="terrain-status">Impossible de creuser pour le moment (trop de requêtes en peu de temps) — réessaie dans un instant.</div>';
   }finally{
@@ -2970,16 +3218,27 @@ function extractYoutubeId(uri){
   return m ? m[1] : null;
 }
 
-async function fetchAudioPreviewUrl(artistName, trackTitle){
+// Vérifie une présence réelle sur une plateforme d'écoute avant de proposer le morceau —
+// une vidéo Discogs confirmée, ou un match exact iTunes/Apple Music (jamais un simple lien
+// de recherche qui peut ne rien donner).
+async function checkPlatformAvailability(artistName, trackTitle, discogsVideos){
+  const videoId = ((discogsVideos || [])
+    .map(v => extractYoutubeId(v.uri))
+    .find(id => id)) || null;
+  if(videoId){
+    return { youtubeId: videoId, appleUrl: null, previewUrl: null };
+  }
   try{
     const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&media=music&entity=song&limit=25`);
     const data = await res.json();
     const artistMatches = (data.results || []).filter(r => r.artistName && r.artistName.toLowerCase() === artistName.toLowerCase());
-    const pool = artistMatches.length ? artistMatches : (data.results || []);
     const titleNorm = (trackTitle || "").toLowerCase();
-    const best = pool.find(r => r.trackName && (r.trackName.toLowerCase().includes(titleNorm) || titleNorm.includes(r.trackName.toLowerCase()))) || pool[0];
-    return (best && best.previewUrl) || null;
-  }catch(e){ return null; }
+    const best = artistMatches.find(r => r.trackName && (r.trackName.toLowerCase().includes(titleNorm) || titleNorm.includes(r.trackName.toLowerCase())));
+    if(best){
+      return { youtubeId: null, appleUrl: best.trackViewUrl || best.collectionViewUrl || null, previewUrl: best.previewUrl || null };
+    }
+  }catch(e){ /* pas de match confirmé */ }
+  return null;
 }
 
 async function findArtistMbidByName(name){
@@ -2991,18 +3250,13 @@ async function findArtistMbidByName(name){
   }catch(e){ return null; }
 }
 
-function renderTerrainResult(summary, detail, depthLabel){
+function renderTerrainResult(summary, detail, depthLabel, platformMatch){
   const artistNames = (detail.artists || []).map(a => a.name).join(", ") || "Artiste inconnu";
   const labelNames = (detail.labels || []).map(l => l.name).join(", ");
   const styles = (detail.styles || []).join(", ");
   const cover = (detail.images && detail.images[0] && detail.images[0].uri) || summary.cover_image || summary.thumb || "";
   const tracklist = detail.tracklist || [];
   const previewTitle = detail.title || summary.title;
-
-  const videos = (detail.videos || [])
-    .map(v => ({ id: extractYoutubeId(v.uri), title: v.title }))
-    .filter(v => v.id)
-    .slice(0, 2);
 
   const wrap = document.createElement("div");
   wrap.className = "terrain-card";
@@ -3038,24 +3292,21 @@ function renderTerrainResult(summary, detail, depthLabel){
   const firstArtist = (artistNames.split(",")[0] || artistNames).trim();
 
   const previewEl = wrap.querySelector("#terrainPreview");
-  const ytUrl = videos.length ? `https://www.youtube.com/watch?v=${videos[0].id}` : ytLink(firstArtist, previewTitle);
-  previewEl.innerHTML = `
-    <a class="terrain-preview-btn ghost" href="${ytUrl}" target="_blank" rel="noopener">▶ Écouter sur YouTube</a>
-    <span class="terrain-preview-loading" id="terrainAudioSlot">Recherche d'un extrait audio...</span>
-  `;
-  fetchAudioPreviewUrl(firstArtist, previewTitle).then(url => {
-    const slot = wrap.querySelector("#terrainAudioSlot");
-    if(!slot) return;
-    if(url){
-      const audio = document.createElement("audio");
-      audio.className = "terrain-audio";
-      audio.controls = true;
-      audio.src = url;
-      slot.replaceWith(audio);
-    } else {
-      slot.remove();
-    }
-  });
+  let previewHtml = "";
+  if(platformMatch.youtubeId){
+    previewHtml += `<a class="terrain-preview-btn ghost" href="https://www.youtube.com/watch?v=${platformMatch.youtubeId}" target="_blank" rel="noopener">▶ Écouter sur YouTube</a>`;
+  }
+  if(platformMatch.appleUrl){
+    previewHtml += `<a class="terrain-preview-btn ghost" href="${platformMatch.appleUrl}" target="_blank" rel="noopener">Écouter sur Apple Music</a>`;
+  }
+  previewEl.innerHTML = previewHtml;
+  if(platformMatch.previewUrl){
+    const audio = document.createElement("audio");
+    audio.className = "terrain-audio";
+    audio.controls = true;
+    audio.src = platformMatch.previewUrl;
+    previewEl.appendChild(audio);
+  }
 
   wrap.querySelector("#terrainArtistBtn").addEventListener("click", async () => {
     const btn = wrap.querySelector("#terrainArtistBtn");

@@ -1164,6 +1164,47 @@
     text-align:center;
     padding:24px 10px;
   }
+  .piste-intro{
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.45;
+    margin:0 0 16px;
+  }
+  .piste-intro a{ color:var(--ink); }
+  .piste-add-row{
+    position:relative;
+    margin-bottom:16px;
+  }
+  .piste-add-row .header-search{
+    width:100%;
+    max-width:420px;
+  }
+  .piste-bangers{ margin-bottom:16px; }
+  .piste-banger-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:8px 10px;
+    border-bottom:1px solid var(--paper-dim);
+    font-size:13px;
+    font-weight:600;
+  }
+  .piste-banger-row:last-child{ border-bottom:none; }
+  .piste-banger-remove{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:18px;
+    line-height:1;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .piste-empty{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:8px 0;
+  }
   .terrain-card{
     background:var(--card);
     border:2px solid var(--line);
@@ -1413,6 +1454,7 @@
 <div class="tabs">
   <button class="tab-btn active" data-tab="terrain">Terrain vague</button>
   <button class="tab-btn" data-tab="explore">Le Tunnel</button>
+  <button class="tab-btn" data-tab="piste">La Piste</button>
   <button class="tab-btn" data-tab="actus">Actus</button>
   <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
@@ -1460,6 +1502,20 @@
     <div id="terrainResult"></div>
   </section>
 
+  <!-- ===== LA PISTE VIEW (sons proches, via cosine.club) ===== -->
+  <section id="view-piste" class="view">
+    <p class="piste-intro">Balance tes bangers à la taupe — plus tu lui en donnes, mieux elle flaire ce qui te ressemble. Analyse du son réel (pas des tags), via <a href="https://cosine.club" target="_blank" rel="noopener">cosine.club</a>.</p>
+    <div class="piste-add-row">
+      <div class="header-search">
+        <input type="text" id="pisteSearchInput" placeholder="Chercher un morceau à ajouter..." autocomplete="off">
+        <div class="header-search-results" id="pisteSearchResults"></div>
+      </div>
+    </div>
+    <div id="pisteBangers" class="piste-bangers"></div>
+    <button class="save-btn" id="pisteFollowBtn" disabled>Suivre la piste</button>
+    <div id="pisteResult"></div>
+  </section>
+
   <!-- ===== ACTUS VIEW (placeholder) ===== -->
   <section id="view-actus" class="view">
     <div class="actus-stub">
@@ -1496,6 +1552,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
+        <button class="tab-btn mini" data-tab="piste">Piste</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1515,6 +1572,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
+        <button class="tab-btn mini" data-tab="piste">Piste</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1555,6 +1613,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
+        <button class="tab-btn mini" data-tab="piste">Piste</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1573,6 +1632,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
+        <button class="tab-btn mini" data-tab="piste">Piste</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1595,6 +1655,7 @@
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
+        <button class="tab-btn mini" data-tab="piste">Piste</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -3336,6 +3397,184 @@ function renderTerrainResult(summary, detail, depthLabel, platformMatch){
 }
 
 unearthBtn.addEventListener("click", unearthRandom);
+
+// ---------- La Piste (sons proches à partir de tes bangers, via cosine.club) ----------
+// Colle ici l'URL de ton Worker Cloudflare une fois déployé (voir mole-cosine-proxy-worker.js)
+const COSINE_PROXY_URL = "https://late-tooth-9d0c.mister-taniark.workers.dev";
+
+const BANGERS_KEY = "mole_bangers_v1";
+const pisteSearchInput = document.getElementById("pisteSearchInput");
+const pisteSearchResults = document.getElementById("pisteSearchResults");
+const pisteBangersEl = document.getElementById("pisteBangers");
+const pisteFollowBtn = document.getElementById("pisteFollowBtn");
+const pisteResultEl = document.getElementById("pisteResult");
+
+function loadBangers(){
+  try{ return JSON.parse(localStorage.getItem(BANGERS_KEY) || "[]"); }catch(e){ return []; }
+}
+function saveBangers(list){ localStorage.setItem(BANGERS_KEY, JSON.stringify(list)); }
+function addBanger(b){
+  const list = loadBangers();
+  if(list.some(x => x.id === b.id)) return;
+  list.push(b);
+  saveBangers(list);
+  renderBangers();
+}
+
+function renderBangers(){
+  const list = loadBangers();
+  pisteFollowBtn.disabled = list.length === 0;
+  if(!list.length){
+    pisteBangersEl.innerHTML = '<div class="piste-empty">Aucun banger pour l’instant — cherche un morceau ci-dessus pour commencer ta piste.</div>';
+    return;
+  }
+  pisteBangersEl.innerHTML = "";
+  list.forEach(b => {
+    const row = document.createElement("div");
+    row.className = "piste-banger-row";
+    row.innerHTML = `
+      <div>${escapeHtml(b.artist)} – ${escapeHtml(b.track)}</div>
+      <button class="piste-banger-remove" title="Retirer">&times;</button>
+    `;
+    row.querySelector(".piste-banger-remove").addEventListener("click", () => {
+      saveBangers(loadBangers().filter(x => x.id !== b.id));
+      renderBangers();
+    });
+    pisteBangersEl.appendChild(row);
+  });
+}
+renderBangers();
+
+let pisteSearchDebounce = null;
+pisteSearchInput.addEventListener("input", () => {
+  const q = pisteSearchInput.value.trim();
+  clearTimeout(pisteSearchDebounce);
+  if(q.length < 2){
+    pisteSearchResults.classList.remove("open");
+    pisteSearchResults.innerHTML = "";
+    return;
+  }
+  pisteSearchDebounce = setTimeout(() => runPisteSearch(q), 400);
+});
+document.addEventListener("click", (e) => {
+  if(!e.target.closest(".piste-add-row")) pisteSearchResults.classList.remove("open");
+});
+
+async function runPisteSearch(q){
+  if(!COSINE_PROXY_URL){
+    pisteSearchResults.classList.add("open");
+    pisteSearchResults.innerHTML = '<div class="hsr-empty">La Piste n’est pas encore branchée (voir mole-cosine-proxy-worker.js).</div>';
+    return;
+  }
+  pisteSearchResults.innerHTML = '<div class="hsr-loading">Recherche...</div>';
+  pisteSearchResults.classList.add("open");
+  try{
+    const res = await fetch(`${COSINE_PROXY_URL}/search?q=${encodeURIComponent(q)}&limit=8`);
+    const data = await res.json();
+    const items = data.data || [];
+    if(!items.length){
+      pisteSearchResults.innerHTML = '<div class="hsr-empty">Aucun résultat.</div>';
+      return;
+    }
+    pisteSearchResults.innerHTML = "";
+    items.forEach(it => {
+      const el = document.createElement("div");
+      el.className = "hsr-item";
+      el.style.cursor = "pointer";
+      el.innerHTML = `
+        <div class="hsr-info">
+          <div class="hsr-title">${escapeHtml(it.artist)}</div>
+          <div class="hsr-sub">${escapeHtml(it.track)}</div>
+        </div>
+        <button class="hsr-add" title="Ajouter à tes bangers">+</button>
+      `;
+      el.addEventListener("click", () => {
+        addBanger({ id: it.id, artist: it.artist, track: it.track });
+        pisteSearchInput.value = "";
+        pisteSearchResults.classList.remove("open");
+      });
+      pisteSearchResults.appendChild(el);
+    });
+  }catch(e){
+    pisteSearchResults.innerHTML = '<div class="hsr-empty">Recherche indisponible pour le moment.</div>';
+  }
+}
+
+pisteFollowBtn.addEventListener("click", followThePiste);
+
+async function followThePiste(){
+  const list = loadBangers();
+  if(!list.length) return;
+  if(!COSINE_PROXY_URL){
+    pisteResultEl.innerHTML = '<div class="terrain-status">La Piste n’est pas encore branchée (voir mole-cosine-proxy-worker.js).</div>';
+    return;
+  }
+  pisteFollowBtn.disabled = true;
+  pisteResultEl.innerHTML = '<div class="terrain-status">La taupe flaire la piste...</div>';
+  try{
+    const tracks = list.slice(0, 50).map(b => `${b.artist} - ${b.track}`);
+    const res = await fetch(`${COSINE_PROXY_URL}/bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tracks, similar_limit: 10 })
+    });
+    if(!res.ok) throw new Error("bulk failed");
+    const data = await res.json();
+    const results = (data.data && data.data.results) || [];
+
+    // agrège les sons proches de tous les bangers, en excluant les bangers eux-mêmes,
+    // classé par nb de bangers touchés puis par score moyen de similarité
+    const bangerIds = new Set(list.map(b => String(b.id)));
+    const agg = new Map();
+    results.forEach(r => {
+      (r.similar_tracks || []).forEach(s => {
+        if(bangerIds.has(String(s.id))) return;
+        if(!agg.has(s.id)) agg.set(s.id, { ...s, hits: 0, scoreSum: 0 });
+        const entry = agg.get(s.id);
+        entry.hits += 1;
+        entry.scoreSum += (s.score || 0);
+      });
+    });
+    const ranked = Array.from(agg.values())
+      .map(e => ({ ...e, avgScore: e.scoreSum / e.hits }))
+      .sort((a, b) => (b.hits - a.hits) || (b.avgScore - a.avgScore))
+      .slice(0, 20);
+
+    renderPisteResults(ranked);
+  }catch(e){
+    pisteResultEl.innerHTML = '<div class="terrain-status">Impossible de suivre la piste pour le moment (trop de requêtes en peu de temps) — réessaie dans un instant.</div>';
+  }finally{
+    pisteFollowBtn.disabled = false;
+  }
+}
+
+function renderPisteResults(ranked){
+  if(!ranked.length){
+    pisteResultEl.innerHTML = '<div class="terrain-status">Rien trouvé — ajoute d’autres bangers pour affiner la piste.</div>';
+    return;
+  }
+  pisteResultEl.innerHTML = "";
+  ranked.forEach(r => {
+    const pct = Math.round((r.avgScore || 0) * 100);
+    const card = document.createElement("div");
+    card.className = "terrain-card";
+    card.innerHTML = `
+      <div class="terrain-title">${escapeHtml(r.artist)} – ${escapeHtml(r.track)}</div>
+      <div class="terrain-meta">${pct}% proche${r.hits > 1 ? ` · fait écho à ${r.hits} de tes bangers` : ""}</div>
+      <div class="terrain-preview">
+        ${r.video_id ? `<a class="terrain-preview-btn ghost" href="${r.video_uri || `https://www.youtube.com/watch?v=${r.video_id}`}" target="_blank" rel="noopener">▶ Écouter sur YouTube</a>` : ""}
+        ${r.external_link ? `<a class="terrain-preview-btn ghost" href="${r.external_link}" target="_blank" rel="noopener">Voir sur Discogs</a>` : ""}
+        <button class="terrain-preview-btn piste-add-banger-btn ghost">+ Ajouter à mes bangers</button>
+      </div>
+    `;
+    card.querySelector(".piste-add-banger-btn").addEventListener("click", (e) => {
+      addBanger({ id: r.id, artist: r.artist, track: r.track });
+      e.target.textContent = "Ajouté ✓";
+      e.target.disabled = true;
+    });
+    pisteResultEl.appendChild(card);
+  });
+}
 
 // ---------- PWA install (service worker) ----------
 if("serviceWorker" in navigator){

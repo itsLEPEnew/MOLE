@@ -59,11 +59,14 @@
     align-items:flex-start;
     gap:8px;
   }
-  .profile-icon-btn{
+  .profile-menu-wrap{
     position:fixed;
     top:12px;
     right:14px;
     z-index:260;
+  }
+  .profile-icon-btn{
+    position:relative;
     width:38px;
     height:38px;
     border-radius:50%;
@@ -74,12 +77,81 @@
     padding:0;
   }
   .profile-icon-btn img{
-    position:absolute;
-    top:50%; left:50%;
-    width:180%; height:180%;
-    transform:translate(-50%,-50%);
+    width:100%;
+    height:100%;
     object-fit:cover;
     pointer-events:none;
+  }
+  .profile-menu{
+    position:absolute;
+    top:100%;
+    right:0;
+    margin-top:8px;
+    min-width:170px;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:3px 10px 3px 10px;
+    overflow:hidden;
+    display:none;
+    flex-direction:column;
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+  }
+  .profile-menu.open{ display:flex; }
+  .profile-menu-item{
+    background:none;
+    border:none;
+    border-bottom:1px solid var(--paper-dim);
+    color:var(--ink);
+    text-align:left;
+    padding:11px 14px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .profile-menu-item:last-child{ border-bottom:none; }
+  .profile-menu-item:hover{ background:var(--paper-dim); }
+  .credits-logo-wrap{
+    position:relative;
+    width:200px;
+    height:200px;
+    margin:8px auto 10px;
+  }
+  .credits-intro{
+    font-weight:800;
+    font-size:15px;
+    text-align:center;
+    line-height:1.55;
+    max-width:540px;
+    margin:0 auto 26px;
+  }
+  .credits-list{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .credit-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    gap:4px 10px;
+    padding:12px 4px;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .credit-row:last-child{ border-bottom:none; }
+  .credit-name{
+    font-weight:800;
+    font-size:14px;
+    flex:0 0 auto;
+  }
+  .credit-desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    flex:1 1 220px;
+  }
+  .credit-row a{
+    font-size:12px;
+    color:var(--ink);
+    flex:0 0 auto;
   }
   .header-search{
     position:relative;
@@ -174,7 +246,7 @@
     position:relative;
     width:140px;
     height:140px;
-    margin:0 auto 6px;
+    margin:0 auto -10px;
     animation:molePopIn 1.1s cubic-bezier(.34,1.56,.64,1) 1 both;
   }
   .mole-logo-wrap .mole-note{
@@ -271,15 +343,15 @@
     display:flex;
     flex-wrap:wrap;
     justify-content:center;
-    gap:6px;
-    margin:18px 0 8px;
+    gap:12px;
+    margin:26px 0 14px;
     padding:0 10px;
   }
   .tab-btn{
     background:var(--paper);
     border:2px solid var(--line);
     color:var(--ink);
-    padding:8px 14px;
+    padding:10px 18px;
     border-radius:3px 10px 3px 10px;
     cursor:pointer;
     font-size:13px;
@@ -292,7 +364,7 @@
   main{
     max-width:760px;
     margin:0 auto;
-    padding:10px 16px 80px;
+    padding:22px 16px 80px;
   }
   .view{display:none;}
   .view.active{display:block;}
@@ -301,9 +373,9 @@
   .filters{
     display:flex;
     flex-wrap:wrap;
-    gap:8px;
+    gap:10px;
     justify-content:center;
-    margin:18px 0;
+    margin:24px 0;
   }
   select{
     background:var(--paper);
@@ -669,42 +741,6 @@
     min-height:18px;
     font-weight:700;
   }
-  .curiosity-block{
-    background:var(--card);
-    border:2px solid var(--line);
-    border-radius:4px 14px 4px 14px;
-    padding:16px;
-    margin-bottom:20px;
-  }
-  .curiosity-block h4{
-    margin:0 0 4px;
-    font-size:13px;
-    text-transform:uppercase;
-    letter-spacing:0.5px;
-  }
-  .curiosity-block p{
-    font-size:12.5px;
-    color:var(--ink-soft);
-    margin:2px 0 12px;
-    line-height:1.4;
-  }
-  .curiosity-row{
-    display:flex;
-    align-items:center;
-    gap:10px;
-  }
-  .curiosity-row span{ font-size:11.5px; color:var(--ink-soft); white-space:nowrap; }
-  input[type="range"]{
-    flex:1;
-    accent-color:var(--ink);
-  }
-  .curiosity-value{
-    text-align:center;
-    font-size:12px;
-    margin-top:6px;
-    font-weight:700;
-  }
-
   .collection-block{
     background:var(--card);
     border:2px solid var(--line);
@@ -1164,13 +1200,6 @@
     text-align:center;
     padding:24px 10px;
   }
-  .piste-intro{
-    font-size:13px;
-    color:var(--ink-soft);
-    line-height:1.45;
-    margin:0 0 16px;
-  }
-  .piste-intro a{ color:var(--ink); }
   .piste-add-row{
     position:relative;
     margin-bottom:16px;
@@ -1435,21 +1464,27 @@
     <span class="mole-note n3">&#9834;</span>
   </div>
   <h1>MOLE</h1>
-  <p>Dig the culture</p>
+  <p>Dig Into the Culture</p>
 </header>
 
 <div class="top-bar-left" id="topBarLeft">
   <button class="theme-toggle-btn" id="themeToggleBtn" title="Mode nuit">&#9789;</button>
   <div class="header-search">
-    <input type="text" id="albumSearchInput" placeholder="Rechercher un album..." autocomplete="off">
+    <input type="text" id="albumSearchInput" placeholder="Creuse un nom, un titre..." autocomplete="off">
     <div class="header-search-results" id="albumSearchResults"></div>
   </div>
 </div>
 
-<button class="profile-icon-btn" id="profileIconBtn" title="Mon Profil">
-  <img src="./mole-paws.png" alt="">
-  <img src="./mole-head.png" alt="">
-</button>
+<div class="profile-menu-wrap">
+  <button class="profile-icon-btn" id="profileIconBtn" title="Menu">
+    <img src="./icon-512.png" alt="">
+  </button>
+  <div class="profile-menu" id="profileMenu">
+    <button class="profile-menu-item" id="menuProfilBtn">Profil</button>
+    <button class="profile-menu-item" id="menuMusicothequeBtn">Musicothèque</button>
+    <button class="profile-menu-item" id="menuCreditsBtn">Crédits</button>
+  </div>
+</div>
 
 <div class="tabs">
   <button class="tab-btn active" data-tab="terrain">Terrain vague</button>
@@ -1496,6 +1531,14 @@
         <option value="Latin">Latin</option>
       </select>
       <select id="terrainStyle"></select>
+      <select id="terrainDepth">
+        <option value="all" selected>Tous niveaux — surprends-moi</option>
+        <option value="0">Surface — à l'air libre</option>
+        <option value="1">Premières galeries</option>
+        <option value="2">Le cœur du tunnel — les pionniers</option>
+        <option value="3">Galeries profondes — diggers confirmés</option>
+        <option value="4">La roche mère — ultra niche</option>
+      </select>
     </div>
     <div id="terrainStyleDesc" class="terrain-style-desc"></div>
     <button class="save-btn" id="unearthBtn">⛏ Déterrer l'inconnu</button>
@@ -1504,7 +1547,6 @@
 
   <!-- ===== LA PISTE VIEW (sons proches, via cosine.club) ===== -->
   <section id="view-piste" class="view">
-    <p class="piste-intro">Balance tes bangers à la taupe — plus tu lui en donnes, mieux elle flaire ce qui te ressemble. Analyse du son réel (pas des tags), via <a href="https://cosine.club" target="_blank" rel="noopener">cosine.club</a>.</p>
     <div class="piste-add-row">
       <div class="header-search">
         <input type="text" id="pisteSearchInput" placeholder="Chercher un morceau à ajouter..." autocomplete="off">
@@ -1580,20 +1622,9 @@
     <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
 
     <div class="collection-block">
-      <h4>Ma Bibliothèque</h4>
+      <h4>Musicothèque</h4>
       <p id="libraryTeaser">Aucun album noté pour l'instant.</p>
-      <button class="save-btn" id="openLibraryBtn">Ouvrir ma bibliothèque</button>
-    </div>
-
-    <div class="curiosity-block">
-      <h4>Curiosity Bar</h4>
-      <p>Joue uniquement sur le style : rester dans tes genres aimés, ou aller voir ailleurs. La profondeur n'est jamais bridée par ce curseur — tout niveau reste toujours pertinent.</p>
-      <div class="curiosity-row">
-        <span>Mes genres</span>
-        <input type="range" id="curiositySlider" min="0" max="100" value="30">
-        <span>Explorer</span>
-      </div>
-      <div class="curiosity-value" id="curiosityValue">30% de découverte</div>
+      <button class="save-btn" id="openLibraryBtn">Ouvrir ma musicothèque</button>
     </div>
 
     <div id="genreChips" class="chip-row"></div>
@@ -1607,7 +1638,7 @@
   <div class="overlay-inner">
     <div class="overlay-topbar">
       <div class="overlay-topbar-row">
-        <h3>Ma Bibliothèque</h3>
+        <h3>Musicothèque</h3>
         <button class="overlay-close" id="libraryOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
@@ -1619,6 +1650,76 @@
       </div>
     </div>
     <div id="libraryOverlayBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="creditsOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-topbar">
+      <div class="overlay-topbar-row">
+        <h3>Crédits</h3>
+        <button class="overlay-close" id="creditsOverlayClose" title="Fermer">&times;</button>
+      </div>
+      <div class="mini-tabs">
+        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
+        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
+        <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="actus">Actus</button>
+        <button class="tab-btn mini" data-tab="chat">Discute</button>
+      </div>
+    </div>
+
+    <div class="credits-logo-wrap">
+      <div class="mole-layer mole-paws"></div>
+      <div class="mole-layer mole-head"></div>
+      <span class="mole-note n1">&#9834;</span>
+      <span class="mole-note n2">&#9835;</span>
+      <span class="mole-note n3">&#9834;</span>
+    </div>
+    <p class="credits-intro">MOLE est un outil de recherche et de découverte musicale qui combine la curation humaine de ses créateurs et les données ouvertes de plusieurs projets indépendants pour vous proposer une palette capable de combler votre faim de musique. Vous trouverez ci-dessous tous les acteurs que nous remercions pour leur travail, ainsi que les informations mises à disposition en libre accès que nous exploitons pour construire MOLE.</p>
+
+    <div class="credits-list">
+      <div class="credit-row">
+        <div class="credit-name">MusicBrainz</div>
+        <div class="credit-desc">Recherche d'artistes/albums et métadonnées structurées (données ouvertes CC0).</div>
+        <a href="https://musicbrainz.org" target="_blank" rel="noopener">musicbrainz.org</a>
+      </div>
+      <div class="credit-row">
+        <div class="credit-name">Cover Art Archive</div>
+        <div class="credit-desc">Pochettes d'albums associées aux fiches MusicBrainz.</div>
+        <a href="https://coverartarchive.org" target="_blank" rel="noopener">coverartarchive.org</a>
+      </div>
+      <div class="credit-row">
+        <div class="credit-name">Wikipédia &amp; Wikidata</div>
+        <div class="credit-desc">Biographies, descriptions de sous-genres et liaisons entre langues.</div>
+        <a href="https://wikipedia.org" target="_blank" rel="noopener">wikipedia.org</a>
+      </div>
+      <div class="credit-row">
+        <div class="credit-name">Discogs</div>
+        <div class="credit-desc">Catalogue, tracklists et statistiques de rareté qui alimentent Terrain vague.</div>
+        <a href="https://discogs.com" target="_blank" rel="noopener">discogs.com</a>
+      </div>
+      <div class="credit-row">
+        <div class="credit-name">Apple Music / iTunes</div>
+        <div class="credit-desc">Extraits audio de 30 secondes et liens d'écoute vérifiés.</div>
+        <a href="https://music.apple.com" target="_blank" rel="noopener">music.apple.com</a>
+      </div>
+      <div class="credit-row">
+        <div class="credit-name">YouTube</div>
+        <div class="credit-desc">Liens d'écoute externes vérifiés depuis les fiches Discogs.</div>
+        <a href="https://youtube.com" target="_blank" rel="noopener">youtube.com</a>
+      </div>
+      <div class="credit-row">
+        <div class="credit-name">cosine.club</div>
+        <div class="credit-desc">Moteur de similarité audio (analyse du son réel) qui alimente La Piste — un projet de hurfyd / deejay.tools.</div>
+        <a href="https://cosine.club" target="_blank" rel="noopener">cosine.club</a>
+      </div>
+      <div class="credit-row">
+        <div class="credit-name">Google Gemini</div>
+        <div class="credit-desc">Modèle de langage derrière le chatbot "la Taupe" dans Discute.</div>
+        <a href="https://ai.google.dev" target="_blank" rel="noopener">ai.google.dev</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1735,6 +1836,15 @@ const TIER_LABELS = [
   "La roche mère — ultra niche"
 ];
 const TIER_SHORT = ["Surface", "Galeries", "Cœur", "Profond", "Roche mère"];
+// bornes de percentile (rang/total, cf. terrainDepthLabel) associées à chaque palier,
+// pour pouvoir piocher directement dans le palier choisi via "Niveau de profondeur souhaité"
+const TIER_BOUNDS = [
+  [0.35, 1.00],
+  [0.20, 0.35],
+  [0.10, 0.20],
+  [0.03, 0.10],
+  [0.00, 0.03]
+];
 
 const DATA = {
   "Techno": [
@@ -2073,18 +2183,15 @@ genreNames.forEach(g=>{
   genreGrid.appendChild(div);
 });
 
-// ---------- profil (goûts + profondeur connue + curiosity bar) ----------
+// ---------- profil (goûts + profondeur connue) ----------
 const PROFILE_KEY = "mole_profile_v2";
 function loadProfile(){
   try{
     const raw = localStorage.getItem(PROFILE_KEY);
     const p = raw ? JSON.parse(raw) : null;
-    if(p && Array.isArray(p.liked) && p.known){
-      if(typeof p.curiosity !== "number") p.curiosity = 30;
-      return p;
-    }
-    return {liked:[], known:{}, curiosity:30};
-  }catch(e){ return {liked:[], known:{}, curiosity:30}; }
+    if(p && Array.isArray(p.liked) && p.known) return p;
+    return {liked:[], known:{}};
+  }catch(e){ return {liked:[], known:{}}; }
 }
 function saveProfileToStorage(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
 
@@ -2092,14 +2199,6 @@ let profile = loadProfile();
 
 const genreChipsEl = document.getElementById("genreChips");
 const knownArtistsEl = document.getElementById("knownArtists");
-const curiositySlider = document.getElementById("curiositySlider");
-const curiosityValue = document.getElementById("curiosityValue");
-
-curiositySlider.value = profile.curiosity;
-curiosityValue.textContent = profile.curiosity + "% de découverte";
-curiositySlider.addEventListener("input", () => {
-  curiosityValue.textContent = curiositySlider.value + "% de découverte";
-});
 
 function sampleArtistsForGenre(genre){
   const tiers = DATA[genre];
@@ -2162,7 +2261,6 @@ document.getElementById("saveProfileBtn").onclick = () => {
     newKnown[g] = Math.max(newKnown[g] ?? -1, t);
   });
   profile.known = newKnown;
-  profile.curiosity = parseInt(curiositySlider.value, 10);
   saveProfileToStorage(profile);
   const status = document.getElementById("profileStatus");
   status.textContent = "Profil enregistré ✓ — tes recos vont s'ajuster.";
@@ -2187,15 +2285,39 @@ function closeAllOverlays(){
   document.getElementById("artistOverlay").classList.remove("open");
   document.getElementById("albumOverlay").classList.remove("open");
   document.getElementById("profileOverlay").classList.remove("open");
+  document.getElementById("creditsOverlay").classList.remove("open");
   document.getElementById("ratingModalBackdrop").classList.remove("open");
+  document.getElementById("profileMenu").classList.remove("open");
 }
 
-document.getElementById("profileIconBtn").addEventListener("click", () => {
+const profileMenu = document.getElementById("profileMenu");
+document.getElementById("profileIconBtn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const willOpen = !profileMenu.classList.contains("open");
+  closeAllOverlays();
+  if(willOpen) profileMenu.classList.add("open");
+});
+document.addEventListener("click", (e) => {
+  if(!e.target.closest(".profile-menu-wrap")) profileMenu.classList.remove("open");
+});
+document.getElementById("menuProfilBtn").addEventListener("click", () => {
   closeAllOverlays();
   document.getElementById("profileOverlay").classList.add("open");
 });
+document.getElementById("menuMusicothequeBtn").addEventListener("click", () => {
+  closeAllOverlays();
+  libraryOverlay.classList.add("open");
+  renderLibraryOverlay();
+});
+document.getElementById("menuCreditsBtn").addEventListener("click", () => {
+  closeAllOverlays();
+  document.getElementById("creditsOverlay").classList.add("open");
+});
 document.getElementById("profileOverlayClose").addEventListener("click", () => {
   document.getElementById("profileOverlay").classList.remove("open");
+});
+document.getElementById("creditsOverlayClose").addEventListener("click", () => {
+  document.getElementById("creditsOverlay").classList.remove("open");
 });
 function switchTab(tabName){
   document.querySelectorAll(".tab-btn[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab === tabName));
@@ -3114,7 +3236,7 @@ document.getElementById("openLibraryBtn").addEventListener("click", () => {
 function renderLibraryOverlay(){
   const list = loadCollection();
   if(!list.length){
-    libraryOverlayBody.innerHTML = '<div class="overlay-status">Ta bibliothèque est vide &mdash; cherche un album en haut de page et note-le pour le voir apparaître ici.</div>';
+    libraryOverlayBody.innerHTML = '<div class="overlay-status">Ta musicothèque est vide &mdash; cherche un album en haut de page et note-le pour le voir apparaître ici.</div>';
     return;
   }
   const grid = document.createElement("div");
@@ -3153,6 +3275,7 @@ updateLibraryTeaser();
 // ---------- Terrain vague : découverte brute via une base de données factuelle ----------
 const terrainGenre = document.getElementById("terrainGenre");
 const terrainStyle = document.getElementById("terrainStyle");
+const terrainDepth = document.getElementById("terrainDepth");
 const terrainStyleDesc = document.getElementById("terrainStyleDesc");
 const terrainResult = document.getElementById("terrainResult");
 const unearthBtn = document.getElementById("unearthBtn");
@@ -3208,15 +3331,43 @@ function formatTrackDuration(str){
   return str && str.trim() ? str.trim() : "";
 }
 
+// Colle ici l'URL de ton Worker Cloudflare une fois déployé (voir lastfm-proxy-worker.js)
+// — sert de garde-fou anti-faux-négatif sur les paliers de profondeur, voir plus bas.
+const LASTFM_PROXY_URL = "https://hidden-fire-6d3b.mister-taniark.workers.dev";
+
 // place le disque déterré sur l'échelle de profondeur du Tunnel plutôt que
 // d'afficher des stats Discogs brutes — basé sur son rang parmi les résultats
-function terrainDepthLabel(rank, total){
+function terrainDepthTierIndex(rank, total){
   const pct = total > 0 ? rank / total : 0;
-  if(pct < 0.03) return TIER_LABELS[4];
-  if(pct < 0.10) return TIER_LABELS[3];
-  if(pct < 0.20) return TIER_LABELS[2];
-  if(pct < 0.35) return TIER_LABELS[1];
-  return TIER_LABELS[0];
+  if(pct < 0.03) return 4;
+  if(pct < 0.10) return 3;
+  if(pct < 0.20) return 2;
+  if(pct < 0.35) return 1;
+  return 0;
+}
+function terrainDepthLabel(rank, total){
+  return TIER_LABELS[terrainDepthTierIndex(rank, total)];
+}
+
+// les stats Discogs (want/have) mesurent l'intérêt des collectionneurs de vinyles pour
+// CETTE pressing précise, pas la notoriété générale du morceau — un tube mondial mal
+// répertorié sur Discogs peut ressortir avec un ratio "rare" alors qu'il est ultra connu.
+// Last.fm (nombre d'auditeurs, toutes plateformes/pressages confondus) sert de garde-fou :
+// si un morceau est manifestement très écouté, on plafonne le palier affiché en conséquence.
+async function fetchLastfmListeners(artist, track){
+  if(!LASTFM_PROXY_URL) return null;
+  try{
+    const res = await fetch(`${LASTFM_PROXY_URL}/?method=track.getInfo&artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(track)}&autocorrect=1`);
+    const data = await res.json();
+    const listeners = data && data.track && data.track.listeners ? parseInt(data.track.listeners, 10) : null;
+    return Number.isFinite(listeners) ? listeners : null;
+  }catch(e){ return null; }
+}
+function popularityTierCap(listeners){
+  if(listeners === null) return null; // pas de donnée Last.fm : on fait confiance au classement Discogs
+  if(listeners >= 100000) return 0; // très écouté partout -> Surface, quoi qu'en dise Discogs
+  if(listeners >= 20000) return 1;  // assez connu -> pas plus profond que Premières galeries
+  return null;
 }
 
 async function unearthRandom(){
@@ -3244,7 +3395,18 @@ async function unearthRandom(){
       return;
     }
     const ranked = results.slice().sort((a, b) => terrainScore(b) - terrainScore(a));
-    const pool = ranked.slice(0, Math.max(1, Math.ceil(ranked.length * 0.3)));
+    const depthChoice = terrainDepth.value;
+    let pool;
+    if(depthChoice === "all" || depthChoice === ""){
+      // pas de préférence : tout le spectre, de la surface à la roche mère
+      pool = ranked;
+    } else {
+      const [lo, hi] = TIER_BOUNDS[parseInt(depthChoice, 10)];
+      const startIdx = Math.floor(lo * ranked.length);
+      const endIdx = Math.max(startIdx + 1, Math.ceil(hi * ranked.length));
+      pool = ranked.slice(startIdx, endIdx);
+    }
+    if(!pool.length) pool = ranked;
     const shuffled = pool.slice().sort(() => Math.random() - 0.5);
 
     const maxAttempts = Math.min(6, shuffled.length);
@@ -3261,8 +3423,17 @@ async function unearthRandom(){
       await new Promise(r => setTimeout(r, 200));
       const platformMatch = await checkPlatformAvailability(firstArtist, trackTitle, detail.videos);
       if(platformMatch){
-        const depthLabel = terrainDepthLabel(ranked.indexOf(candidate), ranked.length);
-        renderTerrainResult(candidate, detail, depthLabel, platformMatch);
+        const rawTierIdx = terrainDepthTierIndex(ranked.indexOf(candidate), ranked.length);
+        await new Promise(r => setTimeout(r, 150));
+        const listeners = await fetchLastfmListeners(firstArtist, trackTitle);
+        const cap = popularityTierCap(listeners);
+        const finalTierIdx = cap !== null ? Math.min(rawTierIdx, cap) : rawTierIdx;
+        // un palier précis a été demandé mais ce morceau est en fait trop connu pour
+        // le tenir vraiment -> on ne le montre pas tel quel, on retente un autre candidat
+        if(depthChoice !== "all" && depthChoice !== "" && finalTierIdx !== rawTierIdx){
+          continue;
+        }
+        renderTerrainResult(candidate, detail, TIER_LABELS[finalTierIdx], platformMatch);
         return;
       }
     }
@@ -3283,12 +3454,13 @@ function extractYoutubeId(uri){
 // une vidéo Discogs confirmée, ou un match exact iTunes/Apple Music (jamais un simple lien
 // de recherche qui peut ne rien donner).
 async function checkPlatformAvailability(artistName, trackTitle, discogsVideos){
-  const videoId = ((discogsVideos || [])
+  const youtubeId = ((discogsVideos || [])
     .map(v => extractYoutubeId(v.uri))
     .find(id => id)) || null;
-  if(videoId){
-    return { youtubeId: videoId, appleUrl: null, previewUrl: null };
-  }
+
+  // on tente toujours iTunes en plus de YouTube : c'est la seule source de l'extrait
+  // audio de 30s, même quand une vidéo Discogs confirmée existe déjà
+  let appleUrl = null, previewUrl = null;
   try{
     const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&media=music&entity=song&limit=25`);
     const data = await res.json();
@@ -3296,9 +3468,14 @@ async function checkPlatformAvailability(artistName, trackTitle, discogsVideos){
     const titleNorm = (trackTitle || "").toLowerCase();
     const best = artistMatches.find(r => r.trackName && (r.trackName.toLowerCase().includes(titleNorm) || titleNorm.includes(r.trackName.toLowerCase())));
     if(best){
-      return { youtubeId: null, appleUrl: best.trackViewUrl || best.collectionViewUrl || null, previewUrl: best.previewUrl || null };
+      appleUrl = best.trackViewUrl || best.collectionViewUrl || null;
+      previewUrl = best.previewUrl || null;
     }
   }catch(e){ /* pas de match confirmé */ }
+
+  if(youtubeId || appleUrl){
+    return { youtubeId, appleUrl, previewUrl };
+  }
   return null;
 }
 

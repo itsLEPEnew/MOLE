@@ -250,11 +250,13 @@ async function quickAddFromUrl(rawUrl, env, debug) {
 
   if (rawUrl.includes("music.apple.com")) {
     let appleId = null;
+    let hasTrackParam = false;
     try {
       const u = new URL(rawUrl);
       const iParam = u.searchParams.get("i");
       if (iParam && /^[0-9]+$/.test(iParam)) {
         appleId = iParam;
+        hasTrackParam = true;
       } else {
         const segments = u.pathname.split("/").filter(Boolean);
         const last = segments[segments.length - 1];
@@ -262,25 +264,53 @@ async function quickAddFromUrl(rawUrl, env, debug) {
       }
     } catch (e) { if (debug) debug.push("url parse error: " + e.message); }
     if (debug) debug.push("appleId=" + appleId);
+    let itunesOk = false;
     if (appleId) {
       try {
         const res = await fetch("https://itunes.apple.com/lookup?id=" + appleId, {
           headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
         });
         if (debug) debug.push("itunes lookup status=" + res.status);
-        const data = await res.json();
-        if (debug) debug.push("itunes lookup resultCount=" + data.resultCount);
-        const t = data.results && data.results[0];
-        if (t) {
-          type = !t.trackName && t.wrapperType === "collection" ? "album" : "single";
-          artist = t.artistName || "";
-          title = t.trackName || "";
-          album = t.collectionName || "";
-          date = (t.releaseDate || "").slice(0, 10);
-          cover = (t.artworkUrl100 || "").replace("100x100bb", "600x600bb");
-          appleUrl = t.trackViewUrl || t.collectionViewUrl || null;
+        if (res.ok) {
+          const data = await res.json();
+          if (debug) debug.push("itunes lookup resultCount=" + data.resultCount);
+          const t = data.results && data.results[0];
+          if (t) {
+            itunesOk = true;
+            type = !t.trackName && t.wrapperType === "collection" ? "album" : "single";
+            artist = t.artistName || "";
+            title = t.trackName || "";
+            album = t.collectionName || "";
+            date = (t.releaseDate || "").slice(0, 10);
+            cover = (t.artworkUrl100 || "").replace("100x100bb", "600x600bb");
+            appleUrl = t.trackViewUrl || t.collectionViewUrl || null;
+          }
         }
       } catch (e) { if (debug) debug.push("itunes lookup error: " + e.message); }
+    }
+    // repli : l'API iTunes peut renvoyer 403 depuis l'IP partagée de Cloudflare.
+    // on lit alors directement la page Apple Music partagée (og:title/og:image),
+    // un chemin différent de celui de l'API bloquée.
+    if (!itunesOk) {
+      if (debug) debug.push("fallback: scraping og tags from apple music page");
+      appleUrl = rawUrl;
+      type = hasTrackParam ? "single" : "album";
+      const meta = await fetchMeta(rawUrl);
+      if (debug) debug.push("apple page meta title=" + meta.title);
+      if (meta.title) {
+        const byIdx = meta.title.lastIndexOf(" by ");
+        if (byIdx !== -1) {
+          artist = meta.title.slice(byIdx + 4).trim();
+          let left = meta.title.slice(0, byIdx).trim();
+          [" - Song", " - Album", " - Single", " - EP"].forEach((suffix) => {
+            if (left.endsWith(suffix)) left = left.slice(0, -suffix.length).trim();
+          });
+          if (type === "album") album = left; else title = left;
+        } else {
+          if (type === "album") album = meta.title; else title = meta.title;
+        }
+      }
+      if (meta.image) cover = meta.image;
     }
   } else {
     const meta = await fetchMeta(rawUrl);

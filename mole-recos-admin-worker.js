@@ -298,16 +298,22 @@ async function quickAddFromUrl(rawUrl, env, debug) {
       const meta = await fetchMeta(rawUrl);
       if (debug) debug.push("apple page meta title=" + meta.title);
       if (meta.title) {
-        const byIdx = meta.title.lastIndexOf(" by ");
-        if (byIdx !== -1) {
-          artist = meta.title.slice(byIdx + 4).trim();
-          let left = meta.title.slice(0, byIdx).trim();
-          [" - Song", " - Album", " - Single", " - EP"].forEach((suffix) => {
+        let t = meta.title;
+        [" sur Apple Music", " on Apple Music", " – Apple Music", " - Apple Music"].forEach((suffix) => {
+          if (t.endsWith(suffix)) t = t.slice(0, -suffix.length).trim();
+        });
+        let sepIdx = t.lastIndexOf(" par ");
+        let sepLen = 5;
+        if (sepIdx === -1) { sepIdx = t.lastIndexOf(" by "); sepLen = 4; }
+        if (sepIdx !== -1) {
+          artist = t.slice(sepIdx + sepLen).trim();
+          let left = t.slice(0, sepIdx).trim();
+          [" - Song", " - Album", " - Single", " - EP", " - Chanson"].forEach((suffix) => {
             if (left.endsWith(suffix)) left = left.slice(0, -suffix.length).trim();
           });
           if (type === "album") album = left; else title = left;
         } else {
-          if (type === "album") album = meta.title; else title = meta.title;
+          if (type === "album") album = t; else title = t;
         }
       }
       if (meta.image) cover = meta.image;

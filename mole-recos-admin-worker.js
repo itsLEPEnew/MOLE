@@ -137,6 +137,7 @@ export default {
       if (url.pathname === "/quick-add" && request.method === "POST") {
         const body = await request.json();
         const debug = url.searchParams.get("debug") ? [] : null;
+        if (debug) debug.push("received appleData=" + (body.appleData ? JSON.stringify(body.appleData).slice(0, 300) : "none"));
         const item = await quickAddFromUrl(body.url || "", env, debug, body.appleData || null);
         if (!item) return jsonResponse({ error: "Rien trouvé pour ce lien", debug }, 422);
         return jsonResponse({ item, debug }, 201);
@@ -315,7 +316,7 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
       const meta = await fetchMeta(rawUrl);
       if (debug) debug.push("apple page meta title=" + meta.title);
       if (meta.title) {
-        let t = meta.title;
+        let t = meta.title.replace(/\s+/g, " ").trim();
         [" sur Apple Music", " on Apple Music", " – Apple Music", " - Apple Music"].forEach((suffix) => {
           if (t.endsWith(suffix)) t = t.slice(0, -suffix.length).trim();
         });

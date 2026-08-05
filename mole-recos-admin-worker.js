@@ -264,7 +264,9 @@ async function quickAddFromUrl(rawUrl, env, debug) {
     if (debug) debug.push("appleId=" + appleId);
     if (appleId) {
       try {
-        const res = await fetch("https://itunes.apple.com/lookup?id=" + appleId);
+        const res = await fetch("https://itunes.apple.com/lookup?id=" + appleId, {
+          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
+        });
         if (debug) debug.push("itunes lookup status=" + res.status);
         const data = await res.json();
         if (debug) debug.push("itunes lookup resultCount=" + data.resultCount);
@@ -311,7 +313,9 @@ async function quickAddFromUrl(rawUrl, env, debug) {
     }
     if (!appleUrl) {
       try {
-        const aRes = await fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(q) + "&media=music&entity=song&limit=1");
+        const aRes = await fetch("https://itunes.apple.com/search?term=" + encodeURIComponent(q) + "&media=music&entity=song&limit=1", {
+          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
+        });
         const aData = await aRes.json();
         const best = (aData.results || [])[0];
         if (best) {

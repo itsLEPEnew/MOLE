@@ -212,7 +212,10 @@ async function fetchMeta(targetUrl) {
   if (!targetUrl) return { title: null, image: null, siteName: null };
   try {
     const res = await fetch(targetUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; MoleBot/1.0)" },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
     });
     const html = await res.text();
     const grab = (prop) => {

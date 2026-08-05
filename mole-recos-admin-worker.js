@@ -137,7 +137,7 @@ export default {
       if (url.pathname === "/quick-add" && request.method === "POST") {
         const body = await request.json();
         const debug = url.searchParams.get("debug") ? [] : null;
-        const item = await quickAddFromUrl(body.url || "", env, debug);
+        const item = await quickAddFromUrl(body.url || "", env, debug, body.appleData || null);
         if (!item) return jsonResponse({ error: "Rien trouvé pour ce lien", debug }, 422);
         return jsonResponse({ item, debug }, 201);
       }
@@ -246,7 +246,7 @@ function decodeEntities(str) {
 // résout tout côté serveur (métadonnées + Spotify/Deezer/Apple Music) et ajoute
 // directement à la file — pas d'appel JSONP nécessaire ici, un Worker n'est pas
 // soumis aux restrictions CORS du navigateur, donc un fetch direct vers Deezer marche.
-async function quickAddFromUrl(rawUrl, env, debug) {
+async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
   if (!rawUrl) return null;
   let artist = "", title = "", album = "", date = "", cover = "", type = "single";
   let appleUrl = null, deezerUrl = null, spotifyUrl = null;
@@ -268,7 +268,21 @@ async function quickAddFromUrl(rawUrl, env, debug) {
     } catch (e) { if (debug) debug.push("url parse error: " + e.message); }
     if (debug) debug.push("appleId=" + appleId);
     let itunesOk = false;
-    if (appleId) {
+    // le raccourci iOS peut avoir déjà résolu le lien lui-même (depuis le
+    // téléphone, jamais bloqué par Apple contrairement à l'IP du Worker) et
+    // nous passer directement le résultat de itunes.apple.com/lookup.
+    if (clientApple && clientApple.artistName) {
+      if (debug) debug.push("using client-resolved apple data");
+      itunesOk = true;
+      type = !clientApple.trackName && clientApple.wrapperType === "collection" ? "album" : "single";
+      artist = clientApple.artistName || "";
+      title = clientApple.trackName || "";
+      album = clientApple.collectionName || "";
+      date = (clientApple.releaseDate || "").slice(0, 10);
+      cover = (clientApple.artworkUrl100 || "").replace("100x100bb", "600x600bb");
+      appleUrl = clientApple.trackViewUrl || clientApple.collectionViewUrl || rawUrl;
+    }
+    if (!itunesOk && appleId) {
       try {
         const res = await fetch("https://itunes.apple.com/lookup?id=" + appleId, {
           headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },

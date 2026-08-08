@@ -228,6 +228,7 @@ function buildQueueItem(item) {
     style: item.style || "",
     note: item.note || "",
     cover: item.cover || "",
+    indispensable: !!item.indispensable,
     links: {
       spotify: (item.links && item.links.spotify) || null,
       deezer: (item.links && item.links.deezer) || null,
@@ -576,6 +577,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
   label{ display:block; font-size:11.5px; color:var(--ink-soft); margin:10px 0 4px; text-transform:uppercase; letter-spacing:0.4px; }
   input, textarea, select{ width:100%; background:var(--paper); border:1px solid #3a352c; border-radius:6px; padding:9px 10px; color:var(--ink); font-size:14px; font-family:inherit; }
   textarea{ min-height:60px; resize:vertical; }
+  input[type="checkbox"]{ width:auto; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:normal; font-size:13.5px; color:var(--ink); margin-top:14px; }
   button{ background:var(--ink); color:var(--paper); border:none; border-radius:6px; padding:10px 14px; font-size:13.5px; font-weight:700; cursor:pointer; }
   button.ghost{ background:transparent; color:var(--ink); border:1px solid #3a352c; }
   button.small{ padding:5px 9px; font-size:12px; }
@@ -677,6 +680,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
   <datalist id="styleOptions"></datalist>
   <label>Note perso de la taupe</label>
   <textarea id="fNote" placeholder="Pourquoi ce son, où tu l'as trouvé..."></textarea>
+
+  <label class="checkbox-row"><input type="checkbox" id="fIndispensable"> Indispensable</label>
 
   <img id="coverPreview" class="cover-preview" style="display:none;">
 
@@ -902,6 +907,7 @@ async function addToQueue(){
     style: $("fStyle").value.trim(),
     note: $("fNote").value.trim(),
     cover: resolvedCover,
+    indispensable: $("fIndispensable").checked,
     links: {
       spotify: selected.spotify ? selected.spotify.url : null,
       deezer: selected.deezer ? selected.deezer.url : null,
@@ -914,6 +920,7 @@ async function addToQueue(){
     if(!res.ok) throw new Error("failed");
     $("addStatus").textContent = "Ajouté à la file ✓";
     ["sharedUrl","fArtist","fTitle","fAlbum","fDate","fStyle","fNote"].forEach(id => $(id).value = "");
+    $("fIndispensable").checked = false;
     resolvedCover = "";
     $("coverPreview").style.display = "none";
     selected = { spotify:null, deezer:null, apple:null };
@@ -946,7 +953,7 @@ async function loadQueue(){
     const mainTitle = it.title || it.album || "(sans titre)";
     row.innerHTML =
       (it.cover ? "<img src='"+it.cover+"'>" : "<div style='width:44px;height:44px;'></div>") +
-      "<div class='info'><div class='t'>" + esc(it.artist) + " – " + esc(mainTitle) + "</div><div class='s'>" + (it.type === "album" ? "Album" : "Single") + (it.style?" · "+esc(it.style):"") + "</div></div>";
+      "<div class='info'><div class='t'>" + (it.indispensable ? "★ " : "") + esc(it.artist) + " – " + esc(mainTitle) + "</div><div class='s'>" + (it.type === "album" ? "Album" : "Single") + (it.style?" · "+esc(it.style):"") + "</div></div>";
     const btnUp = document.createElement("button");
     btnUp.className = "small ghost"; btnUp.textContent = "↑";
     btnUp.disabled = idx === 0;
@@ -1029,9 +1036,10 @@ function wallCardHtml(it){
   const mainTitle = it.title || it.album || "(sans titre)";
   return "<div class='wall-card' data-id='" + it.id + "'>" +
     (it.cover ? "<img src='"+it.cover+"'>" : "") +
-    "<div class='t'>" + esc(it.artist) + " – " + esc(mainTitle) + "</div>" +
+    "<div class='t'>" + (it.indispensable ? "★ " : "") + esc(it.artist) + " – " + esc(mainTitle) + "</div>" +
     "<div class='s'>" + (it.type === "album" ? "Album" : "Single") + (it.style ? " · " + esc(it.style) : "") + "</div>" +
     "<div class='actions'>" +
+      "<button class='small ghost' data-action='indispensable'>" + (it.indispensable ? "★ Retirer" : "☆ Indispensable") + "</button>" +
       "<button class='small ghost' data-action='style'>Style</button>" +
       "<button class='small ghost' data-action='delete'>✕</button>" +
     "</div>" +
@@ -1044,7 +1052,16 @@ $("wallContent").addEventListener("click", (e) => {
   const id = btn.closest(".wall-card").dataset.id;
   if(btn.dataset.action === "style") editWallStyle(id);
   if(btn.dataset.action === "delete") deleteWallItem(id);
+  if(btn.dataset.action === "indispensable") toggleIndispensable(id);
 });
+
+async function toggleIndispensable(id){
+  const it = wallCache.find((x) => x.id === id);
+  if(!it) return;
+  await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ indispensable: !it.indispensable }) });
+  wallCache = null;
+  loadWall();
+}
 
 function renderWall(){
   const styleValue = $("wallStyleFilter").value;

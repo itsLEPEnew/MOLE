@@ -1261,8 +1261,8 @@
     letter-spacing:0.5px;
     margin:0;
   }
-  .recos-wall-head .filters{ margin:0; }
-  #recosSearchInput{
+  .recos-wall-head .filters{ margin:0; align-items:center; }
+  #recosSearchInput, #recosStyleFilter{
     background:var(--paper);
     border:2px solid var(--line);
     border-radius:8px;
@@ -1271,6 +1271,18 @@
     color:var(--ink);
     font-weight:600;
   }
+  #recosStyleFilter{ max-width:200px; }
+  .recos-indispensable-toggle{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .recos-indispensable-toggle input{ width:auto; }
   .recos-style-tag{
     display:inline-block;
     font-size:10.5px;
@@ -1626,12 +1638,15 @@
 
     <div id="recosThisWeek"></div>
     <div id="recosLastWeek"></div>
+    <div id="recosIndispensables"></div>
 
     <div class="recos-wall-head">
       <h3>Tout le mur</h3>
       <div class="filters">
-        <select id="recosStyleFilter"><option value="">Tous styles</option></select>
+        <input type="text" id="recosStyleFilter" list="recosStyleOptions" placeholder="Filtrer par style...">
+        <datalist id="recosStyleOptions"></datalist>
         <input type="text" id="recosSearchInput" placeholder="Chercher un artiste, un titre...">
+        <label class="recos-indispensable-toggle"><input type="checkbox" id="recosIndispensableOnly"> ★ Indispensables uniquement</label>
       </div>
     </div>
     <div id="recosWallGrid"></div>
@@ -3849,6 +3864,7 @@ let recosLoaded = false;
 
 const recosThisWeekEl = document.getElementById("recosThisWeek");
 const recosLastWeekEl = document.getElementById("recosLastWeek");
+const recosIndispensablesEl = document.getElementById("recosIndispensables");
 const recosWallGridEl = document.getElementById("recosWallGrid");
 const recosStyleFilter = document.getElementById("recosStyleFilter");
 const recosSearchInput = document.getElementById("recosSearchInput");
@@ -3876,8 +3892,8 @@ async function loadRecosWallIfNeeded(){
 
 function populateRecosStyleFilter(){
   const styles = Array.from(new Set(recosWallCache.map(it => it.style).filter(Boolean))).sort();
-  recosStyleFilter.innerHTML = '<option value="">Tous styles</option>' +
-    styles.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+  document.getElementById("recosStyleOptions").innerHTML =
+    styles.map(s => `<option value="${escapeHtml(s)}">`).join("");
 }
 
 function recosCardHtml(it){
@@ -3888,7 +3904,7 @@ function recosCardHtml(it){
   return `
     <div class="res-card">
       ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
-      <div class="res-title">${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
+      <div class="res-title">${it.indispensable ? "★ " : ""}${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
       <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (it.type === "album" ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""}</div>
       ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}</div>` : ""}
       ${it.note ? `<div class="recos-note">${escapeHtml(it.note)}</div>` : ""}
@@ -3911,6 +3927,11 @@ function renderRecosSections(){
 
   recosLastWeekEl.innerHTML = lastWeek
     ? `<div class="recos-week-block"><h3>La semaine dernière</h3><div class="card-grid">${recosWallCache.filter(it => it.publishedWeek === lastWeek).map(recosCardHtml).join("")}</div></div>`
+    : "";
+
+  const indispensables = recosWallCache.filter(it => it.indispensable);
+  recosIndispensablesEl.innerHTML = indispensables.length
+    ? `<div class="recos-week-block"><h3>Indispensables</h3><div class="card-grid">${indispensables.map(recosCardHtml).join("")}</div></div>`
     : "";
 
   renderRecosWall();
@@ -3956,10 +3977,12 @@ function recosMatchesSearch(it, query){
 }
 
 function renderRecosWall(){
-  const styleValue = recosStyleFilter.value;
+  const styleValue = recosStyleFilter.value.trim().toLowerCase();
   const query = recosSearchInput.value;
+  const indispensableOnly = document.getElementById("recosIndispensableOnly").checked;
   const filtered = recosWallCache.filter(it => {
-    if(styleValue && it.style !== styleValue) return false;
+    if(styleValue && !(it.style || "").toLowerCase().includes(styleValue)) return false;
+    if(indispensableOnly && !it.indispensable) return false;
     return recosMatchesSearch(it, query);
   });
   if(filtered.length){
@@ -3971,7 +3994,8 @@ function renderRecosWall(){
   }
 }
 
-recosStyleFilter.addEventListener("change", renderRecosWall);
+recosStyleFilter.addEventListener("input", renderRecosWall);
+document.getElementById("recosIndispensableOnly").addEventListener("change", renderRecosWall);
 let recosSearchDebounce = null;
 recosSearchInput.addEventListener("input", () => {
   clearTimeout(recosSearchDebounce);

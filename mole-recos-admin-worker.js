@@ -133,6 +133,30 @@ export default {
         return jsonResponse(result);
       }
 
+      if (url.pathname === "/wall" && request.method === "GET") {
+        return jsonResponse({ wall: await loadWall(env) });
+      }
+
+      const wallItemMatch = url.pathname.match(/^\/wall\/([^/]+)$/);
+      if (wallItemMatch && request.method === "PUT") {
+        const id = wallItemMatch[1];
+        const patch = await request.json();
+        const wall = await loadWall(env);
+        const idx = wall.findIndex((it) => it.id === id);
+        if (idx === -1) return jsonResponse({ error: "Not found" }, 404);
+        wall[idx] = { ...wall[idx], ...patch, id: wall[idx].id };
+        await saveWall(env, wall);
+        return jsonResponse({ item: wall[idx] });
+      }
+
+      if (wallItemMatch && request.method === "DELETE") {
+        const id = wallItemMatch[1];
+        const wall = await loadWall(env);
+        const filtered = wall.filter((it) => it.id !== id);
+        await saveWall(env, filtered);
+        return jsonResponse({ ok: true });
+      }
+
       if (url.pathname === "/spotify-search" && request.method === "GET") {
         const q = url.searchParams.get("q") || "";
         const results = await spotifySearch(q);
@@ -192,16 +216,22 @@ async function loadQueue(env) {
 async function saveQueue(env, queue) {
   await env.RECOS_KV.put("queue", JSON.stringify(queue));
 }
+async function loadWall(env) {
+  const raw = await env.RECOS_KV.get("wall");
+  return raw ? JSON.parse(raw) : [];
+}
+async function saveWall(env, wall) {
+  await env.RECOS_KV.put("wall", JSON.stringify(wall));
+}
 async function publishQueue(env) {
   const queue = await loadQueue(env);
-  const wallRaw = await env.RECOS_KV.get("wall");
-  const wall = wallRaw ? JSON.parse(wallRaw) : [];
+  const wall = await loadWall(env);
   if (queue.length) {
     const weekKey = new Date().toISOString().slice(0, 10);
     const published = queue.map((it) => ({ ...it, publishedWeek: weekKey }));
     const newWall = published.concat(wall);
-    await env.RECOS_KV.put("wall", JSON.stringify(newWall));
-    await env.RECOS_KV.put("queue", JSON.stringify([]));
+    await saveWall(env, newWall);
+    await saveQueue(env, []);
     return { wall: newWall, publishedCount: queue.length };
   }
   return { wall, publishedCount: 0 };
@@ -456,29 +486,29 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Recos de la taupe — coulisses</title>
 <style>
-  :root{ --paper:#141210; --ink:#f2eee4; --ink-soft:#a89f8f; --card:#1e1b15; --line:#3a352c; --accent:#f2eee4; }
+  :root{ --paper:#16140f; --paper-dim:#221f19; --ink:#f2eee4; --ink-soft:#b8b0a0; --card:#1e1b15; --line:#f2eee4; --accent:#f2eee4; }
   *{box-sizing:border-box;}
-  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--paper); color:var(--ink); padding:16px 16px 60px; }
-  h1{ font-size:18px; margin:0 0 4px; }
-  .sub{ color:var(--ink-soft); font-size:12.5px; margin:0 0 20px; }
-  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:16px; }
+  body{ margin:0; font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif; background:var(--paper); color:var(--ink); padding:16px 16px 60px; }
+  h1{ font-size:18px; margin:0 0 4px; letter-spacing:0.5px; }
+  .sub{ color:var(--ink-soft); font-size:12.5px; margin:0 0 18px; }
+  .card{ background:var(--card); border:1px solid var(--line-soft,#3a352c); border-radius:10px; padding:14px; margin-bottom:16px; }
   label{ display:block; font-size:11.5px; color:var(--ink-soft); margin:10px 0 4px; text-transform:uppercase; letter-spacing:0.4px; }
-  input, textarea{ width:100%; background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:9px 10px; color:var(--ink); font-size:14px; font-family:inherit; }
+  input, textarea, select{ width:100%; background:var(--paper); border:1px solid #3a352c; border-radius:6px; padding:9px 10px; color:var(--ink); font-size:14px; font-family:inherit; }
   textarea{ min-height:60px; resize:vertical; }
   button{ background:var(--ink); color:var(--paper); border:none; border-radius:6px; padding:10px 14px; font-size:13.5px; font-weight:700; cursor:pointer; }
-  button.ghost{ background:transparent; color:var(--ink); border:1px solid var(--line); }
+  button.ghost{ background:transparent; color:var(--ink); border:1px solid #3a352c; }
   button.small{ padding:5px 9px; font-size:12px; }
   button:disabled{ opacity:0.5; }
-  .type-btn{ background:transparent; color:var(--ink-soft); border:1px solid var(--line); }
+  .type-btn{ background:transparent; color:var(--ink-soft); border:1px solid #3a352c; }
   .type-btn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
   .row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
   .match-list{ display:flex; flex-direction:column; gap:6px; margin-top:8px; }
-  .match{ display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-size:12.5px; }
+  .match{ display:flex; align-items:center; gap:8px; border:1px solid #3a352c; border-radius:6px; padding:6px 8px; font-size:12.5px; }
   .match img{ width:32px; height:32px; object-fit:cover; border-radius:3px; flex-shrink:0; }
   .match .info{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .match.selected{ border-color:var(--ink); background:rgba(255,255,255,0.05); }
-  .cover-preview{ width:100%; max-width:180px; aspect-ratio:1/1; object-fit:cover; border-radius:6px; margin-top:8px; background:var(--paper); border:1px solid var(--line); }
-  .queue-row{ display:flex; gap:10px; align-items:center; border-bottom:1px solid var(--line); padding:10px 0; }
+  .cover-preview{ width:100%; max-width:180px; aspect-ratio:1/1; object-fit:cover; border-radius:6px; margin-top:8px; background:var(--paper); border:1px solid #3a352c; }
+  .queue-row{ display:flex; gap:10px; align-items:center; border-bottom:1px solid #3a352c; padding:10px 0; }
   .queue-row:last-child{ border-bottom:none; }
   .queue-row img{ width:44px; height:44px; object-fit:cover; border-radius:5px; flex-shrink:0; background:var(--paper); }
   .queue-row .info{ flex:1; min-width:0; }
@@ -486,13 +516,62 @@ const ADMIN_HTML = `<!DOCTYPE html>
   .queue-row .info .s{ color:var(--ink-soft); font-size:11.5px; }
   .status{ font-size:12.5px; color:var(--ink-soft); margin-top:8px; min-height:16px; }
   .empty{ color:var(--ink-soft); font-size:13px; }
+
+  /* logo animé, repris de MOLE */
+  .mole-header{ display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:18px; }
+  .mole-logo-wrap{ position:relative; width:84px; height:84px; margin-bottom:6px; animation:molePopIn 1.1s cubic-bezier(.34,1.56,.64,1) 1 both; }
+  .mole-logo-wrap .mole-note{ position:absolute; color:var(--ink-soft); animation:noteOrbit 5s ease-in-out infinite; }
+  .mole-logo-wrap .mole-note.n1{ top:19%; right:20%; font-size:10px; animation-delay:0s; }
+  .mole-logo-wrap .mole-note.n2{ top:15%; right:38%; font-size:7px; animation-delay:.6s; }
+  .mole-logo-wrap .mole-note.n3{ top:29%; right:10%; font-size:5px; animation-delay:1.1s; }
+  .mole-layer{ position:absolute; inset:0; background-color:var(--ink); -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; -webkit-mask-position:center; mask-position:center; -webkit-mask-size:contain; mask-size:contain; }
+  .mole-paws{ -webkit-mask-image:url('https://itslepenew.github.io/MOLE/mole-paws.png'); mask-image:url('https://itslepenew.github.io/MOLE/mole-paws.png'); }
+  .mole-head{ -webkit-mask-image:url('https://itslepenew.github.io/MOLE/mole-head.png'); mask-image:url('https://itslepenew.github.io/MOLE/mole-head.png'); animation:headSway 2.4s ease-in-out infinite; transform-origin:50% 85%; }
+  @keyframes headSway{ 0%,100%{ transform:translate(-1px,0) rotate(-0.8deg); } 50%{ transform:translate(1px,-0.6px) rotate(0.8deg); } }
+  @keyframes molePopIn{ 0%{ transform:translateY(30px) scale(.7); opacity:0; } 55%{ transform:translateY(-7px) scale(1.06); opacity:1; } 75%{ transform:translateY(2px) scale(.98); } 100%{ transform:translateY(0) scale(1); opacity:1; } }
+  @keyframes noteOrbit{ 0%,100%{ transform:translate(0,0) rotate(-4deg); } 50%{ transform:translate(-6px,-8px) rotate(6deg); } }
+
+  /* onglets */
+  .tabs{ display:flex; gap:6px; margin-bottom:16px; border-bottom:1px solid #3a352c; }
+  .tab-btn{ background:transparent; color:var(--ink-soft); border:none; border-radius:0; padding:9px 4px; font-size:13px; font-weight:700; border-bottom:2px solid transparent; }
+  .tab-btn.active{ color:var(--ink); border-bottom-color:var(--ink); }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  /* mur public */
+  .wall-filters{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .wall-filters select, .wall-filters input{ width:auto; flex:1; min-width:120px; }
+  .wall-week-head{ font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.4px; margin:18px 0 8px; }
+  .wall-week-head:first-child{ margin-top:0; }
+  .wall-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+  .wall-card{ background:var(--card); border:1px solid #3a352c; border-radius:10px; padding:10px; }
+  .wall-card img{ width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:6px; background:var(--paper); }
+  .wall-card .t{ font-weight:700; font-size:12.5px; margin-top:8px; }
+  .wall-card .s{ color:var(--ink-soft); font-size:11px; margin-top:2px; }
+  .wall-card .actions{ display:flex; gap:6px; margin-top:8px; }
 </style>
 </head>
 <body>
 
-<h1>Recos de la taupe — coulisses</h1>
-<p class="sub">File d'attente privée. Tout ce qui est ici part au prochain vendredi.</p>
+<div class="mole-header">
+  <div class="mole-logo-wrap">
+    <div class="mole-layer mole-paws"></div>
+    <div class="mole-layer mole-head"></div>
+    <span class="mole-note n1">&#9834;</span>
+    <span class="mole-note n2">&#9835;</span>
+    <span class="mole-note n3">&#9834;</span>
+  </div>
+  <h1>Recos de la taupe — coulisses</h1>
+  <p class="sub">Tout ce qui est ici part au prochain vendredi.</p>
+</div>
 
+<div class="tabs">
+  <button class="tab-btn active" data-tab="add">Ajouter</button>
+  <button class="tab-btn" data-tab="queue">File d'attente</button>
+  <button class="tab-btn" data-tab="wall">Mur public</button>
+</div>
+
+<div id="tab-add" class="tab-panel active">
 <div class="card">
   <label>Lien partagé (optionnel — pré-remplit le reste)</label>
   <input id="sharedUrl" type="url" placeholder="https://...">
@@ -513,7 +592,8 @@ const ADMIN_HTML = `<!DOCTYPE html>
   <label>Date de sortie</label>
   <input id="fDate" type="text" placeholder="2024 ou 2024-05-01">
   <label>Style</label>
-  <input id="fStyle" type="text" placeholder="Deep house, Boom bap...">
+  <input id="fStyle" type="text" list="styleOptions" placeholder="Deep house, Boom bap...">
+  <datalist id="styleOptions"></datalist>
   <label>Note perso de la taupe</label>
   <textarea id="fNote" placeholder="Pourquoi ce son, où tu l'as trouvé..."></textarea>
 
@@ -527,13 +607,25 @@ const ADMIN_HTML = `<!DOCTYPE html>
   <div class="row"><button id="addBtn">Ajouter à la file</button></div>
   <div id="addStatus" class="status"></div>
 </div>
+</div>
 
+<div id="tab-queue" class="tab-panel">
 <div class="card">
   <div class="row" style="margin-top:0;justify-content:space-between;align-items:center;">
     <strong style="font-size:14px;">File d'attente</strong>
     <button id="publishBtn" class="ghost small">Publier maintenant</button>
   </div>
   <div id="queueList" style="margin-top:10px;"></div>
+  <div id="queueStatus" class="status"></div>
+</div>
+</div>
+
+<div id="tab-wall" class="tab-panel">
+<div class="wall-filters">
+  <select id="wallStyleFilter"><option value="">Tous styles</option></select>
+  <input type="text" id="wallSearchInput" placeholder="Chercher un artiste, un titre...">
+</div>
+<div id="wallContent"></div>
 </div>
 
 <script>
@@ -542,6 +634,17 @@ let resolvedCover = "";
 let entryType = "single";
 
 const $ = (id) => document.getElementById(id);
+
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    btn.classList.add("active");
+    $("tab-" + btn.dataset.tab).classList.add("active");
+    if(btn.dataset.tab === "wall") loadWall();
+    if(btn.dataset.tab === "queue") loadQueue();
+  });
+});
 
 function setEntryType(type){
   entryType = type;
@@ -797,17 +900,130 @@ async function publishNow(){
   try{
     const res = await fetch("/publish", { method:"POST" });
     const data = await res.json();
-    $("addStatus").textContent = data.publishedCount > 0
+    $("queueStatus").textContent = data.publishedCount > 0
       ? "Publié ✓ (" + data.publishedCount + " son" + (data.publishedCount > 1 ? "s" : "") + ")"
       : "Rien à publier — la file était vide.";
   }catch(e){
-    $("addStatus").textContent = "Erreur lors de la publication — réessaie.";
+    $("queueStatus").textContent = "Erreur lors de la publication — réessaie.";
   }
   loadQueue();
+  wallCache = null;
 }
 
 function esc(s){
   return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ---------- mur public (lecture/édition/suppression) ----------
+let wallCache = null;
+
+async function loadWall(){
+  const content = $("wallContent");
+  if(wallCache === null){
+    content.innerHTML = "<div class='empty'>Chargement...</div>";
+    try{
+      const res = await fetch("/wall");
+      const data = await res.json();
+      wallCache = data.wall || [];
+    }catch(e){
+      content.innerHTML = "<div class='empty'>Impossible de charger le mur pour le moment.</div>";
+      return;
+    }
+    populateStyleFilter();
+  }
+  renderWall();
+}
+
+function populateStyleFilter(){
+  const styles = new Set();
+  wallCache.forEach((it) => { if(it.style) styles.add(it.style); });
+  const sel = $("wallStyleFilter");
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Tous styles</option>' +
+    Array.from(styles).sort().map((s) => "<option value='"+esc(s)+"'>"+esc(s)+"</option>").join("");
+  sel.value = current;
+}
+
+function wallCardHtml(it){
+  const mainTitle = it.title || it.album || "(sans titre)";
+  return "<div class='wall-card' data-id='" + it.id + "'>" +
+    (it.cover ? "<img src='"+it.cover+"'>" : "") +
+    "<div class='t'>" + esc(it.artist) + " – " + esc(mainTitle) + "</div>" +
+    "<div class='s'>" + (it.type === "album" ? "Album" : "Single") + (it.style ? " · " + esc(it.style) : "") + "</div>" +
+    "<div class='actions'>" +
+      "<button class='small ghost' data-action='style'>Style</button>" +
+      "<button class='small ghost' data-action='delete'>✕</button>" +
+    "</div>" +
+  "</div>";
+}
+
+$("wallContent").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if(!btn) return;
+  const id = btn.closest(".wall-card").dataset.id;
+  if(btn.dataset.action === "style") editWallStyle(id);
+  if(btn.dataset.action === "delete") deleteWallItem(id);
+});
+
+function renderWall(){
+  const styleValue = $("wallStyleFilter").value;
+  const query = $("wallSearchInput").value.trim().toLowerCase();
+  const filtered = wallCache.filter((it) => {
+    if(styleValue && it.style !== styleValue) return false;
+    if(query){
+      const haystack = (it.artist + " " + it.title + " " + (it.album||"")).toLowerCase();
+      if(!haystack.includes(query)) return false;
+    }
+    return true;
+  });
+  const content = $("wallContent");
+  if(!wallCache.length){
+    content.innerHTML = "<div class='empty'>Rien de publié pour l'instant.</div>";
+    return;
+  }
+  if(!filtered.length){
+    content.innerHTML = "<div class='empty'>Rien ne correspond à ce filtre.</div>";
+    return;
+  }
+  const weeks = [];
+  const byWeek = {};
+  filtered.forEach((it) => {
+    const w = it.publishedWeek || "Sans date";
+    if(!byWeek[w]){ byWeek[w] = []; weeks.push(w); }
+    byWeek[w].push(it);
+  });
+  content.innerHTML = weeks.map((w) =>
+    "<div class='wall-week-head'>Semaine du " + esc(w) + "</div>" +
+    "<div class='wall-grid'>" + byWeek[w].map(wallCardHtml).join("") + "</div>"
+  ).join("");
+}
+
+$("wallStyleFilter").addEventListener("change", renderWall);
+$("wallSearchInput").addEventListener("input", renderWall);
+
+async function editWallStyle(id){
+  const it = wallCache.find((x) => x.id === id);
+  if(!it) return;
+  const style = prompt("Style pour " + it.artist + " – " + (it.title || it.album) + " :", it.style || "");
+  if(style === null) return;
+  await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ style }) });
+  wallCache = null;
+  loadWall();
+}
+
+async function deleteWallItem(id){
+  if(!confirm("Retirer ce son du mur public ?")) return;
+  await fetch("/wall/" + id, { method:"DELETE" });
+  wallCache = null;
+  loadWall();
+}
+
+function populateStyleDatalist(){
+  fetch("/wall").then(r => r.json()).then(data => {
+    const styles = new Set();
+    (data.wall || []).forEach((it) => { if(it.style) styles.add(it.style); });
+    $("styleOptions").innerHTML = Array.from(styles).sort().map((s) => "<option value='"+esc(s)+"'>").join("");
+  }).catch(() => {});
 }
 
 // pré-remplissage direct si arrivée via le Raccourci de partage (?shared=...)
@@ -817,6 +1033,7 @@ if(params.get("shared")){
   lookupSharedUrl();
 }
 loadQueue();
+populateStyleDatalist();
 </script>
 </body>
 </html>`;

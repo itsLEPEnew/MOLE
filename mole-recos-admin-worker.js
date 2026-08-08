@@ -70,7 +70,7 @@ export default {
           status: 200,
           headers: {
             "Content-Type": "application/json",
-            "Set-Cookie": "admin_key=" + env.QUICK_ADD_SECRET + "; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax",
+            "Set-Cookie": "admin_key=" + env.QUICK_ADD_SECRET + "; Path=/; Max-Age=604800; HttpOnly; Secure; SameSite=Lax",
             ...corsHeaders(),
           },
         });

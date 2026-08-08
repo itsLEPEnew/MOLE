@@ -1234,6 +1234,67 @@
     color:var(--ink-soft);
     padding:8px 0;
   }
+  .recos-intro{
+    font-size:13px;
+    color:var(--ink-soft);
+    line-height:1.45;
+    margin:0 0 20px;
+  }
+  .recos-week-block{ margin-bottom:26px; }
+  .recos-week-block h3{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:0 0 12px;
+  }
+  .recos-wall-head{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin:8px 0 4px;
+  }
+  .recos-wall-head h3{
+    font-size:14px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:0;
+  }
+  .recos-wall-head .filters{ margin:0; }
+  #recosSearchInput{
+    background:var(--paper);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:8px 11px;
+    font-size:13px;
+    color:var(--ink);
+    font-weight:600;
+  }
+  .recos-style-tag{
+    display:inline-block;
+    font-size:10.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:3px 8px 3px 8px;
+    padding:2px 7px;
+    margin:4px 0;
+  }
+  .recos-note{
+    font-size:12px;
+    color:var(--ink-soft);
+    font-style:italic;
+    line-height:1.4;
+    margin:4px 0 8px;
+  }
+  .recos-empty{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:10px 0;
+  }
   .terrain-card{
     background:var(--card);
     border:2px solid var(--line);
@@ -1490,6 +1551,7 @@
   <button class="tab-btn active" data-tab="terrain">Terrain vague</button>
   <button class="tab-btn" data-tab="explore">Le Tunnel</button>
   <button class="tab-btn" data-tab="piste">La Piste</button>
+  <button class="tab-btn" data-tab="recos">Recos de la taupe</button>
   <button class="tab-btn" data-tab="actus">Actus</button>
   <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
@@ -1558,6 +1620,23 @@
     <div id="pisteResult"></div>
   </section>
 
+  <!-- ===== RECOS DE LA TAUPE (mur éditorial hebdo) ===== -->
+  <section id="view-recos" class="view">
+    <p class="recos-intro">Chaque vendredi, la taupe balance ses trouvailles de la semaine — pas d'algorithme ici, juste ce qu'elle a écouté et pourquoi ça lui a plu.</p>
+
+    <div id="recosThisWeek"></div>
+    <div id="recosLastWeek"></div>
+
+    <div class="recos-wall-head">
+      <h3>Tout le mur</h3>
+      <div class="filters">
+        <select id="recosStyleFilter"><option value="">Tous styles</option></select>
+        <input type="text" id="recosSearchInput" placeholder="Chercher un artiste, un titre...">
+      </div>
+    </div>
+    <div id="recosWallGrid"></div>
+  </section>
+
   <!-- ===== ACTUS VIEW (placeholder) ===== -->
   <section id="view-actus" class="view">
     <div class="actus-stub">
@@ -1595,6 +1674,7 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="recos">Recos</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1615,6 +1695,7 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="recos">Recos</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1645,6 +1726,7 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="recos">Recos</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1664,6 +1746,7 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="recos">Recos</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1734,6 +1817,7 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="recos">Recos</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -1757,6 +1841,7 @@
         <button class="tab-btn mini" data-tab="explore">Tunnel</button>
         <button class="tab-btn mini" data-tab="terrain">Terrain</button>
         <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="recos">Recos</button>
         <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
@@ -2324,6 +2409,7 @@ function switchTab(tabName){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-" + tabName).classList.add("active");
   closeAllOverlays();
+  if(tabName === "recos") loadRecosWallIfNeeded();
 }
 document.querySelectorAll(".tab-btn[data-tab]").forEach(btn=>{
   btn.onclick = () => switchTab(btn.dataset.tab);
@@ -3752,6 +3838,145 @@ function renderPisteResults(ranked){
     pisteResultEl.appendChild(card);
   });
 }
+
+// ---------- Recos de la taupe (mur éditorial hebdo, via mole-recos-public-worker) ----------
+// Colle ici l'URL de ton Worker public une fois déployé (voir mole-recos-public-worker.js)
+const RECOS_PUBLIC_URL = "https://mole-recos-public-worker.mister-taniark.workers.dev";
+
+let recosWallCache = [];
+let recosActiveWeeks = [];
+let recosLoaded = false;
+
+const recosThisWeekEl = document.getElementById("recosThisWeek");
+const recosLastWeekEl = document.getElementById("recosLastWeek");
+const recosWallGridEl = document.getElementById("recosWallGrid");
+const recosStyleFilter = document.getElementById("recosStyleFilter");
+const recosSearchInput = document.getElementById("recosSearchInput");
+
+async function loadRecosWallIfNeeded(){
+  if(recosLoaded) return;
+  recosLoaded = true;
+  if(!RECOS_PUBLIC_URL){
+    recosWallGridEl.innerHTML = '<div class="recos-empty">Le mur n\'est pas encore branché.</div>';
+    return;
+  }
+  try{
+    const res = await fetch(`${RECOS_PUBLIC_URL}/wall`);
+    const data = await res.json();
+    recosWallCache = data.wall || [];
+    const weeks = [];
+    recosWallCache.forEach(it => { if(it.publishedWeek && !weeks.includes(it.publishedWeek)) weeks.push(it.publishedWeek); });
+    recosActiveWeeks = weeks; // le mur est stocké du plus récent au plus ancien
+    populateRecosStyleFilter();
+    renderRecosSections();
+  }catch(e){
+    recosWallGridEl.innerHTML = '<div class="recos-empty">Impossible de charger le mur pour le moment.</div>';
+  }
+}
+
+function populateRecosStyleFilter(){
+  const styles = Array.from(new Set(recosWallCache.map(it => it.style).filter(Boolean))).sort();
+  recosStyleFilter.innerHTML = '<option value="">Tous styles</option>' +
+    styles.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+}
+
+function recosCardHtml(it){
+  const links = it.links || {};
+  const mainTitle = it.title || it.album || "";
+  // pour un album, le titre EST déjà le nom d'album -> pas la peine de le répéter en sous-titre
+  const showAlbumInSub = it.album && it.album !== mainTitle;
+  return `
+    <div class="res-card">
+      ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
+      <div class="res-title">${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
+      <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (it.type === "album" ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""}</div>
+      ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}</div>` : ""}
+      ${it.note ? `<div class="recos-note">${escapeHtml(it.note)}</div>` : ""}
+      <div class="terrain-preview">
+        ${links.spotify ? `<a class="terrain-preview-btn ghost" href="${links.spotify}" target="_blank" rel="noopener">Spotify</a>` : ""}
+        ${links.deezer ? `<a class="terrain-preview-btn ghost" href="${links.deezer}" target="_blank" rel="noopener">Deezer</a>` : ""}
+        ${links.appleMusic ? `<a class="terrain-preview-btn ghost" href="${links.appleMusic}" target="_blank" rel="noopener">Apple Music</a>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function renderRecosSections(){
+  const thisWeek = recosActiveWeeks[0];
+  const lastWeek = recosActiveWeeks[1];
+
+  recosThisWeekEl.innerHTML = thisWeek
+    ? `<div class="recos-week-block"><h3>Cette semaine</h3><div class="card-grid">${recosWallCache.filter(it => it.publishedWeek === thisWeek).map(recosCardHtml).join("")}</div></div>`
+    : "";
+
+  recosLastWeekEl.innerHTML = lastWeek
+    ? `<div class="recos-week-block"><h3>La semaine dernière</h3><div class="card-grid">${recosWallCache.filter(it => it.publishedWeek === lastWeek).map(recosCardHtml).join("")}</div></div>`
+    : "";
+
+  renderRecosWall();
+}
+
+// distance de Levenshtein bornée — juste pour tolérer les fautes de frappe,
+// pas besoin d'exact sur de gros mots
+function levenshtein(a, b){
+  if(a === b) return 0;
+  if(!a.length) return b.length;
+  if(!b.length) return a.length;
+  const prev = new Array(b.length + 1);
+  for(let j = 0; j <= b.length; j++) prev[j] = j;
+  for(let i = 1; i <= a.length; i++){
+    let prevDiag = prev[0];
+    prev[0] = i;
+    for(let j = 1; j <= b.length; j++){
+      const tmp = prev[j];
+      prev[j] = a[i-1] === b[j-1]
+        ? prevDiag
+        : 1 + Math.min(prevDiag, prev[j], prev[j-1]);
+      prevDiag = tmp;
+    }
+  }
+  return prev[b.length];
+}
+
+// recherche tolérante : chaque mot tapé doit se retrouver (même partiellement,
+// même avec une faute de frappe) quelque part dans artiste/titre/album —
+// large marge d'erreur voulue, peu importe l'ordre des mots
+function recosMatchesSearch(it, query){
+  const q = query.trim().toLowerCase();
+  if(!q) return true;
+  const haystack = `${it.artist} ${it.title} ${it.album || ""}`.toLowerCase();
+  // on enlève la ponctuation pour comparer des mots "propres" (sinon "Operation:"
+  // compte comme un caractère de différence en plus rien qu'à cause du ":")
+  const haystackWords = haystack.split(/[^a-z0-9à-ÿ]+/).filter(Boolean);
+  return q.split(/[^a-z0-9à-ÿ]+/).filter(Boolean).every(word => {
+    if(haystack.includes(word)) return true;
+    const maxDist = word.length <= 3 ? 1 : Math.max(1, Math.floor(word.length * 0.3));
+    return haystackWords.some(hw => levenshtein(word, hw) <= maxDist);
+  });
+}
+
+function renderRecosWall(){
+  const styleValue = recosStyleFilter.value;
+  const query = recosSearchInput.value;
+  const filtered = recosWallCache.filter(it => {
+    if(styleValue && it.style !== styleValue) return false;
+    return recosMatchesSearch(it, query);
+  });
+  if(filtered.length){
+    recosWallGridEl.innerHTML = `<div class="card-grid">${filtered.map(recosCardHtml).join("")}</div>`;
+  } else if(!recosWallCache.length){
+    recosWallGridEl.innerHTML = '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';
+  } else {
+    recosWallGridEl.innerHTML = '<div class="recos-empty">Rien ne correspond à ta recherche.</div>';
+  }
+}
+
+recosStyleFilter.addEventListener("change", renderRecosWall);
+let recosSearchDebounce = null;
+recosSearchInput.addEventListener("input", () => {
+  clearTimeout(recosSearchDebounce);
+  recosSearchDebounce = setTimeout(renderRecosWall, 200);
+});
 
 // ---------- PWA install (service worker) ----------
 if("serviceWorker" in navigator){

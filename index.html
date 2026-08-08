@@ -1240,6 +1240,25 @@
     line-height:1.45;
     margin:0 0 20px;
   }
+  .recos-discover{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin:0 0 16px;
+  }
+  .recos-discover select{
+    background:var(--paper);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:8px 11px;
+    font-size:13px;
+    color:var(--ink);
+    font-weight:600;
+  }
+  #recosDiscoverResult:empty{ display:none; }
+  #recosDiscoverResult{ margin:0 0 26px; }
+  .recos-discover-result .res-card{ border-width:3px; max-width:220px; }
   .recos-week-block{ margin-bottom:26px; }
   .recos-week-block h3{
     font-size:14px;
@@ -1293,6 +1312,11 @@
     border-radius:3px 8px 3px 8px;
     padding:2px 7px;
     margin:4px 0;
+  }
+  .recos-substyle{
+    text-transform:none;
+    font-weight:600;
+    opacity:0.75;
   }
   .recos-note{
     font-size:12px;
@@ -1635,6 +1659,16 @@
   <section id="view-recos" class="view">
     <p class="recos-intro">Chaque vendredi, la taupe balance ses trouvailles de la semaine — pas d'algorithme ici, juste ce qu'elle a écouté et pourquoi ça lui a plu.</p>
 
+    <div class="recos-discover">
+      <select id="recosDiscoverType">
+        <option value="">Peu importe</option>
+        <option value="album">Un album</option>
+        <option value="single">Un single</option>
+      </select>
+      <button class="save-btn" id="recosDiscoverBtn">🎲 Surprends-moi</button>
+    </div>
+    <div id="recosDiscoverResult"></div>
+
     <div id="recosThisWeek"></div>
     <div id="recosLastWeek"></div>
 
@@ -1649,6 +1683,13 @@
         <input type="text" id="recosStyleFilter" list="recosStyleOptions" placeholder="Filtrer par style...">
         <datalist id="recosStyleOptions"></datalist>
         <input type="text" id="recosSearchInput" placeholder="Chercher un artiste, un titre...">
+        <select id="recosSortFilter">
+          <option value="recent">Plus récent</option>
+          <option value="az">A-Z</option>
+          <option value="za">Z-A</option>
+          <option value="year-desc">Année (récent → ancien)</option>
+          <option value="year-asc">Année (ancien → récent)</option>
+        </select>
         <label class="recos-indispensable-toggle"><input type="checkbox" id="recosIndispensableOnly"> ★ Indispensables uniquement</label>
       </div>
     </div>
@@ -3908,7 +3949,7 @@ function recosCardHtml(it){
       ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
       <div class="res-title">${it.indispensable ? "★ " : ""}${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
       <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (it.type === "album" ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""}</div>
-      ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}</div>` : ""}
+      ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}${it.substyle ? ` <span class="recos-substyle">· ${escapeHtml(it.substyle)}</span>` : ""}</div>` : ""}
       ${it.note ? `<div class="recos-note">${escapeHtml(it.note)}</div>` : ""}
       <div class="terrain-preview">
         ${links.spotify ? `<a class="terrain-preview-btn ghost" href="${links.spotify}" target="_blank" rel="noopener">Spotify</a>` : ""}
@@ -3973,19 +4014,32 @@ function recosMatchesSearch(it, query){
   });
 }
 
+function sortRecos(list, sortValue){
+  const arr = list.slice();
+  const yearOf = (it) => parseInt((it.date || "").slice(0, 4), 10) || 0;
+  if(sortValue === "az") arr.sort((a, b) => a.artist.localeCompare(b.artist, "fr", {sensitivity:"base"}));
+  else if(sortValue === "za") arr.sort((a, b) => b.artist.localeCompare(a.artist, "fr", {sensitivity:"base"}));
+  else if(sortValue === "year-desc") arr.sort((a, b) => yearOf(b) - yearOf(a));
+  else if(sortValue === "year-asc") arr.sort((a, b) => yearOf(a) - yearOf(b));
+  // "recent" = ordre d'origine (déjà du plus récent au plus ancien)
+  return arr;
+}
+
 function renderRecosWall(){
   const styleValue = recosStyleFilter.value.trim().toLowerCase();
   const typeValue = document.getElementById("recosTypeFilter").value;
   const query = recosSearchInput.value;
   const indispensableOnly = document.getElementById("recosIndispensableOnly").checked;
+  const sortValue = document.getElementById("recosSortFilter").value;
   const filtered = recosWallCache.filter(it => {
     if(styleValue && !(it.style || "").toLowerCase().includes(styleValue)) return false;
     if(typeValue && it.type !== typeValue) return false;
     if(indispensableOnly && !it.indispensable) return false;
     return recosMatchesSearch(it, query);
   });
-  if(filtered.length){
-    recosWallGridEl.innerHTML = `<div class="card-grid">${filtered.map(recosCardHtml).join("")}</div>`;
+  const sorted = sortRecos(filtered, sortValue);
+  if(sorted.length){
+    recosWallGridEl.innerHTML = `<div class="card-grid">${sorted.map(recosCardHtml).join("")}</div>`;
   } else if(!recosWallCache.length){
     recosWallGridEl.innerHTML = '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';
   } else {
@@ -3995,11 +4049,25 @@ function renderRecosWall(){
 
 recosStyleFilter.addEventListener("input", renderRecosWall);
 document.getElementById("recosTypeFilter").addEventListener("change", renderRecosWall);
+document.getElementById("recosSortFilter").addEventListener("change", renderRecosWall);
 document.getElementById("recosIndispensableOnly").addEventListener("change", renderRecosWall);
 let recosSearchDebounce = null;
 recosSearchInput.addEventListener("input", () => {
   clearTimeout(recosSearchDebounce);
   recosSearchDebounce = setTimeout(renderRecosWall, 200);
+});
+
+document.getElementById("recosDiscoverBtn").addEventListener("click", async () => {
+  await loadRecosWallIfNeeded();
+  const wantedType = document.getElementById("recosDiscoverType").value;
+  const pool = wantedType ? recosWallCache.filter(it => it.type === wantedType) : recosWallCache;
+  const resultEl = document.getElementById("recosDiscoverResult");
+  if(!pool.length){
+    resultEl.innerHTML = '<div class="recos-empty">Rien à te proposer pour l\'instant.</div>';
+    return;
+  }
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  resultEl.innerHTML = `<div class="card-grid recos-discover-result">${recosCardHtml(pick)}</div>`;
 });
 
 // ---------- PWA install (service worker) ----------

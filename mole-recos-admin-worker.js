@@ -226,6 +226,7 @@ function buildQueueItem(item) {
     type: item.type === "album" ? "album" : "single",
     date: item.date || "",
     style: item.style || "",
+    substyle: item.substyle || "",
     note: item.note || "",
     cover: item.cover || "",
     indispensable: !!item.indispensable,
@@ -675,9 +676,11 @@ const ADMIN_HTML = `<!DOCTYPE html>
   <input id="fAlbum" type="text">
   <label>Date de sortie</label>
   <input id="fDate" type="text" placeholder="2024 ou 2024-05-01">
-  <label>Style</label>
-  <input id="fStyle" type="text" list="styleOptions" placeholder="Deep house, Boom bap...">
+  <label>Style principal (sert au filtre — reste court, ex: Rap, Jazz, House)</label>
+  <input id="fStyle" type="text" list="styleOptions" placeholder="Rap, Jazz, House...">
   <datalist id="styleOptions"></datalist>
+  <label>Précision / sous-genre (optionnel, juste affiché)</label>
+  <input id="fSubstyle" type="text" placeholder="Cloud rap underground britannique...">
   <label>Note perso de la taupe</label>
   <textarea id="fNote" placeholder="Pourquoi ce son, où tu l'as trouvé..."></textarea>
 
@@ -905,6 +908,7 @@ async function addToQueue(){
     type: entryType,
     date: $("fDate").value.trim(),
     style: $("fStyle").value.trim(),
+    substyle: $("fSubstyle").value.trim(),
     note: $("fNote").value.trim(),
     cover: resolvedCover,
     indispensable: $("fIndispensable").checked,
@@ -919,7 +923,7 @@ async function addToQueue(){
     const res = await fetch("/queue", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(item) });
     if(!res.ok) throw new Error("failed");
     $("addStatus").textContent = "Ajouté à la file ✓";
-    ["sharedUrl","fArtist","fTitle","fAlbum","fDate","fStyle","fNote"].forEach(id => $(id).value = "");
+    ["sharedUrl","fArtist","fTitle","fAlbum","fDate","fStyle","fSubstyle","fNote"].forEach(id => $(id).value = "");
     $("fIndispensable").checked = false;
     resolvedCover = "";
     $("coverPreview").style.display = "none";
@@ -1037,7 +1041,7 @@ function wallCardHtml(it){
   return "<div class='wall-card' data-id='" + it.id + "'>" +
     (it.cover ? "<img src='"+it.cover+"'>" : "") +
     "<div class='t'>" + (it.indispensable ? "★ " : "") + esc(it.artist) + " – " + esc(mainTitle) + "</div>" +
-    "<div class='s'>" + (it.type === "album" ? "Album" : "Single") + (it.style ? " · " + esc(it.style) : "") + "</div>" +
+    "<div class='s'>" + (it.type === "album" ? "Album" : "Single") + (it.style ? " · " + esc(it.style) : "") + (it.substyle ? " (" + esc(it.substyle) + ")" : "") + "</div>" +
     "<div class='actions'>" +
       "<button class='small ghost' data-action='indispensable'>" + (it.indispensable ? "★ Retirer" : "☆ Indispensable") + "</button>" +
       "<button class='small ghost' data-action='style'>Style</button>" +
@@ -1102,9 +1106,12 @@ $("wallSearchInput").addEventListener("input", renderWall);
 async function editWallStyle(id){
   const it = wallCache.find((x) => x.id === id);
   if(!it) return;
-  const style = prompt("Style pour " + it.artist + " – " + (it.title || it.album) + " :", it.style || "");
+  const label = it.artist + " – " + (it.title || it.album);
+  const style = prompt("Style principal pour " + label + " (sert au filtre, reste court) :", it.style || "");
   if(style === null) return;
-  await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ style }) });
+  const substyle = prompt("Précision / sous-genre pour " + label + " (optionnel) :", it.substyle || "");
+  if(substyle === null) return;
+  await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ style, substyle }) });
   wallCache = null;
   loadWall();
 }

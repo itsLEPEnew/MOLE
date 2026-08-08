@@ -54,6 +54,33 @@ export default {
         });
       }
 
+      // porte à part, hors Cloudflare Access, réservée au Raccourci iOS :
+      // une simple clé secrète (QUICK_ADD_SECRET) remplace la connexion email
+      // pour ce chemin précis uniquement — la vraie page d'admin (/) et le
+      // reste de l'API restent protégés par Access comme avant.
+      if (url.pathname === "/quick" && request.method === "GET") {
+        const key = url.searchParams.get("key") || "";
+        if (!env.QUICK_ADD_SECRET || key !== env.QUICK_ADD_SECRET) {
+          return new Response("Accès refusé", { status: 403 });
+        }
+        return new Response(QUICK_HTML, {
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
+
+      if (url.pathname === "/quick/save" && request.method === "POST") {
+        const body = await request.json();
+        const key = body.key || "";
+        if (!env.QUICK_ADD_SECRET || key !== env.QUICK_ADD_SECRET) {
+          return jsonResponse({ error: "Accès refusé" }, 403);
+        }
+        const newItem = buildQueueItem(body);
+        const queue = await loadQueue(env);
+        queue.unshift(newItem);
+        await saveQueue(env, queue);
+        return jsonResponse({ item: newItem }, 201);
+      }
+
       if (url.pathname === "/queue" && request.method === "GET") {
         return jsonResponse({ queue: await loadQueue(env) });
       }
@@ -61,23 +88,7 @@ export default {
       if (url.pathname === "/queue" && request.method === "POST") {
         const item = await request.json();
         const queue = await loadQueue(env);
-        const newItem = {
-          id: crypto.randomUUID(),
-          addedAt: Date.now(),
-          artist: item.artist || "",
-          title: item.title || "",
-          album: item.album || "",
-          type: item.type === "album" ? "album" : "single",
-          date: item.date || "",
-          style: item.style || "",
-          note: item.note || "",
-          cover: item.cover || "",
-          links: {
-            spotify: (item.links && item.links.spotify) || null,
-            deezer: (item.links && item.links.deezer) || null,
-            appleMusic: (item.links && item.links.appleMusic) || null,
-          },
-        };
+        const newItem = buildQueueItem(item);
         queue.unshift(newItem);
         await saveQueue(env, queue);
         return jsonResponse({ item: newItem }, 201);
@@ -155,6 +166,25 @@ export default {
 };
 
 // ---------- stockage ----------
+function buildQueueItem(item) {
+  return {
+    id: crypto.randomUUID(),
+    addedAt: Date.now(),
+    artist: item.artist || "",
+    title: item.title || "",
+    album: item.album || "",
+    type: item.type === "album" ? "album" : "single",
+    date: item.date || "",
+    style: item.style || "",
+    note: item.note || "",
+    cover: item.cover || "",
+    links: {
+      spotify: (item.links && item.links.spotify) || null,
+      deezer: (item.links && item.links.deezer) || null,
+      appleMusic: (item.links && item.links.appleMusic) || null,
+    },
+  };
+}
 async function loadQueue(env) {
   const raw = await env.RECOS_KV.get("queue");
   return raw ? JSON.parse(raw) : [];
@@ -787,6 +817,191 @@ if(params.get("shared")){
   lookupSharedUrl();
 }
 loadQueue();
+</script>
+</body>
+</html>`;
+
+// ---------- page minimaliste "ajout rapide" (hors Cloudflare Access) ----------
+// même esprit que ADMIN_HTML mais réduite à l'essentiel (pas de publier, pas de
+// supprimer, pas de réorganiser) — protégée uniquement par la clé secrète dans
+// l'URL, jamais par la connexion email.
+const QUICK_HTML = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ajout rapide — recos de la taupe</title>
+<style>
+  :root{ --paper:#141210; --ink:#f2eee4; --ink-soft:#a89f8f; --card:#1e1b15; --line:#3a352c; }
+  *{box-sizing:border-box;}
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--paper); color:var(--ink); padding:16px 16px 60px; }
+  h1{ font-size:17px; margin:0 0 14px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  label{ display:block; font-size:11.5px; color:var(--ink-soft); margin:10px 0 4px; text-transform:uppercase; letter-spacing:0.4px; }
+  input, textarea{ width:100%; background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:9px 10px; color:var(--ink); font-size:14px; font-family:inherit; }
+  textarea{ min-height:60px; resize:vertical; }
+  button{ background:var(--ink); color:var(--paper); border:none; border-radius:6px; padding:12px 14px; font-size:14.5px; font-weight:700; cursor:pointer; width:100%; margin-top:14px; }
+  button:disabled{ opacity:0.5; }
+  .type-btn{ background:transparent; color:var(--ink-soft); border:1px solid var(--line); width:auto; flex:1; margin-top:0; }
+  .type-btn.active{ background:var(--ink); color:var(--paper); border-color:var(--ink); }
+  .row{ display:flex; gap:8px; }
+  .cover-preview{ width:100%; max-width:160px; aspect-ratio:1/1; object-fit:cover; border-radius:6px; margin-top:8px; background:var(--paper); border:1px solid var(--line); display:none; }
+  .status{ font-size:13px; color:var(--ink-soft); margin-top:10px; min-height:16px; }
+</style>
+</head>
+<body>
+
+<h1>Ajout rapide — recos de la taupe</h1>
+
+<div class="card">
+  <label>Type</label>
+  <div class="row">
+    <button type="button" id="typeSingleBtn" class="type-btn active">Single</button>
+    <button type="button" id="typeAlbumBtn" class="type-btn">Album</button>
+  </div>
+
+  <label>Artiste</label>
+  <input id="fArtist" type="text">
+  <label id="titleLabel">Titre</label>
+  <input id="fTitle" type="text">
+  <label>Album</label>
+  <input id="fAlbum" type="text">
+  <label>Date de sortie</label>
+  <input id="fDate" type="text" placeholder="2024 ou 2024-05-01">
+  <label>Style</label>
+  <input id="fStyle" type="text" placeholder="Deep house, Boom bap...">
+  <label>Note perso de la taupe</label>
+  <textarea id="fNote"></textarea>
+
+  <img id="coverPreview" class="cover-preview">
+
+  <button id="addBtn">Ajouter à la file</button>
+  <div id="status" class="status">Analyse du lien...</div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const KEY = params.get("key") || "";
+const SHARED = params.get("shared") || "";
+let entryType = "single";
+let resolvedCover = "";
+let links = { spotify: null, deezer: null, appleMusic: null };
+
+function setEntryType(type){
+  entryType = type;
+  $("typeSingleBtn").classList.toggle("active", type === "single");
+  $("typeAlbumBtn").classList.toggle("active", type === "album");
+  $("titleLabel").textContent = type === "album" ? "Titre (optionnel pour un album)" : "Titre";
+}
+$("typeSingleBtn").addEventListener("click", () => setEntryType("single"));
+$("typeAlbumBtn").addEventListener("click", () => setEntryType("album"));
+
+function showCover(url){
+  if(!url) return;
+  resolvedCover = url;
+  const img = $("coverPreview");
+  img.src = url;
+  img.style.display = "block";
+}
+
+async function searchDeezer(q){
+  if(!q) return;
+  return new Promise((resolve) => {
+    const cbName = "molecb" + Date.now();
+    window[cbName] = (data) => {
+      const best = (data.data || [])[0];
+      if(best){
+        links.deezer = best.link;
+        if(!resolvedCover && best.album) showCover(best.album.cover_medium);
+      }
+      delete window[cbName];
+      script.remove();
+      resolve();
+    };
+    const script = document.createElement("script");
+    script.src = "https://api.deezer.com/search?q=" + encodeURIComponent(q) + "&output=jsonp&callback=" + cbName;
+    script.onerror = () => resolve();
+    document.body.appendChild(script);
+    setTimeout(resolve, 4000);
+  });
+}
+
+async function resolveShared(){
+  if(!SHARED){ $("status").textContent = "Aucun lien reçu — remplis les champs à la main."; return; }
+  try{
+    if(SHARED.includes("music.apple.com")){
+      let appleId = null;
+      const u = new URL(SHARED);
+      const iParam = u.searchParams.get("i");
+      if(iParam && /^[0-9]+$/.test(iParam)){
+        appleId = iParam;
+      } else {
+        const segments = u.pathname.split("/").filter(Boolean);
+        const last = segments[segments.length - 1];
+        if(last && /^[0-9]+$/.test(last)) appleId = last;
+      }
+      if(appleId){
+        const res = await fetch("https://itunes.apple.com/lookup?id=" + appleId);
+        const data = await res.json();
+        const t = data.results && data.results[0];
+        if(t){
+          const isAlbum = !t.trackName && t.wrapperType === "collection";
+          setEntryType(isAlbum ? "album" : "single");
+          $("fArtist").value = t.artistName || "";
+          $("fTitle").value = t.trackName || "";
+          $("fAlbum").value = t.collectionName || "";
+          $("fDate").value = (t.releaseDate || "").slice(0,10);
+          showCover((t.artworkUrl100 || "").replace("100x100bb", "600x600bb"));
+          links.appleMusic = t.trackViewUrl || t.collectionViewUrl || null;
+        }
+      }
+    }
+    const artist = $("fArtist").value.trim();
+    const title = $("fTitle").value.trim();
+    const album = $("fAlbum").value.trim();
+    const q = (artist + " " + (title || album)).trim();
+    if(q) await searchDeezer(q);
+    $("status").textContent = artist ? "Vérifie les champs, puis ajoute." : "Rien trouvé automatiquement — remplis à la main.";
+  }catch(e){
+    $("status").textContent = "Impossible d'analyser ce lien — remplis les champs à la main.";
+  }
+}
+
+$("addBtn").addEventListener("click", async () => {
+  const artist = $("fArtist").value.trim();
+  const title = $("fTitle").value.trim();
+  const album = $("fAlbum").value.trim();
+  if(!artist || (!title && !album)){
+    $("status").textContent = "Artiste obligatoire, plus au moins Titre ou Album.";
+    return;
+  }
+  $("addBtn").disabled = true;
+  $("status").textContent = "Ajout...";
+  try{
+    const res = await fetch("/quick/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key: KEY,
+        artist, title, album,
+        type: entryType,
+        date: $("fDate").value.trim(),
+        style: $("fStyle").value.trim(),
+        note: $("fNote").value.trim(),
+        cover: resolvedCover,
+        links
+      })
+    });
+    if(!res.ok) throw new Error("failed");
+    $("status").textContent = "Ajouté à la file ✓ — tu peux fermer cette page.";
+  }catch(e){
+    $("status").textContent = "Erreur lors de l'ajout — réessaie.";
+    $("addBtn").disabled = false;
+  }
+});
+
+resolveShared();
 </script>
 </body>
 </html>`;

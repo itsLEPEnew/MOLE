@@ -1583,10 +1583,10 @@
 </div>
 
 <div class="tabs">
-  <button class="tab-btn active" data-tab="terrain">Terrain vague</button>
+  <button class="tab-btn active" data-tab="recos">Recos de la taupe</button>
+  <button class="tab-btn" data-tab="terrain">Terrain vague</button>
   <button class="tab-btn" data-tab="explore">Le Tunnel</button>
   <button class="tab-btn" data-tab="piste">La Piste</button>
-  <button class="tab-btn" data-tab="recos">Recos de la taupe</button>
   <button class="tab-btn" data-tab="actus">Actus</button>
   <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
@@ -1615,7 +1615,7 @@
   </section>
 
   <!-- ===== TERRAIN VAGUE VIEW ===== -->
-  <section id="view-terrain" class="view active">
+  <section id="view-terrain" class="view">
     <div class="filters">
       <select id="terrainGenre">
         <option value="">Tous genres</option>
@@ -1656,7 +1656,7 @@
   </section>
 
   <!-- ===== RECOS DE LA TAUPE (mur éditorial hebdo) ===== -->
-  <section id="view-recos" class="view">
+  <section id="view-recos" class="view active">
     <p class="recos-intro">Chaque vendredi, la taupe balance ses trouvailles de la semaine — pas d'algorithme ici, juste ce qu'elle a écouté et pourquoi ça lui a plu.</p>
 
     <div class="recos-discover">
@@ -4069,6 +4069,9 @@ document.getElementById("recosDiscoverBtn").addEventListener("click", async () =
   const pick = pool[Math.floor(Math.random() * pool.length)];
   resultEl.innerHTML = `<div class="card-grid recos-discover-result">${recosCardHtml(pick)}</div>`;
 });
+
+// "Recos de la taupe" est la vue par défaut à l'ouverture -> on charge le mur direct
+loadRecosWallIfNeeded();
 
 // ---------- PWA install (service worker) ----------
 if("serviceWorker" in navigator){

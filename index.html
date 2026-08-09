@@ -1103,7 +1103,12 @@
     grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
     gap:14px;
   }
+  .accueil-recos-grid{
+    grid-template-columns:repeat(auto-fit, minmax(155px, 1fr));
+    gap:20px;
+  }
   .res-card{
+    position:relative;
     background:var(--card);
     border:2px solid var(--line);
     border-radius:4px 14px 4px 14px;
@@ -1111,6 +1116,21 @@
     display:flex;
     flex-direction:column;
     gap:6px;
+  }
+  .res-card.is-indispensable{ border-width:3px; border-color:var(--ink); }
+  .indispensable-badge{
+    position:absolute;
+    top:8px;
+    left:8px;
+    z-index:2;
+    background:var(--ink);
+    color:var(--paper);
+    font-size:9.5px;
+    font-weight:700;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+    padding:3px 8px 3px 7px;
+    border-radius:3px 8px 3px 8px;
   }
   .res-cover{
     width:100%;
@@ -4078,9 +4098,10 @@ function recosCardHtml(it){
   // pour un album, le titre EST déjà le nom d'album -> pas la peine de le répéter en sous-titre
   const showAlbumInSub = it.album && it.album !== mainTitle;
   return `
-    <div class="res-card">
+    <div class="res-card${it.indispensable ? " is-indispensable" : ""}">
+      ${it.indispensable ? `<div class="indispensable-badge">★ Indispensable</div>` : ""}
       ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
-      <div class="res-title">${it.indispensable ? "★ " : ""}${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
+      <div class="res-title">${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
       <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (it.type === "album" ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""}</div>
       ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}${it.substyle ? ` <span class="recos-substyle">· ${escapeHtml(it.substyle)}</span>` : ""}</div>` : ""}
       ${it.note ? `<div class="recos-note">${escapeHtml(it.note)}</div>` : ""}
@@ -4210,12 +4231,12 @@ function renderAccueilRecosPreview(){
     el.innerHTML = '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';
     return;
   }
-  const picks = recosWallCache.filter(it => it.indispensable).slice(0, 3);
+  const picks = recosWallCache.filter(it => it.indispensable).slice(0, 4);
   for(const it of recosWallCache){
-    if(picks.length >= 3) break;
+    if(picks.length >= 4) break;
     if(!picks.includes(it)) picks.push(it);
   }
-  el.innerHTML = `<div class="card-grid">${picks.map(recosCardHtml).join("")}</div>`;
+  el.innerHTML = `<div class="card-grid accueil-recos-grid">${picks.map(recosCardHtml).join("")}</div>`;
 }
 
 function renderAccueilLibrarySummary(){

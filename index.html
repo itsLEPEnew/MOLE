@@ -369,6 +369,93 @@
   .view{display:none;}
   .view.active{display:block;}
 
+  .subtabs{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:0 0 20px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:14px;
+  }
+  .subtab-btn{
+    background:transparent;
+    border:1.5px solid var(--line);
+    color:var(--ink-soft);
+    padding:7px 14px;
+    border-radius:3px 10px 3px 10px;
+    cursor:pointer;
+    font-size:12px;
+    font-weight:700;
+  }
+  .subtab-btn.active{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+  .subview{display:none;}
+  .subview.active{display:block;}
+
+  .accueil-block{ margin-bottom:34px; }
+  .accueil-block h3{
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:0 0 14px;
+  }
+  .accueil-block-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .accueil-block-head h3{ margin:0; }
+  .accueil-link{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    padding:0;
+    white-space:nowrap;
+  }
+  .accueil-link:hover{ color:var(--ink); }
+  .accueil-modes{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+    gap:12px;
+  }
+  .accueil-mode-btn{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:3px 12px 3px 12px;
+    padding:14px 16px;
+    cursor:pointer;
+    text-align:left;
+    color:var(--ink);
+  }
+  .accueil-mode-btn:hover{ border-color:var(--ink); }
+  .accueil-mode-emoji{ font-size:20px; }
+  .accueil-mode-title{ font-size:14px; font-weight:700; }
+  .accueil-mode-desc{ font-size:11.5px; color:var(--ink-soft); }
+  .accueil-library-summary{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:3px 12px 3px 12px;
+    padding:14px 16px;
+  }
+  .accueil-library-summary p{ margin:0; font-size:13px; color:var(--ink-soft); }
+  .accueil-library-summary strong{ color:var(--ink); }
+
   /* --- Reco view --- */
   .filters{
     display:flex;
@@ -1583,18 +1670,59 @@
 </div>
 
 <div class="tabs">
-  <button class="tab-btn active" data-tab="recos">Recos de la taupe</button>
-  <button class="tab-btn" data-tab="terrain">Terrain vague</button>
-  <button class="tab-btn" data-tab="explore">Le Tunnel</button>
-  <button class="tab-btn" data-tab="piste">La Piste</button>
-  <button class="tab-btn" data-tab="actus">Actus</button>
+  <button class="tab-btn active" data-tab="accueil">Accueil</button>
+  <button class="tab-btn" data-tab="creuser">Creuser</button>
+  <button class="tab-btn" data-tab="recos">Recos de la taupe</button>
   <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
 
 <main>
 
+  <!-- ===== ACCUEIL ===== -->
+  <section id="view-accueil" class="view active">
+    <div class="accueil-block">
+      <div class="accueil-block-head">
+        <h3>Cette semaine chez la taupe</h3>
+        <button class="accueil-link" data-tab="recos">Voir tout le mur →</button>
+      </div>
+      <div id="accueilRecosPreview"></div>
+    </div>
+    <div class="accueil-block">
+      <h3>Comment tu veux creuser aujourd'hui ?</h3>
+      <div class="accueil-modes">
+        <button class="accueil-mode-btn" data-creuser-mode="terrain">
+          <span class="accueil-mode-emoji">⛏</span>
+          <span class="accueil-mode-title">Terrain vague</span>
+          <span class="accueil-mode-desc">Aléatoire, profondeur réglable</span>
+        </button>
+        <button class="accueil-mode-btn" data-creuser-mode="explore">
+          <span class="accueil-mode-emoji">🧊</span>
+          <span class="accueil-mode-title">Le Tunnel</span>
+          <span class="accueil-mode-desc">Explorer par genre, du surface au niche</span>
+        </button>
+        <button class="accueil-mode-btn" data-creuser-mode="piste">
+          <span class="accueil-mode-emoji">🎧</span>
+          <span class="accueil-mode-title">La Piste</span>
+          <span class="accueil-mode-desc">Sons proches de tes bangers</span>
+        </button>
+      </div>
+    </div>
+    <div class="accueil-block">
+      <h3>Ta musicothèque</h3>
+      <div id="accueilLibrarySummary"></div>
+    </div>
+  </section>
+
+  <!-- ===== CREUSER (regroupe Terrain vague / Le Tunnel / La Piste) ===== -->
+  <section id="view-creuser" class="view">
+    <div class="subtabs">
+      <button class="subtab-btn active" data-subtab="terrain">Terrain vague</button>
+      <button class="subtab-btn" data-subtab="explore">Le Tunnel</button>
+      <button class="subtab-btn" data-subtab="piste">La Piste</button>
+    </div>
+
   <!-- ===== TUNNEL (EXPLORE) VIEW ===== -->
-  <section id="view-explore" class="view">
+  <section id="view-explore" class="subview">
     <div id="doghouseIntro" class="doghouse-wrap">
       <svg viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg">
         <polygon points="50,8 92,42 82,42 82,80 18,80 18,42 8,42" fill="none" stroke="#141210" stroke-width="4" stroke-linejoin="round"/>
@@ -1615,7 +1743,7 @@
   </section>
 
   <!-- ===== TERRAIN VAGUE VIEW ===== -->
-  <section id="view-terrain" class="view">
+  <section id="view-terrain" class="subview active">
     <div class="filters">
       <select id="terrainGenre">
         <option value="">Tous genres</option>
@@ -1643,7 +1771,7 @@
   </section>
 
   <!-- ===== LA PISTE VIEW (sons proches, via cosine.club) ===== -->
-  <section id="view-piste" class="view">
+  <section id="view-piste" class="subview">
     <div class="piste-add-row">
       <div class="header-search">
         <input type="text" id="pisteSearchInput" placeholder="Chercher un morceau à ajouter..." autocomplete="off">
@@ -1655,8 +1783,10 @@
     <div id="pisteResult"></div>
   </section>
 
+  </section><!-- /view-creuser -->
+
   <!-- ===== RECOS DE LA TAUPE (mur éditorial hebdo) ===== -->
-  <section id="view-recos" class="view active">
+  <section id="view-recos" class="view">
     <p class="recos-intro">Chaque vendredi, la taupe balance ses trouvailles de la semaine — pas d'algorithme ici, juste ce qu'elle a écouté et pourquoi ça lui a plu.</p>
 
     <div class="recos-discover">
@@ -1730,11 +1860,9 @@
         <button class="overlay-close" id="searchOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
-        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
-        <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1751,11 +1879,9 @@
         <button class="overlay-close" id="profileOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
-        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
-        <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1782,11 +1908,9 @@
         <button class="overlay-close" id="libraryOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
-        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
-        <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1802,11 +1926,9 @@
         <button class="overlay-close" id="creditsOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
-        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
-        <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1873,11 +1995,9 @@
         <button class="overlay-close" id="artistOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
-        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
-        <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -1897,11 +2017,9 @@
         <button class="overlay-close" id="albumOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="explore">Tunnel</button>
-        <button class="tab-btn mini" data-tab="terrain">Terrain</button>
-        <button class="tab-btn mini" data-tab="piste">Piste</button>
+        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="actus">Actus</button>
         <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
@@ -2471,6 +2589,21 @@ function switchTab(tabName){
   if(tabName === "recos") loadRecosWallIfNeeded();
 }
 document.querySelectorAll(".tab-btn[data-tab]").forEach(btn=>{
+  btn.onclick = () => switchTab(btn.dataset.tab);
+});
+
+function switchSubTab(subtabName){
+  document.querySelectorAll(".subtab-btn[data-subtab]").forEach(b=>b.classList.toggle("active", b.dataset.subtab === subtabName));
+  document.querySelectorAll(".subview").forEach(v=>v.classList.remove("active"));
+  document.getElementById("view-" + subtabName).classList.add("active");
+}
+document.querySelectorAll(".subtab-btn[data-subtab]").forEach(btn=>{
+  btn.onclick = () => switchSubTab(btn.dataset.subtab);
+});
+document.querySelectorAll(".accueil-mode-btn[data-creuser-mode]").forEach(btn=>{
+  btn.onclick = () => { switchTab("creuser"); switchSubTab(btn.dataset.creuserMode); };
+});
+document.querySelectorAll(".accueil-link[data-tab]").forEach(btn=>{
   btn.onclick = () => switchTab(btn.dataset.tab);
 });
 
@@ -4070,8 +4203,39 @@ document.getElementById("recosDiscoverBtn").addEventListener("click", async () =
   resultEl.innerHTML = `<div class="card-grid recos-discover-result">${recosCardHtml(pick)}</div>`;
 });
 
-// "Recos de la taupe" est la vue par défaut à l'ouverture -> on charge le mur direct
-loadRecosWallIfNeeded();
+// ---------- Accueil ----------
+function renderAccueilRecosPreview(){
+  const el = document.getElementById("accueilRecosPreview");
+  if(!recosWallCache.length){
+    el.innerHTML = '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';
+    return;
+  }
+  const picks = recosWallCache.filter(it => it.indispensable).slice(0, 3);
+  for(const it of recosWallCache){
+    if(picks.length >= 3) break;
+    if(!picks.includes(it)) picks.push(it);
+  }
+  el.innerHTML = `<div class="card-grid">${picks.map(recosCardHtml).join("")}</div>`;
+}
+
+function renderAccueilLibrarySummary(){
+  const el = document.getElementById("accueilLibrarySummary");
+  const count = loadCollection().length;
+  el.innerHTML = `
+    <div class="accueil-library-summary">
+      <p>${count ? `<strong>${count}</strong> album${count > 1 ? "s" : ""} dans ta musicothèque` : "Ta musicothèque est vide pour l'instant."}</p>
+      <button class="accueil-link" id="accueilOpenLibraryBtn">Ouvrir →</button>
+    </div>`;
+  document.getElementById("accueilOpenLibraryBtn").onclick = () => {
+    closeAllOverlays();
+    libraryOverlay.classList.add("open");
+    renderLibraryOverlay();
+  };
+}
+
+// "Accueil" est la vue par défaut à l'ouverture -> on charge son contenu direct
+renderAccueilLibrarySummary();
+loadRecosWallIfNeeded().then(renderAccueilRecosPreview);
 
 // ---------- PWA install (service worker) ----------
 if("serviceWorker" in navigator){

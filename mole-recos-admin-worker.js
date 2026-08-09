@@ -730,7 +730,6 @@ const ADMIN_HTML = `<!DOCTYPE html>
   <label>Réaction GIF (optionnel)</label>
   <div class="row" style="margin-top:0;">
     <input id="gifSearchInput" type="text" placeholder="Chercher un GIF...">
-    <button type="button" id="gifSearchBtn" class="ghost">Chercher</button>
   </div>
   <div id="gifResults" class="gif-results"></div>
   <div id="gifSelectedPreview"></div>
@@ -774,10 +773,8 @@ let selectedGif = "";
 
 const $ = (id) => document.getElementById(id);
 
-$("gifSearchBtn").addEventListener("click", async () => {
-  const q = $("gifSearchInput").value.trim();
-  if(!q) return;
-  $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Recherche...</div>";
+async function runGifSearch(q){
+  $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Chargement...</div>";
   try{
     const res = await fetch("/gif-search?q=" + encodeURIComponent(q));
     const data = await res.json();
@@ -800,7 +797,13 @@ $("gifSearchBtn").addEventListener("click", async () => {
   }catch(e){
     $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Erreur de recherche.</div>";
   }
+}
+let gifDebounce = null;
+$("gifSearchInput").addEventListener("input", () => {
+  clearTimeout(gifDebounce);
+  gifDebounce = setTimeout(() => runGifSearch($("gifSearchInput").value.trim()), 350);
 });
+runGifSearch("");
 
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1009,8 +1012,8 @@ async function addToQueue(){
     $("coverPreview").style.display = "none";
     selected = { spotify:null, deezer:null, apple:null };
     selectedGif = "";
-    $("gifResults").innerHTML = "";
     $("gifSelectedPreview").innerHTML = "";
+    runGifSearch("");
     setEntryType("single");
     renderMatches();
     loadQueue();

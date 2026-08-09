@@ -101,6 +101,16 @@ export default {
         return jsonResponse({ item: newItem }, 201);
       }
 
+      if (url.pathname === "/quick/gif-search" && request.method === "GET") {
+        const key = url.searchParams.get("key") || "";
+        if (!env.QUICK_ADD_SECRET || key !== env.QUICK_ADD_SECRET) {
+          return jsonResponse({ error: "Accès refusé" }, 403);
+        }
+        const q = url.searchParams.get("q") || "";
+        const results = await gifSearch(q, env);
+        return jsonResponse({ results });
+      }
+
       // tout ce qui suit (file, mur, publication, recherche...) exige le
       // cookie posé par /login — /quick et /quick/save restent à part.
       if (!isAdminAuthed(request, env)) {
@@ -306,11 +316,12 @@ async function spotifySearch(q) {
 
 // ---------- recherche GIF (Giphy, clé cachée côté serveur) ----------
 async function gifSearch(q, env) {
-  if (!q || !env.GIPHY_API_KEY) return [];
+  if (!env.GIPHY_API_KEY) return [];
   try {
-    const res = await fetch(
-      `https://api.giphy.com/v1/gifs/search?api_key=${env.GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=12&rating=pg-13`
-    );
+    const url = q
+      ? `https://api.giphy.com/v1/gifs/search?api_key=${env.GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=24&rating=pg-13`
+      : `https://api.giphy.com/v1/gifs/trending?api_key=${env.GIPHY_API_KEY}&limit=24&rating=pg-13`;
+    const res = await fetch(url);
     const data = await res.json();
     return ((data.data) || []).map((g) => g.images && g.images.fixed_height && g.images.fixed_height.url).filter(Boolean);
   } catch (e) {
@@ -543,7 +554,7 @@ const LOGIN_HTML = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Recos de la taupe — connexion</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,${FAVICON_B64}">
 <style>
@@ -587,7 +598,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Recos de la taupe — coulisses</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,${FAVICON_B64}">
 <style>
@@ -598,7 +609,7 @@ const ADMIN_HTML = `<!DOCTYPE html>
   .sub{ color:var(--ink-soft); font-size:12.5px; margin:0 0 18px; }
   .card{ background:var(--card); border:1px solid var(--line-soft,#3a352c); border-radius:10px; padding:14px; margin-bottom:16px; }
   label{ display:block; font-size:11.5px; color:var(--ink-soft); margin:10px 0 4px; text-transform:uppercase; letter-spacing:0.4px; }
-  input, textarea, select{ width:100%; background:var(--paper); border:1px solid #3a352c; border-radius:6px; padding:9px 10px; color:var(--ink); font-size:14px; font-family:inherit; }
+  input, textarea, select{ width:100%; background:var(--paper); border:1px solid #3a352c; border-radius:6px; padding:9px 10px; color:var(--ink); font-size:16px; font-family:inherit; }
   textarea{ min-height:60px; resize:vertical; }
   input[type="checkbox"]{ width:auto; }
   .checkbox-row{ display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:normal; font-size:13.5px; color:var(--ink); margin-top:14px; }
@@ -979,7 +990,7 @@ async function addToQueue(){
     note: $("fNote").value.trim(),
     cover: resolvedCover,
     indispensable: $("fIndispensable").checked,
-    recommendedTracks: $("fTracks").value.split("\n").map(s => s.trim()).filter(Boolean),
+    recommendedTracks: $("fTracks").value.split("\\n").map(s => s.trim()).filter(Boolean),
     gifNote: selectedGif,
     links: {
       spotify: selected.spotify ? selected.spotify.url : null,
@@ -1137,10 +1148,10 @@ async function editWallTracks(id){
   const it = wallCache.find((x) => x.id === id);
   if(!it) return;
   const label = it.artist + " – " + (it.title || it.album);
-  const current = (it.recommendedTracks || []).join("\n");
+  const current = (it.recommendedTracks || []).join("\\n");
   const raw = prompt("Morceaux recommandés pour " + label + " (un par ligne) :", current);
   if(raw === null) return;
-  const recommendedTracks = raw.split("\n").map((s) => s.trim()).filter(Boolean);
+  const recommendedTracks = raw.split("\\n").map((s) => s.trim()).filter(Boolean);
   await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ recommendedTracks }) });
   wallCache = null;
   loadWall();
@@ -1238,7 +1249,7 @@ const QUICK_HTML = `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Ajout rapide — recos de la taupe</title>
 <link rel="icon" type="image/png" href="data:image/png;base64,${FAVICON_B64}">
 <style>
@@ -1248,7 +1259,7 @@ const QUICK_HTML = `<!DOCTYPE html>
   h1{ font-size:17px; margin:0 0 14px; }
   .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
   label{ display:block; font-size:11.5px; color:var(--ink-soft); margin:10px 0 4px; text-transform:uppercase; letter-spacing:0.4px; }
-  input, textarea{ width:100%; background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:9px 10px; color:var(--ink); font-size:14px; font-family:inherit; }
+  input, textarea{ width:100%; background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:9px 10px; color:var(--ink); font-size:16px; font-family:inherit; }
   textarea{ min-height:60px; resize:vertical; }
   button{ background:var(--ink); color:var(--paper); border:none; border-radius:6px; padding:12px 14px; font-size:14.5px; font-weight:700; cursor:pointer; width:100%; margin-top:14px; }
   button:disabled{ opacity:0.5; }
@@ -1257,6 +1268,14 @@ const QUICK_HTML = `<!DOCTYPE html>
   .row{ display:flex; gap:8px; }
   .cover-preview{ width:100%; max-width:160px; aspect-ratio:1/1; object-fit:cover; border-radius:6px; margin-top:8px; background:var(--paper); border:1px solid var(--line); display:none; }
   .status{ font-size:13px; color:var(--ink-soft); margin-top:10px; min-height:16px; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:normal; font-size:13.5px; color:var(--ink); margin-top:14px; }
+  .checkbox-row input{ width:auto; }
+  .ghost-btn{ background:transparent; color:var(--ink); border:1px solid var(--line); margin-top:8px; }
+  .gif-results{ display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:6px; margin-top:8px; max-height:260px; overflow-y:auto; }
+  .gif-results img{ width:100%; border-radius:4px; cursor:pointer; border:2px solid transparent; }
+  .gif-results img:hover{ border-color:var(--ink); }
+  .gif-selected{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .gif-selected img{ width:90px; border-radius:4px; border:2px solid var(--ink); }
 </style>
 </head>
 <body>
@@ -1283,6 +1302,18 @@ const QUICK_HTML = `<!DOCTYPE html>
   <label>Note perso de la taupe</label>
   <textarea id="fNote"></textarea>
 
+  <label class="checkbox-row"><input type="checkbox" id="fIndispensable"> Indispensable</label>
+
+  <label>Morceaux recommandés (un par ligne, optionnel)</label>
+  <textarea id="fTracks" placeholder="Titre 1&#10;Titre 2..."></textarea>
+
+  <label>Réaction GIF (optionnel)</label>
+  <div class="row" style="margin-top:0;">
+    <input id="gifSearchInput" type="text" placeholder="Chercher un GIF...">
+  </div>
+  <div id="gifResults" class="gif-results"></div>
+  <div id="gifSelectedPreview"></div>
+
   <img id="coverPreview" class="cover-preview">
 
   <button id="addBtn">Ajouter à la file</button>
@@ -1297,6 +1328,39 @@ const SHARED = params.get("shared") || "";
 let entryType = "single";
 let resolvedCover = "";
 let links = { spotify: null, deezer: null, appleMusic: null };
+let selectedGif = "";
+
+async function runGifSearch(q){
+  $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Chargement...</div>";
+  try{
+    const res = await fetch("/quick/gif-search?key=" + encodeURIComponent(KEY) + "&q=" + encodeURIComponent(q));
+    const data = await res.json();
+    const results = data.results || [];
+    if(!results.length){
+      $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Aucun résultat.</div>";
+      return;
+    }
+    $("gifResults").innerHTML = "";
+    results.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      img.addEventListener("click", () => {
+        selectedGif = url;
+        $("gifSelectedPreview").innerHTML = "<div class='gif-selected'><img src='" + url + "'><button type='button' class='ghost-btn' id='gifClearBtn' style='width:auto;margin-top:0;'>Retirer</button></div>";
+        $("gifClearBtn").addEventListener("click", () => { selectedGif = ""; $("gifSelectedPreview").innerHTML = ""; });
+      });
+      $("gifResults").appendChild(img);
+    });
+  }catch(e){
+    $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Erreur de recherche.</div>";
+  }
+}
+let gifDebounce = null;
+$("gifSearchInput").addEventListener("input", () => {
+  clearTimeout(gifDebounce);
+  gifDebounce = setTimeout(() => runGifSearch($("gifSearchInput").value.trim()), 350);
+});
+runGifSearch("");
 
 function setEntryType(type){
   entryType = type;
@@ -1400,6 +1464,9 @@ $("addBtn").addEventListener("click", async () => {
         style: $("fStyle").value.trim(),
         note: $("fNote").value.trim(),
         cover: resolvedCover,
+        indispensable: $("fIndispensable").checked,
+        recommendedTracks: $("fTracks").value.split("\\n").map(s => s.trim()).filter(Boolean),
+        gifNote: selectedGif,
         links
       })
     });

@@ -1118,6 +1118,10 @@
     gap:6px;
   }
   .res-card.is-indispensable{ border-width:3px; border-color:var(--ink); }
+  .res-card-clickable{ cursor:pointer; }
+  .res-card-clickable:hover{ border-color:var(--ink); }
+  .res-open-hint{ color:var(--ink); text-decoration:underline; }
+  .recos-gif{ width:100%; border-radius:4px; border:1px solid var(--line); }
   .indispensable-badge{
     position:absolute;
     top:8px;
@@ -2052,6 +2056,7 @@
       </div>
     </div>
     <div id="albumTracklistBody"></div>
+    <div id="albumRecosLinks" class="terrain-preview"></div>
   </div>
 </div>
 
@@ -4097,14 +4102,16 @@ function recosCardHtml(it){
   const mainTitle = it.title || it.album || "";
   // pour un album, le titre EST déjà le nom d'album -> pas la peine de le répéter en sous-titre
   const showAlbumInSub = it.album && it.album !== mainTitle;
+  const isAlbum = it.type === "album";
   return `
-    <div class="res-card${it.indispensable ? " is-indispensable" : ""}">
+    <div class="res-card${it.indispensable ? " is-indispensable" : ""}${isAlbum ? " res-card-clickable" : ""}" data-id="${it.id}">
       ${it.indispensable ? `<div class="indispensable-badge">★ Indispensable</div>` : ""}
       ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
       <div class="res-title">${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
-      <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (it.type === "album" ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""}</div>
+      <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (isAlbum ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""}${isAlbum ? ' · <span class="res-open-hint">voir la fiche →</span>' : ""}</div>
       ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}${it.substyle ? ` <span class="recos-substyle">· ${escapeHtml(it.substyle)}</span>` : ""}</div>` : ""}
       ${it.note ? `<div class="recos-note">${escapeHtml(it.note)}</div>` : ""}
+      ${it.gifNote ? `<img class="recos-gif" src="${it.gifNote}" alt="">` : ""}
       <div class="terrain-preview">
         ${links.spotify ? `<a class="terrain-preview-btn ghost" href="${links.spotify}" target="_blank" rel="noopener">Spotify</a>` : ""}
         ${links.deezer ? `<a class="terrain-preview-btn ghost" href="${links.deezer}" target="_blank" rel="noopener">Deezer</a>` : ""}
@@ -4113,6 +4120,56 @@ function recosCardHtml(it){
     </div>
   `;
 }
+
+const albumRecosLinksEl = document.getElementById("albumRecosLinks");
+
+function openRecosAlbumOverlay(item){
+  dockSearchHome();
+  albumOverlay.classList.add("open");
+  const title = item.title || item.album || "";
+  albumOverlayTitle.textContent = title;
+  if(item.cover){
+    albumCoverBig.src = item.cover;
+    albumCoverBig.style.visibility = "visible";
+    albumCoverBig.onerror = () => { albumCoverBig.style.visibility = "hidden"; };
+  } else {
+    albumCoverBig.style.visibility = "hidden";
+  }
+  albumHeaderTitle.textContent = title;
+  albumHeaderArtist.textContent = item.artist + (item.date ? ` · ${item.date}` : "");
+  albumHeaderDesc.innerHTML =
+    (item.style ? `<div class="recos-style-tag">${escapeHtml(item.style)}${item.substyle ? ` <span class="recos-substyle">· ${escapeHtml(item.substyle)}</span>` : ""}</div>` : "") +
+    (item.note ? `<div style="margin-top:8px;">${escapeHtml(item.note)}</div>` : "") +
+    (item.gifNote ? `<img class="recos-gif" src="${item.gifNote}" alt="" style="margin-top:8px;max-width:200px;">` : "");
+
+  const tracks = Array.isArray(item.recommendedTracks) ? item.recommendedTracks : [];
+  if(tracks.length){
+    albumTracklistBody.innerHTML =
+      `<div class="overlay-status" style="text-align:left;padding:0 0 6px;">La taupe recommande particulièrement :</div>` +
+      tracks.map((t, i) => `
+        <div class="track-row">
+          <div class="track-num">${i + 1}</div>
+          <div class="track-title">${escapeHtml(t)}</div>
+        </div>
+      `).join("");
+  } else {
+    albumTracklistBody.innerHTML = '<div class="overlay-status">La taupe n\'a pas mis en avant de morceaux précis sur cet album.</div>';
+  }
+
+  const links = item.links || {};
+  albumRecosLinksEl.innerHTML = `
+    ${links.spotify ? `<a class="terrain-preview-btn ghost" href="${links.spotify}" target="_blank" rel="noopener">Spotify</a>` : ""}
+    ${links.deezer ? `<a class="terrain-preview-btn ghost" href="${links.deezer}" target="_blank" rel="noopener">Deezer</a>` : ""}
+    ${links.appleMusic ? `<a class="terrain-preview-btn ghost" href="${links.appleMusic}" target="_blank" rel="noopener">Apple Music</a>` : ""}
+  `;
+}
+
+document.addEventListener("click", (e) => {
+  const card = e.target.closest(".res-card-clickable");
+  if(!card || e.target.closest("a")) return;
+  const item = recosWallCache.find(it => it.id === card.dataset.id);
+  if(item) openRecosAlbumOverlay(item);
+});
 
 function renderRecosSections(){
   const thisWeek = recosActiveWeeks[0];

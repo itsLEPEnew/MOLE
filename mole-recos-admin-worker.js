@@ -189,6 +189,12 @@ export default {
         return jsonResponse({ results });
       }
 
+      if (url.pathname === "/gif-search" && request.method === "GET") {
+        const q = url.searchParams.get("q") || "";
+        const results = await gifSearch(q, env);
+        return jsonResponse({ results });
+      }
+
       if (url.pathname === "/fetch-meta" && request.method === "GET") {
         const target = url.searchParams.get("url") || "";
         const meta = await fetchMeta(target);
@@ -230,6 +236,8 @@ function buildQueueItem(item) {
     note: item.note || "",
     cover: item.cover || "",
     indispensable: !!item.indispensable,
+    recommendedTracks: Array.isArray(item.recommendedTracks) ? item.recommendedTracks.filter(Boolean) : [],
+    gifNote: item.gifNote || "",
     links: {
       spotify: (item.links && item.links.spotify) || null,
       deezer: (item.links && item.links.deezer) || null,
@@ -291,6 +299,20 @@ async function spotifySearch(q) {
       cover: t.album && t.album.images && t.album.images[0] && t.album.images[0].url,
       url: t.external_urls && t.external_urls.spotify,
     }));
+  } catch (e) {
+    return [];
+  }
+}
+
+// ---------- recherche GIF (Giphy, clé cachée côté serveur) ----------
+async function gifSearch(q, env) {
+  if (!q || !env.GIPHY_API_KEY) return [];
+  try {
+    const res = await fetch(
+      `https://api.giphy.com/v1/gifs/search?api_key=${env.GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=12&rating=pg-13`
+    );
+    const data = await res.json();
+    return ((data.data) || []).map((g) => g.images && g.images.fixed_height && g.images.fixed_height.url).filter(Boolean);
   } catch (e) {
     return [];
   }
@@ -580,6 +602,11 @@ const ADMIN_HTML = `<!DOCTYPE html>
   textarea{ min-height:60px; resize:vertical; }
   input[type="checkbox"]{ width:auto; }
   .checkbox-row{ display:flex; align-items:center; gap:8px; text-transform:none; letter-spacing:normal; font-size:13.5px; color:var(--ink); margin-top:14px; }
+  .gif-results{ display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:6px; margin-top:8px; }
+  .gif-results img{ width:100%; border-radius:4px; cursor:pointer; border:2px solid transparent; }
+  .gif-results img:hover{ border-color:var(--ink); }
+  .gif-selected{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+  .gif-selected img{ width:90px; border-radius:4px; border:2px solid var(--ink); }
   button{ background:var(--ink); color:var(--paper); border:none; border-radius:6px; padding:10px 14px; font-size:13.5px; font-weight:700; cursor:pointer; }
   button.ghost{ background:transparent; color:var(--ink); border:1px solid #3a352c; }
   button.small{ padding:5px 9px; font-size:12px; }
@@ -686,6 +713,17 @@ const ADMIN_HTML = `<!DOCTYPE html>
 
   <label class="checkbox-row"><input type="checkbox" id="fIndispensable"> Indispensable</label>
 
+  <label>Morceaux recommandés (un par ligne, optionnel — surtout utile pour un album)</label>
+  <textarea id="fTracks" placeholder="Titre 1&#10;Titre 2..."></textarea>
+
+  <label>Réaction GIF (optionnel)</label>
+  <div class="row" style="margin-top:0;">
+    <input id="gifSearchInput" type="text" placeholder="Chercher un GIF...">
+    <button type="button" id="gifSearchBtn" class="ghost">Chercher</button>
+  </div>
+  <div id="gifResults" class="gif-results"></div>
+  <div id="gifSelectedPreview"></div>
+
   <img id="coverPreview" class="cover-preview" style="display:none;">
 
   <div class="row"><button id="searchLinksBtn" class="ghost">Chercher les liens (Spotify / Deezer / Apple Music)</button></div>
@@ -721,8 +759,37 @@ const ADMIN_HTML = `<!DOCTYPE html>
 let selected = { spotify: null, deezer: null, apple: null };
 let resolvedCover = "";
 let entryType = "single";
+let selectedGif = "";
 
 const $ = (id) => document.getElementById(id);
+
+$("gifSearchBtn").addEventListener("click", async () => {
+  const q = $("gifSearchInput").value.trim();
+  if(!q) return;
+  $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Recherche...</div>";
+  try{
+    const res = await fetch("/gif-search?q=" + encodeURIComponent(q));
+    const data = await res.json();
+    const results = data.results || [];
+    if(!results.length){
+      $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Aucun résultat.</div>";
+      return;
+    }
+    $("gifResults").innerHTML = "";
+    results.forEach(url => {
+      const img = document.createElement("img");
+      img.src = url;
+      img.addEventListener("click", () => {
+        selectedGif = url;
+        $("gifSelectedPreview").innerHTML = "<div class='gif-selected'><img src='" + url + "'><button type='button' class='small ghost' id='gifClearBtn'>Retirer</button></div>";
+        $("gifClearBtn").addEventListener("click", () => { selectedGif = ""; $("gifSelectedPreview").innerHTML = ""; });
+      });
+      $("gifResults").appendChild(img);
+    });
+  }catch(e){
+    $("gifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Erreur de recherche.</div>";
+  }
+});
 
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -912,6 +979,8 @@ async function addToQueue(){
     note: $("fNote").value.trim(),
     cover: resolvedCover,
     indispensable: $("fIndispensable").checked,
+    recommendedTracks: $("fTracks").value.split("\n").map(s => s.trim()).filter(Boolean),
+    gifNote: selectedGif,
     links: {
       spotify: selected.spotify ? selected.spotify.url : null,
       deezer: selected.deezer ? selected.deezer.url : null,
@@ -923,11 +992,14 @@ async function addToQueue(){
     const res = await fetch("/queue", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(item) });
     if(!res.ok) throw new Error("failed");
     $("addStatus").textContent = "Ajouté à la file ✓";
-    ["sharedUrl","fArtist","fTitle","fAlbum","fDate","fStyle","fSubstyle","fNote"].forEach(id => $(id).value = "");
+    ["sharedUrl","fArtist","fTitle","fAlbum","fDate","fStyle","fSubstyle","fNote","fTracks","gifSearchInput"].forEach(id => $(id).value = "");
     $("fIndispensable").checked = false;
     resolvedCover = "";
     $("coverPreview").style.display = "none";
     selected = { spotify:null, deezer:null, apple:null };
+    selectedGif = "";
+    $("gifResults").innerHTML = "";
+    $("gifSelectedPreview").innerHTML = "";
     setEntryType("single");
     renderMatches();
     loadQueue();
@@ -1045,6 +1117,7 @@ function wallCardHtml(it){
     "<div class='actions'>" +
       "<button class='small ghost' data-action='indispensable'>" + (it.indispensable ? "★ Retirer" : "☆ Indispensable") + "</button>" +
       "<button class='small ghost' data-action='style'>Style</button>" +
+      (it.type === "album" ? "<button class='small ghost' data-action='tracks'>Morceaux (" + (it.recommendedTracks || []).length + ")</button>" : "") +
       "<button class='small ghost' data-action='delete'>✕</button>" +
     "</div>" +
   "</div>";
@@ -1057,7 +1130,21 @@ $("wallContent").addEventListener("click", (e) => {
   if(btn.dataset.action === "style") editWallStyle(id);
   if(btn.dataset.action === "delete") deleteWallItem(id);
   if(btn.dataset.action === "indispensable") toggleIndispensable(id);
+  if(btn.dataset.action === "tracks") editWallTracks(id);
 });
+
+async function editWallTracks(id){
+  const it = wallCache.find((x) => x.id === id);
+  if(!it) return;
+  const label = it.artist + " – " + (it.title || it.album);
+  const current = (it.recommendedTracks || []).join("\n");
+  const raw = prompt("Morceaux recommandés pour " + label + " (un par ligne) :", current);
+  if(raw === null) return;
+  const recommendedTracks = raw.split("\n").map((s) => s.trim()).filter(Boolean);
+  await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ recommendedTracks }) });
+  wallCache = null;
+  loadWall();
+}
 
 async function toggleIndispensable(id){
   const it = wallCache.find((x) => x.id === id);

@@ -4105,14 +4105,13 @@ function recosCardHtml(it){
   const showAlbumInSub = it.album && it.album !== mainTitle;
   const isAlbum = it.type === "album";
   return `
-    <div class="res-card${it.indispensable ? " is-indispensable" : ""}${isAlbum ? " res-card-clickable" : ""}" data-id="${it.id}">
+    <div class="res-card${it.indispensable ? " is-indispensable" : ""} res-card-clickable" data-id="${it.id}">
       ${it.indispensable ? `<div class="indispensable-badge">★ Indispensable</div>` : ""}
       ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
       <div class="res-title">${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
-      <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (isAlbum ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""}${isAlbum ? ' · <span class="res-open-hint">voir la fiche →</span>' : ""}</div>
+      <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (isAlbum ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""} · <span class="res-open-hint">voir la fiche →</span></div>
       ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}${it.substyle ? ` <span class="recos-substyle">· ${escapeHtml(it.substyle)}</span>` : ""}</div>` : ""}
       ${it.note ? `<div class="recos-note">${escapeHtml(it.note)}</div>` : ""}
-      ${it.gifNote ? `<img class="recos-gif" src="${it.gifNote}" alt="">` : ""}
       <div class="terrain-preview">
         ${links.spotify ? `<a class="terrain-preview-btn ghost" href="${links.spotify}" target="_blank" rel="noopener">Spotify</a>` : ""}
         ${links.deezer ? `<a class="terrain-preview-btn ghost" href="${links.deezer}" target="_blank" rel="noopener">Deezer</a>` : ""}
@@ -4153,8 +4152,10 @@ function openRecosAlbumOverlay(item){
           <div class="track-title">${escapeHtml(t)}</div>
         </div>
       `).join("");
-  } else {
+  } else if(item.type === "album"){
     albumTracklistBody.innerHTML = '<div class="overlay-status">La taupe n\'a pas mis en avant de morceaux précis sur cet album.</div>';
+  } else {
+    albumTracklistBody.innerHTML = "";
   }
 
   const links = item.links || {};

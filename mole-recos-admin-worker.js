@@ -667,11 +667,14 @@ const ADMIN_HTML = `<!DOCTYPE html>
   .wall-week-head{ font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.4px; margin:18px 0 8px; }
   .wall-week-head:first-child{ margin-top:0; }
   .wall-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
-  .wall-card{ background:var(--card); border:1px solid #3a352c; border-radius:10px; padding:10px; }
+  .wall-card{ background:var(--card); border:1px solid #3a352c; border-radius:10px; padding:10px; cursor:pointer; }
+  .wall-card:hover{ border-color:var(--ink); }
   .wall-card img{ width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:6px; background:var(--paper); }
   .wall-card .t{ font-weight:700; font-size:12.5px; margin-top:8px; }
   .wall-card .s{ color:var(--ink-soft); font-size:11px; margin-top:2px; }
-  .wall-card .actions{ display:flex; gap:6px; margin-top:8px; }
+  .wall-edit-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:100; overflow-y:auto; padding:20px 16px; }
+  .wall-edit-backdrop.open{ display:block; }
+  .wall-edit-modal{ max-width:420px; margin:0 auto; }
 </style>
 </head>
 <body>
@@ -765,6 +768,48 @@ const ADMIN_HTML = `<!DOCTYPE html>
 <div id="wallContent"></div>
 </div>
 
+<div id="wallEditBackdrop" class="wall-edit-backdrop">
+  <div class="wall-edit-modal card">
+    <div class="row" style="margin-top:0;justify-content:space-between;align-items:center;">
+      <strong style="font-size:14px;">Modifier</strong>
+      <button type="button" id="weCloseBtn" class="ghost small">✕ Fermer</button>
+    </div>
+    <img id="weCoverPreview" class="cover-preview" style="display:none;">
+    <label>Artiste</label>
+    <input id="weArtist" type="text">
+    <label>Titre</label>
+    <input id="weTitle" type="text">
+    <label>Album</label>
+    <input id="weAlbum" type="text">
+    <label>Date de sortie</label>
+    <input id="weDate" type="text">
+    <label>Style principal</label>
+    <input id="weStyle" type="text" list="styleOptions">
+    <label>Précision / sous-genre</label>
+    <input id="weSubstyle" type="text">
+    <label>Note perso de la taupe</label>
+    <textarea id="weNote"></textarea>
+    <label class="checkbox-row"><input type="checkbox" id="weIndispensable"> Indispensable</label>
+    <label>Morceaux recommandés (un par ligne)</label>
+    <textarea id="weTracks"></textarea>
+    <label>Lien Spotify</label>
+    <input id="weSpotify" type="text">
+    <label>Lien Deezer</label>
+    <input id="weDeezer" type="text">
+    <label>Lien Apple Music</label>
+    <input id="weApple" type="text">
+    <label>Réaction GIF</label>
+    <div id="weGifCurrent"></div>
+    <input id="weGifSearchInput" type="text" placeholder="Chercher un GIF...">
+    <div id="weGifResults" class="gif-results"></div>
+    <div class="row">
+      <button type="button" id="weSaveBtn">Enregistrer</button>
+      <button type="button" id="weDeleteBtn" class="ghost">Supprimer du mur</button>
+    </div>
+    <div id="weStatus" class="status"></div>
+  </div>
+</div>
+
 <script>
 let selected = { spotify: null, deezer: null, apple: null };
 let resolvedCover = "";
@@ -801,9 +846,8 @@ async function runGifSearch(q){
 let gifDebounce = null;
 $("gifSearchInput").addEventListener("input", () => {
   clearTimeout(gifDebounce);
-  gifDebounce = setTimeout(() => runGifSearch($("gifSearchInput").value.trim()), 350);
+  const gq = $("gifSearchInput").value.trim(); if(!gq){ $("gifResults").innerHTML = ""; return; } gifDebounce = setTimeout(() => runGifSearch(gq), 350);
 });
-runGifSearch("");
 
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1013,7 +1057,7 @@ async function addToQueue(){
     selected = { spotify:null, deezer:null, apple:null };
     selectedGif = "";
     $("gifSelectedPreview").innerHTML = "";
-    runGifSearch("");
+    $("gifResults").innerHTML = "";
     setEntryType("single");
     renderMatches();
     loadQueue();
@@ -1128,45 +1172,124 @@ function wallCardHtml(it){
     (it.cover ? "<img src='"+it.cover+"'>" : "") +
     "<div class='t'>" + (it.indispensable ? "★ " : "") + esc(it.artist) + " – " + esc(mainTitle) + "</div>" +
     "<div class='s'>" + (it.type === "album" ? "Album" : "Single") + (it.style ? " · " + esc(it.style) : "") + (it.substyle ? " (" + esc(it.substyle) + ")" : "") + "</div>" +
-    "<div class='actions'>" +
-      "<button class='small ghost' data-action='indispensable'>" + (it.indispensable ? "★ Retirer" : "☆ Indispensable") + "</button>" +
-      "<button class='small ghost' data-action='style'>Style</button>" +
-      (it.type === "album" ? "<button class='small ghost' data-action='tracks'>Morceaux (" + (it.recommendedTracks || []).length + ")</button>" : "") +
-      "<button class='small ghost' data-action='delete'>✕</button>" +
-    "</div>" +
   "</div>";
 }
 
 $("wallContent").addEventListener("click", (e) => {
-  const btn = e.target.closest("button[data-action]");
-  if(!btn) return;
-  const id = btn.closest(".wall-card").dataset.id;
-  if(btn.dataset.action === "style") editWallStyle(id);
-  if(btn.dataset.action === "delete") deleteWallItem(id);
-  if(btn.dataset.action === "indispensable") toggleIndispensable(id);
-  if(btn.dataset.action === "tracks") editWallTracks(id);
+  const card = e.target.closest(".wall-card");
+  if(!card) return;
+  openWallEdit(card.dataset.id);
 });
 
-async function editWallTracks(id){
+let editingWallId = null;
+
+function openWallEdit(id){
   const it = wallCache.find((x) => x.id === id);
   if(!it) return;
-  const label = it.artist + " – " + (it.title || it.album);
-  const current = (it.recommendedTracks || []).join("\\n");
-  const raw = prompt("Morceaux recommandés pour " + label + " (un par ligne) :", current);
-  if(raw === null) return;
-  const recommendedTracks = raw.split("\\n").map((s) => s.trim()).filter(Boolean);
-  await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ recommendedTracks }) });
-  wallCache = null;
-  loadWall();
+  editingWallId = id;
+  const links = it.links || {};
+  if(it.cover){ $("weCoverPreview").src = it.cover; $("weCoverPreview").style.display = "block"; }
+  else { $("weCoverPreview").style.display = "none"; }
+  $("weArtist").value = it.artist || "";
+  $("weTitle").value = it.title || "";
+  $("weAlbum").value = it.album || "";
+  $("weDate").value = it.date || "";
+  $("weStyle").value = it.style || "";
+  $("weSubstyle").value = it.substyle || "";
+  $("weNote").value = it.note || "";
+  $("weIndispensable").checked = !!it.indispensable;
+  $("weTracks").value = (it.recommendedTracks || []).join("\\n");
+  $("weSpotify").value = links.spotify || "";
+  $("weDeezer").value = links.deezer || "";
+  $("weApple").value = links.appleMusic || "";
+  weSelectedGif = it.gifNote || "";
+  renderWeGifCurrent();
+  $("weGifSearchInput").value = "";
+  $("weGifResults").innerHTML = "";
+  $("weStatus").textContent = "";
+  $("wallEditBackdrop").classList.add("open");
 }
 
-async function toggleIndispensable(id){
-  const it = wallCache.find((x) => x.id === id);
-  if(!it) return;
-  await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ indispensable: !it.indispensable }) });
-  wallCache = null;
-  loadWall();
+function closeWallEdit(){
+  $("wallEditBackdrop").classList.remove("open");
+  editingWallId = null;
 }
+$("weCloseBtn").addEventListener("click", closeWallEdit);
+$("wallEditBackdrop").addEventListener("click", (e) => {
+  if(e.target.id === "wallEditBackdrop") closeWallEdit();
+});
+
+let weSelectedGif = "";
+function renderWeGifCurrent(){
+  $("weGifCurrent").innerHTML = weSelectedGif
+    ? "<div class='gif-selected'><img src='" + weSelectedGif + "'><button type='button' class='small ghost' id='weGifClearBtn'>Retirer</button></div>"
+    : "";
+  const clearBtn = $("weGifClearBtn");
+  if(clearBtn) clearBtn.addEventListener("click", () => { weSelectedGif = ""; renderWeGifCurrent(); });
+}
+
+let weGifDebounce = null;
+$("weGifSearchInput").addEventListener("input", () => {
+  clearTimeout(weGifDebounce);
+  const q = $("weGifSearchInput").value.trim();
+  if(!q){ $("weGifResults").innerHTML = ""; return; }
+  weGifDebounce = setTimeout(async () => {
+    $("weGifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Chargement...</div>";
+    try{
+      const res = await fetch("/gif-search?q=" + encodeURIComponent(q));
+      const data = await res.json();
+      const results = data.results || [];
+      $("weGifResults").innerHTML = "";
+      results.forEach(url => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.addEventListener("click", () => { weSelectedGif = url; renderWeGifCurrent(); });
+        $("weGifResults").appendChild(img);
+      });
+    }catch(e){
+      $("weGifResults").innerHTML = "<div style='font-size:12px;color:var(--ink-soft);'>Erreur de recherche.</div>";
+    }
+  }, 350);
+});
+
+$("weSaveBtn").addEventListener("click", async () => {
+  if(!editingWallId) return;
+  $("weStatus").textContent = "Enregistrement...";
+  const patch = {
+    artist: $("weArtist").value.trim(),
+    title: $("weTitle").value.trim(),
+    album: $("weAlbum").value.trim(),
+    date: $("weDate").value.trim(),
+    style: $("weStyle").value.trim(),
+    substyle: $("weSubstyle").value.trim(),
+    note: $("weNote").value.trim(),
+    indispensable: $("weIndispensable").checked,
+    recommendedTracks: $("weTracks").value.split("\\n").map(s => s.trim()).filter(Boolean),
+    gifNote: weSelectedGif,
+    links: {
+      spotify: $("weSpotify").value.trim() || null,
+      deezer: $("weDeezer").value.trim() || null,
+      appleMusic: $("weApple").value.trim() || null
+    }
+  };
+  try{
+    await fetch("/wall/" + editingWallId, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(patch) });
+    wallCache = null;
+    closeWallEdit();
+    loadWall();
+  }catch(e){
+    $("weStatus").textContent = "Erreur — réessaie.";
+  }
+});
+
+$("weDeleteBtn").addEventListener("click", async () => {
+  if(!editingWallId) return;
+  if(!confirm("Retirer ce son du mur public ?")) return;
+  await fetch("/wall/" + editingWallId, { method:"DELETE" });
+  wallCache = null;
+  closeWallEdit();
+  loadWall();
+});
 
 function renderWall(){
   const styleValue = $("wallStyleFilter").value;
@@ -1213,13 +1336,6 @@ async function editWallStyle(id){
   const substyle = prompt("Précision / sous-genre pour " + label + " (optionnel) :", it.substyle || "");
   if(substyle === null) return;
   await fetch("/wall/" + id, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ style, substyle }) });
-  wallCache = null;
-  loadWall();
-}
-
-async function deleteWallItem(id){
-  if(!confirm("Retirer ce son du mur public ?")) return;
-  await fetch("/wall/" + id, { method:"DELETE" });
   wallCache = null;
   loadWall();
 }
@@ -1361,9 +1477,8 @@ async function runGifSearch(q){
 let gifDebounce = null;
 $("gifSearchInput").addEventListener("input", () => {
   clearTimeout(gifDebounce);
-  gifDebounce = setTimeout(() => runGifSearch($("gifSearchInput").value.trim()), 350);
+  const gq = $("gifSearchInput").value.trim(); if(!gq){ $("gifResults").innerHTML = ""; return; } gifDebounce = setTimeout(() => runGifSearch(gq), 350);
 });
-runGifSearch("");
 
 function setEntryType(type){
   entryType = type;

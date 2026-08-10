@@ -2057,6 +2057,7 @@
     </div>
     <div id="albumTracklistBody"></div>
     <div id="albumRecosLinks" class="terrain-preview"></div>
+    <div id="albumRecosGif"></div>
   </div>
 </div>
 
@@ -4122,6 +4123,7 @@ function recosCardHtml(it){
 }
 
 const albumRecosLinksEl = document.getElementById("albumRecosLinks");
+const albumRecosGifEl = document.getElementById("albumRecosGif");
 
 function openRecosAlbumOverlay(item){
   dockSearchHome();
@@ -4139,8 +4141,7 @@ function openRecosAlbumOverlay(item){
   albumHeaderArtist.textContent = item.artist + (item.date ? ` · ${item.date}` : "");
   albumHeaderDesc.innerHTML =
     (item.style ? `<div class="recos-style-tag">${escapeHtml(item.style)}${item.substyle ? ` <span class="recos-substyle">· ${escapeHtml(item.substyle)}</span>` : ""}</div>` : "") +
-    (item.note ? `<div style="margin-top:8px;">${escapeHtml(item.note)}</div>` : "") +
-    (item.gifNote ? `<img class="recos-gif" src="${item.gifNote}" alt="" style="margin-top:8px;max-width:200px;">` : "");
+    (item.note ? `<div style="margin-top:8px;">${escapeHtml(item.note)}</div>` : "");
 
   const tracks = Array.isArray(item.recommendedTracks) ? item.recommendedTracks : [];
   if(tracks.length){
@@ -4162,6 +4163,7 @@ function openRecosAlbumOverlay(item){
     ${links.deezer ? `<a class="terrain-preview-btn ghost" href="${links.deezer}" target="_blank" rel="noopener">Deezer</a>` : ""}
     ${links.appleMusic ? `<a class="terrain-preview-btn ghost" href="${links.appleMusic}" target="_blank" rel="noopener">Apple Music</a>` : ""}
   `;
+  albumRecosGifEl.innerHTML = item.gifNote ? `<img class="recos-gif" src="${item.gifNote}" alt="" style="margin-top:14px;max-width:200px;">` : "";
 }
 
 document.addEventListener("click", (e) => {

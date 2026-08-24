@@ -110,6 +110,28 @@
   }
   .profile-menu-item:last-child{ border-bottom:none; }
   .profile-menu-item:hover{ background:var(--paper-dim); }
+  .settings-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding:14px 4px;
+    border-bottom:1px solid var(--paper-dim);
+  }
+  .settings-row-title{
+    font-weight:800;
+    font-size:14px;
+  }
+  .settings-row-desc{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .settings-more-hint{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:14px 4px 0;
+  }
   .credits-logo-wrap{
     position:relative;
     width:200px;
@@ -241,7 +263,8 @@
     flex-shrink:0;
   }
   .hsr-add:disabled{opacity:0.4; cursor:default;}
-  .hsr-empty, .hsr-loading{padding:10px; font-size:12px; color:var(--ink-soft);}
+  .hsr-empty, .hsr-loading, .hsr-hint{padding:10px; font-size:12px; color:var(--ink-soft);}
+  .hsr-hint{ line-height:1.5; }
   .mole-logo-wrap{
     position:relative;
     width:140px;
@@ -1573,12 +1596,71 @@
     line-height:1.6;
   }
   /* --- Chat view --- */
+  .chat-widget{
+    position:fixed;
+    right:18px;
+    bottom:18px;
+    z-index:400;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:10px;
+  }
+  .chat-widget-launcher{
+    width:54px;
+    height:54px;
+    border-radius:50%;
+    background:#000;
+    border:2px solid #fff;
+    cursor:pointer;
+    padding:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.3);
+    flex-shrink:0;
+  }
+  .chat-widget-launcher svg{
+    width:28px;
+    height:28px;
+  }
+  .chat-widget-panel{
+    display:none;
+    flex-direction:column;
+    width:min(340px, 88vw);
+    height:min(480px, 70vh);
+    background:var(--paper);
+    border:2px solid var(--line);
+    border-radius:4px 18px 4px 18px;
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+    padding:14px;
+  }
+  .chat-widget-panel.open{ display:flex; }
+  .chat-widget-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:6px;
+    flex-shrink:0;
+  }
+  .chat-widget-head h3{
+    margin:0;
+    font-size:15px;
+  }
+  .chat-widget-close{
+    background:none;
+    border:none;
+    font-size:20px;
+    line-height:1;
+    color:var(--ink);
+    cursor:pointer;
+    flex-shrink:0;
+  }
   .chat-wrap{
     display:flex;
     flex-direction:column;
-    height:60vh;
-    min-height:340px;
-    margin-top:10px;
+    flex:1;
+    min-height:0;
   }
   .chat-log{
     flex:1;
@@ -1675,7 +1757,6 @@
 </header>
 
 <div class="top-bar-left" id="topBarLeft">
-  <button class="theme-toggle-btn" id="themeToggleBtn" title="Mode nuit">&#9789;</button>
   <div class="header-search">
     <input type="text" id="albumSearchInput" placeholder="Creuse un nom, un titre..." autocomplete="off">
     <div class="header-search-results" id="albumSearchResults"></div>
@@ -1689,6 +1770,7 @@
   <div class="profile-menu" id="profileMenu">
     <button class="profile-menu-item" id="menuProfilBtn">Profil</button>
     <button class="profile-menu-item" id="menuMusicothequeBtn">Musicothèque</button>
+    <button class="profile-menu-item" id="menuParamsBtn">Paramètres</button>
     <button class="profile-menu-item" id="menuCreditsBtn">Crédits</button>
   </div>
 </div>
@@ -1697,7 +1779,6 @@
   <button class="tab-btn active" data-tab="accueil">Accueil</button>
   <button class="tab-btn" data-tab="creuser">Creuser</button>
   <button class="tab-btn" data-tab="recos">Recos de la taupe</button>
-  <button class="tab-btn" data-tab="chat">Discute</button>
 </div>
 
 <main>
@@ -1859,8 +1940,17 @@
   </section>
 
 
-  <!-- ===== CHAT (LA TAUPE PARLE) VIEW ===== -->
-  <section id="view-chat" class="view">
+</main>
+
+<footer>MOLE V0.3 — data curée à la main sur 9 genres · Apple Music &amp; YouTube en liens externes</footer>
+
+<!-- ===== CHAT FLOTTANT (LA TAUPE PARLE) ===== -->
+<div class="chat-widget" id="chatWidget">
+  <div class="chat-widget-panel" id="chatWidgetPanel">
+    <div class="chat-widget-head">
+      <h3>Discute avec la taupe</h3>
+      <button class="chat-widget-close" id="chatWidgetClose" title="Fermer">&times;</button>
+    </div>
     <div class="chat-wrap">
       <div class="chat-log" id="chatLog">
         <div class="msg mole"><span class="msg-tag">La taupe</span>Salut, je suis la taupe de MOLE ! Demande-moi ce que tu veux sur la musique &mdash; artistes, genres, samples, matos, culture du digging... Je reste sous terre pour tout le reste. &#9935;</div>
@@ -1871,11 +1961,18 @@
       </div>
       <p class="chat-hint">La taupe ne parle que musique &mdash; elle recadre gentiment le reste.</p>
     </div>
-  </section>
-
-</main>
-
-<footer>MOLE V0.3 — data curée à la main sur 9 genres · Apple Music &amp; YouTube en liens externes</footer>
+  </div>
+  <button class="chat-widget-launcher" id="chatWidgetLauncher" title="Discute avec la taupe">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <path d="M46,22 C63,22 76,33 76,47 C76,58 68,67 57,70 L60,84 L44,71 C29,69 18,59 18,47 C18,33 31,22 46,22 Z" fill="#fff"/>
+      <path d="M40,16 C57,16 70,27 70,41 C70,55 57,66 40,66 C36,66 32,65.4 28.7,64.3 L14,74 L18.5,58.5 C13.7,53.8 11,47.7 11,41 C11,27 24,16 40,16 Z" fill="#000"/>
+      <circle cx="26" cy="41" r="4.2" fill="#fff"/>
+      <circle cx="40" cy="41" r="4.2" fill="#fff"/>
+      <circle cx="54" cy="41" r="4.2" fill="#fff"/>
+      <path d="M60,45 C67,50 67,58 60,64" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>
+  </button>
+</div>
 
 <div class="overlay" id="searchOverlay">
   <div class="overlay-inner">
@@ -1887,7 +1984,6 @@
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
         <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
     <div class="search-filter-tabs" id="searchFilterTabs"></div>
@@ -1906,7 +2002,6 @@
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
         <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
     <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
@@ -1935,7 +2030,6 @@
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
         <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
     <div id="libraryOverlayBody"></div>
@@ -1953,7 +2047,6 @@
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
         <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
 
@@ -2011,6 +2104,30 @@
   </div>
 </div>
 
+<div class="overlay" id="settingsOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-topbar">
+      <div class="overlay-topbar-row">
+        <h3>Paramètres</h3>
+        <button class="overlay-close" id="settingsOverlayClose" title="Fermer">&times;</button>
+      </div>
+      <div class="mini-tabs">
+        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
+        <button class="tab-btn mini" data-tab="recos">Recos</button>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Apparence</div>
+        <div class="settings-row-desc">Bascule entre mode jour et mode nuit.</div>
+      </div>
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Mode nuit">&#9789;</button>
+    </div>
+    <p class="settings-more-hint">D'autres réglages arriveront ici.</p>
+  </div>
+</div>
+
 <div class="overlay" id="artistOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
@@ -2022,7 +2139,6 @@
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
         <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
     <div class="artist-bio-block" id="artistBioBlock">
@@ -2044,7 +2160,6 @@
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
         <button class="tab-btn mini" data-tab="creuser">Creuser</button>
         <button class="tab-btn mini" data-tab="recos">Recos</button>
-        <button class="tab-btn mini" data-tab="chat">Discute</button>
       </div>
     </div>
     <div class="album-header">
@@ -2574,6 +2689,7 @@ function closeAllOverlays(){
   document.getElementById("albumOverlay").classList.remove("open");
   document.getElementById("profileOverlay").classList.remove("open");
   document.getElementById("creditsOverlay").classList.remove("open");
+  document.getElementById("settingsOverlay").classList.remove("open");
   document.getElementById("ratingModalBackdrop").classList.remove("open");
   document.getElementById("profileMenu").classList.remove("open");
 }
@@ -2601,11 +2717,27 @@ document.getElementById("menuCreditsBtn").addEventListener("click", () => {
   closeAllOverlays();
   document.getElementById("creditsOverlay").classList.add("open");
 });
+document.getElementById("menuParamsBtn").addEventListener("click", () => {
+  closeAllOverlays();
+  document.getElementById("settingsOverlay").classList.add("open");
+});
 document.getElementById("profileOverlayClose").addEventListener("click", () => {
   document.getElementById("profileOverlay").classList.remove("open");
 });
 document.getElementById("creditsOverlayClose").addEventListener("click", () => {
   document.getElementById("creditsOverlay").classList.remove("open");
+});
+document.getElementById("settingsOverlayClose").addEventListener("click", () => {
+  document.getElementById("settingsOverlay").classList.remove("open");
+});
+
+// ---------- chat flottant ----------
+const chatWidgetPanel = document.getElementById("chatWidgetPanel");
+document.getElementById("chatWidgetLauncher").addEventListener("click", () => {
+  chatWidgetPanel.classList.toggle("open");
+});
+document.getElementById("chatWidgetClose").addEventListener("click", () => {
+  chatWidgetPanel.classList.remove("open");
 });
 function switchTab(tabName){
   document.querySelectorAll(".tab-btn[data-tab]").forEach(b=>b.classList.toggle("active", b.dataset.tab === tabName));
@@ -2855,6 +2987,12 @@ albumSearchInput.addEventListener("keydown", (e) => {
   clearTimeout(albumSearchDebounce);
   albumSearchResults.classList.remove("open");
   openSearchOverlay(q);
+});
+
+albumSearchInput.addEventListener("focus", () => {
+  if(albumSearchInput.value.trim().length > 0) return;
+  albumSearchResults.innerHTML = '<div class="hsr-hint">Cherche un artiste ou un album &mdash; note-le, garde une trace dans ta Musicothèque.</div>';
+  albumSearchResults.classList.add("open");
 });
 
 document.addEventListener("click", (e) => {

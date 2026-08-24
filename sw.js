@@ -1,4 +1,4 @@
-const CACHE_NAME = "mole-v4";
+const CACHE_NAME = "mole-v5";
 const ASSETS = [
   "./index.html",
   "./manifest.json",
@@ -23,19 +23,19 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Réseau en priorité (tant que tu es en ligne, tu vois toujours la dernière version
+// déployée dès le premier chargement) — le cache ne sert que de secours hors-ligne.
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (event.request.method === "GET" && networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse.ok) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

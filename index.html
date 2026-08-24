@@ -1036,7 +1036,8 @@
   .overlay-topbar{
     display:flex;
     flex-direction:column;
-    gap:8px;
+    align-items:center;
+    gap:6px;
     padding:10px 0 14px;
     border-bottom:2px solid var(--line);
     margin-bottom:16px;
@@ -1050,6 +1051,7 @@
     align-items:center;
     justify-content:space-between;
     gap:12px;
+    width:100%;
   }
   .overlay-topbar h3{
     margin:0;
@@ -1057,8 +1059,12 @@
     font-size:18px;
     text-transform:uppercase;
     letter-spacing:1px;
+    text-align:center;
   }
   .overlay-close{
+    position:absolute;
+    top:10px;
+    right:0;
     background:var(--ink);
     color:var(--paper);
     border:2px solid var(--line);
@@ -1069,9 +1075,13 @@
     cursor:pointer;
     flex-shrink:0;
   }
+  .overlay-topbar-row .overlay-close{
+    position:static;
+  }
   .mini-tabs{
     display:flex;
     flex-wrap:wrap;
+    justify-content:center;
     gap:6px;
   }
   .tab-btn.mini{
@@ -2205,13 +2215,11 @@
 <div class="overlay" id="profileOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
-      <div class="overlay-topbar-row">
-        <h3>Mon Profil</h3>
-        <button class="overlay-close" id="profileOverlayClose" title="Fermer">&times;</button>
-      </div>
+      <button class="overlay-close" id="profileOverlayClose" title="Fermer">&times;</button>
       <div class="mini-tabs">
         <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
+      <h3>Mon Profil</h3>
     </div>
     <div class="profile-id-row">
       <img class="profile-avatar" src="./icon-512.png" alt="">
@@ -2235,13 +2243,11 @@
 <div class="overlay" id="libraryOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
-      <div class="overlay-topbar-row">
-        <h3>Musicothèque</h3>
-        <button class="overlay-close" id="libraryOverlayClose" title="Fermer">&times;</button>
-      </div>
+      <button class="overlay-close" id="libraryOverlayClose" title="Fermer">&times;</button>
       <div class="mini-tabs">
         <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
+      <h3>Musicothèque</h3>
     </div>
     <div id="libraryOverlayBody"></div>
   </div>
@@ -2250,13 +2256,11 @@
 <div class="overlay" id="creditsOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
-      <div class="overlay-topbar-row">
-        <h3>Crédits</h3>
-        <button class="overlay-close" id="creditsOverlayClose" title="Fermer">&times;</button>
-      </div>
+      <button class="overlay-close" id="creditsOverlayClose" title="Fermer">&times;</button>
       <div class="mini-tabs">
         <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
+      <h3>Crédits</h3>
     </div>
 
     <div class="credits-logo-wrap">
@@ -2316,13 +2320,11 @@
 <div class="overlay" id="settingsOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
-      <div class="overlay-topbar-row">
-        <h3>Paramètres</h3>
-        <button class="overlay-close" id="settingsOverlayClose" title="Fermer">&times;</button>
-      </div>
+      <button class="overlay-close" id="settingsOverlayClose" title="Fermer">&times;</button>
       <div class="mini-tabs">
         <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
+      <h3>Paramètres</h3>
     </div>
     <div class="settings-row">
       <div>
@@ -2379,13 +2381,11 @@
 <div class="overlay" id="artistOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
-      <div class="overlay-topbar-row">
-        <h3 id="artistOverlayTitle">Artiste</h3>
-        <button class="overlay-close" id="artistOverlayClose" title="Fermer">&times;</button>
-      </div>
+      <button class="overlay-close" id="artistOverlayClose" title="Fermer">&times;</button>
       <div class="mini-tabs">
         <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
+      <h3 id="artistOverlayTitle">Artiste</h3>
     </div>
     <div class="artist-bio-block" id="artistBioBlock">
       <div class="avatar lg" id="artistProfileAvatar"></div>
@@ -2398,13 +2398,11 @@
 <div class="overlay" id="albumOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
-      <div class="overlay-topbar-row">
-        <h3 id="albumOverlayTitle">Album</h3>
-        <button class="overlay-close" id="albumOverlayClose" title="Fermer">&times;</button>
-      </div>
+      <button class="overlay-close" id="albumOverlayClose" title="Fermer">&times;</button>
       <div class="mini-tabs">
         <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
+      <h3 id="albumOverlayTitle">Album</h3>
     </div>
     <div class="album-header">
       <img class="album-cover-big" id="albumCoverBig" alt="">

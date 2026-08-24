@@ -4962,7 +4962,16 @@ renderAccueilLibrarySummary();
 loadRecosWallIfNeeded().then(renderAccueilRecosPreview);
 
 // ---------- PWA install (service worker) ----------
+// Dès qu'une nouvelle version du service worker prend la main, on recharge la page
+// automatiquement une fois — sinon l'ancien service worker reste actif tant qu'on n'a
+// pas rechargé "à la main" une seconde fois, ce qui donne l'impression que rien ne se met à jour.
 if("serviceWorker" in navigator){
+  let swRefreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if(swRefreshing) return;
+    swRefreshing = true;
+    window.location.reload();
+  });
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(()=>{});
   });

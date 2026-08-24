@@ -132,6 +132,31 @@
     color:var(--ink-soft);
     padding:14px 4px 0;
   }
+  .settings-section-title{
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--ink-soft);
+    margin:22px 0 4px;
+  }
+  .settings-section-title:first-of-type{ margin-top:6px; }
+  .settings-action-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    border-radius:3px 10px 3px 10px;
+    padding:8px 14px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .settings-action-btn.danger{
+    background:var(--paper);
+    color:#b23b3b;
+    border-color:#b23b3b;
+  }
   .credits-logo-wrap{
     position:relative;
     width:200px;
@@ -445,11 +470,19 @@
   }
   .accueil-link:hover{ color:var(--ink); }
   .accueil-modes{
-    display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
-    gap:12px;
+    display:flex;
+    gap:14px;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    padding-bottom:2px;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
   }
+  .accueil-modes::-webkit-scrollbar{ display:none; }
   .accueil-mode-btn{
+    scroll-snap-align:center;
+    flex:0 0 82%;
+    max-width:320px;
     display:flex;
     flex-direction:column;
     align-items:flex-start;
@@ -466,6 +499,29 @@
   .accueil-mode-emoji{ font-size:20px; }
   .accueil-mode-title{ font-size:14px; font-weight:700; }
   .accueil-mode-desc{ font-size:11.5px; color:var(--ink-soft); }
+  .accueil-modes-dots{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:12px;
+  }
+  .accueil-dot{
+    width:11px;
+    height:11px;
+    border-radius:50%;
+    background:var(--paper-dim);
+    border:2px solid var(--line);
+    cursor:pointer;
+    padding:0;
+  }
+  .accueil-dot.active{
+    background:var(--ink);
+    border-color:var(--ink);
+  }
+  @media (min-width:600px){
+    .accueil-mode-btn{ flex:0 0 calc(33.33% - 10px); max-width:none; }
+    .accueil-modes-dots{ display:none; }
+  }
   .accueil-library-summary{
     display:flex;
     align-items:center;
@@ -851,23 +907,57 @@
     min-height:18px;
     font-weight:700;
   }
-  .collection-block{
+  .profile-id-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:18px;
+  }
+  .profile-avatar{
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    border:2px solid #fff;
+    background:#000;
+    object-fit:cover;
+    flex-shrink:0;
+  }
+  .profile-username{
+    font-size:16px;
+    font-weight:800;
+  }
+  .profile-username-hint{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .profile-stats-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  .profile-stat{
+    flex:1;
     background:var(--card);
     border:2px solid var(--line);
-    border-radius:4px 14px 4px 14px;
-    padding:14px 16px;
-    margin-bottom:20px;
+    border-radius:4px 12px 4px 12px;
+    padding:10px 8px;
+    text-align:center;
   }
-  .collection-block h4{
-    margin:0 0 4px;
-    font-size:13px;
+  .profile-stat-num{
+    font-size:16px;
+    font-weight:800;
+  }
+  .profile-stat-label{
+    font-size:10.5px;
+    color:var(--ink-soft);
     text-transform:uppercase;
-    letter-spacing:0.5px;
+    letter-spacing:0.3px;
+    margin-top:2px;
   }
-  .collection-block > p{
+  .profile-stats-empty{
     font-size:12.5px;
     color:var(--ink-soft);
-    margin:2px 0 12px;
     line-height:1.4;
   }
   /* --- Overlays plein écran (recherche & bibliothèque) --- */
@@ -1381,14 +1471,60 @@
     flex-wrap:wrap;
     margin:0 0 16px;
   }
-  .recos-discover select{
-    background:var(--paper);
+  .type-switch{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .type-switch-toggle{
+    position:relative;
+    width:42px;
+    height:24px;
+    border-radius:14px;
+    background:var(--paper-dim);
     border:2px solid var(--line);
-    border-radius:8px;
-    padding:8px 11px;
-    font-size:16px;
+    cursor:pointer;
+    padding:0;
+    flex-shrink:0;
+  }
+  .type-switch-toggle.on{ background:var(--ink); }
+  .type-switch-knob{
+    position:absolute;
+    top:1px;
+    left:1px;
+    width:16px;
+    height:16px;
+    border-radius:50%;
+    background:var(--ink);
+    transition:transform .18s ease, background .18s ease;
+  }
+  .type-switch-toggle.on .type-switch-knob{
+    transform:translateX(18px);
+    background:var(--paper);
+  }
+  .type-switch-label{
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink-soft);
+  }
+  .type-switch-as{
+    display:flex;
+    border:2px solid var(--line);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  .type-switch-as-opt{
+    background:var(--paper);
     color:var(--ink);
-    font-weight:600;
+    border:none;
+    padding:6px 14px;
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .type-switch-as-opt.active{
+    background:var(--ink);
+    color:var(--paper);
   }
   #recosDiscoverResult:empty{ display:none; }
   #recosDiscoverResult{ margin:0 0 26px; }
@@ -1777,8 +1913,6 @@
 
 <div class="tabs">
   <button class="tab-btn active" data-tab="accueil">Accueil</button>
-  <button class="tab-btn" data-tab="creuser">Creuser</button>
-  <button class="tab-btn" data-tab="recos">Recos de la taupe</button>
 </div>
 
 <main>
@@ -1794,7 +1928,7 @@
     </div>
     <div class="accueil-block">
       <h3>Comment tu veux creuser aujourd'hui ?</h3>
-      <div class="accueil-modes">
+      <div class="accueil-modes" id="accueilModes">
         <button class="accueil-mode-btn" data-creuser-mode="terrain">
           <span class="accueil-mode-emoji">⛏</span>
           <span class="accueil-mode-title">Terrain vague</span>
@@ -1810,6 +1944,11 @@
           <span class="accueil-mode-title">La Piste</span>
           <span class="accueil-mode-desc">Sons proches de tes bangers</span>
         </button>
+      </div>
+      <div class="accueil-modes-dots" id="accueilModesDots">
+        <span class="accueil-dot active" data-idx="0"></span>
+        <span class="accueil-dot" data-idx="1"></span>
+        <span class="accueil-dot" data-idx="2"></span>
       </div>
     </div>
     <div class="accueil-block">
@@ -1894,18 +2033,21 @@
   <section id="view-recos" class="view">
     <p class="recos-intro">Chaque vendredi, la taupe balance ses trouvailles de la semaine — pas d'algorithme ici, juste ce qu'elle a écouté et pourquoi ça lui a plu.</p>
 
+    <div id="recosThisWeek"></div>
+    <div id="recosLastWeek"></div>
+
     <div class="recos-discover">
-      <select id="recosDiscoverType">
-        <option value="">Peu importe</option>
-        <option value="album">Un album</option>
-        <option value="single">Un single</option>
-      </select>
+      <div class="type-switch" id="recosTypeSwitch">
+        <button class="type-switch-toggle" id="recosTypeToggle" type="button" role="switch" aria-checked="false" title="Filtrer par type"><span class="type-switch-knob"></span></button>
+        <div class="type-switch-label" id="recosTypeLabel">Peu importe</div>
+        <div class="type-switch-as" id="recosAsSwitch" style="display:none;">
+          <button class="type-switch-as-opt active" data-val="album" type="button">Album</button>
+          <button class="type-switch-as-opt" data-val="single" type="button">Single</button>
+        </div>
+      </div>
       <button class="save-btn" id="recosDiscoverBtn">🎲 Surprends-moi</button>
     </div>
     <div id="recosDiscoverResult"></div>
-
-    <div id="recosThisWeek"></div>
-    <div id="recosLastWeek"></div>
 
     <div class="recos-wall-head">
       <h3>Tout le mur</h3>
@@ -1982,8 +2124,6 @@
       </div>
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
-        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
-        <button class="tab-btn mini" data-tab="recos">Recos</button>
       </div>
     </div>
     <div class="search-filter-tabs" id="searchFilterTabs"></div>
@@ -2000,17 +2140,19 @@
       </div>
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
-        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
-        <button class="tab-btn mini" data-tab="recos">Recos</button>
       </div>
     </div>
-    <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
-
-    <div class="collection-block">
-      <h4>Musicothèque</h4>
-      <p id="libraryTeaser">Aucun album noté pour l'instant.</p>
-      <button class="save-btn" id="openLibraryBtn">Ouvrir ma musicothèque</button>
+    <div class="profile-id-row">
+      <img class="profile-avatar" src="./icon-512.png" alt="">
+      <div>
+        <div class="profile-username">Digger anonyme</div>
+        <div class="profile-username-hint">Nom temporaire — les comptes perso arrivent avec le serveur</div>
+      </div>
     </div>
+
+    <div class="profile-stats-row" id="profileStatsRow"></div>
+
+    <p class="profil-intro">Pas de connexion Apple Music/Last.fm pour l'instant (ça viendra) — en attendant, dis-moi ce que t'aimes et ce que tu connais déjà, ça suffit à rendre les recos moins random.</p>
 
     <div id="genreChips" class="chip-row"></div>
     <div id="knownArtists"></div>
@@ -2028,8 +2170,6 @@
       </div>
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
-        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
-        <button class="tab-btn mini" data-tab="recos">Recos</button>
       </div>
     </div>
     <div id="libraryOverlayBody"></div>
@@ -2045,8 +2185,6 @@
       </div>
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
-        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
-        <button class="tab-btn mini" data-tab="recos">Recos</button>
       </div>
     </div>
 
@@ -2113,8 +2251,6 @@
       </div>
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
-        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
-        <button class="tab-btn mini" data-tab="recos">Recos</button>
       </div>
     </div>
     <div class="settings-row">
@@ -2124,7 +2260,48 @@
       </div>
       <button class="theme-toggle-btn" id="themeToggleBtn" title="Mode nuit">&#9789;</button>
     </div>
-    <p class="settings-more-hint">D'autres réglages arriveront ici.</p>
+
+    <div class="settings-section-title">Mes données</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Exporter mes données</div>
+        <div class="settings-row-desc">Musicothèque, profil de goûts et bangers, dans un fichier à garder de côté.</div>
+      </div>
+      <button class="settings-action-btn" id="exportDataBtn">Exporter</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Importer mes données</div>
+        <div class="settings-row-desc">Recharge un fichier exporté — écrase les données actuelles.</div>
+      </div>
+      <button class="settings-action-btn" id="importDataBtn">Importer</button>
+      <input type="file" id="importDataInput" accept="application/json" style="display:none;">
+    </div>
+
+    <div class="settings-section-title">Réinitialiser</div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Vider ma musicothèque</div>
+        <div class="settings-row-desc">Supprime toutes tes notes et commentaires.</div>
+      </div>
+      <button class="settings-action-btn danger" id="resetCollectionBtn">Vider</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Réinitialiser mon profil de goûts</div>
+        <div class="settings-row-desc">Genres et artistes déjà connus, à refaire depuis Profil.</div>
+      </div>
+      <button class="settings-action-btn danger" id="resetProfileBtn">Réinitialiser</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Vider ma liste de bangers</div>
+        <div class="settings-row-desc">Les morceaux ajoutés dans La Piste.</div>
+      </div>
+      <button class="settings-action-btn danger" id="resetBangersBtn">Vider</button>
+    </div>
+
+    <p class="settings-more-hint" id="settingsActionStatus"></p>
   </div>
 </div>
 
@@ -2137,8 +2314,6 @@
       </div>
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
-        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
-        <button class="tab-btn mini" data-tab="recos">Recos</button>
       </div>
     </div>
     <div class="artist-bio-block" id="artistBioBlock">
@@ -2158,8 +2333,6 @@
       </div>
       <div class="mini-tabs">
         <button class="tab-btn mini" data-tab="accueil">Accueil</button>
-        <button class="tab-btn mini" data-tab="creuser">Creuser</button>
-        <button class="tab-btn mini" data-tab="recos">Recos</button>
       </div>
     </div>
     <div class="album-header">
@@ -2731,6 +2904,80 @@ document.getElementById("settingsOverlayClose").addEventListener("click", () => 
   document.getElementById("settingsOverlay").classList.remove("open");
 });
 
+// ---------- Paramètres : export / import / réinitialisation des données locales ----------
+const settingsActionStatus = document.getElementById("settingsActionStatus");
+function flashSettingsStatus(msg){
+  settingsActionStatus.textContent = msg;
+  setTimeout(() => { if(settingsActionStatus.textContent === msg) settingsActionStatus.textContent = ""; }, 3500);
+}
+
+document.getElementById("exportDataBtn").addEventListener("click", () => {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    collection: JSON.parse(localStorage.getItem(COLLECTION_KEY) || "[]"),
+    profile: JSON.parse(localStorage.getItem(PROFILE_KEY) || "null"),
+    bangers: JSON.parse(localStorage.getItem(BANGERS_KEY) || "[]")
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `mole-data-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  flashSettingsStatus("Export téléchargé.");
+});
+
+document.getElementById("importDataBtn").addEventListener("click", () => {
+  document.getElementById("importDataInput").click();
+});
+document.getElementById("importDataInput").addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(Array.isArray(data.collection)) localStorage.setItem(COLLECTION_KEY, JSON.stringify(data.collection));
+      if(data.profile) localStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
+      if(Array.isArray(data.bangers)) localStorage.setItem(BANGERS_KEY, JSON.stringify(data.bangers));
+      profile = loadProfile();
+      renderGenreChips();
+      renderKnownArtists();
+      updateProfileStats();
+      flashSettingsStatus("Données importées.");
+    }catch(err){
+      flashSettingsStatus("Fichier invalide.");
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+
+document.getElementById("resetCollectionBtn").addEventListener("click", () => {
+  if(!confirm("Vider toute ta musicothèque (notes et commentaires) ? Cette action est irréversible.")) return;
+  localStorage.removeItem(COLLECTION_KEY);
+  updateProfileStats();
+  if(libraryOverlay.classList.contains("open")) renderLibraryOverlay();
+  flashSettingsStatus("Musicothèque vidée.");
+});
+
+document.getElementById("resetProfileBtn").addEventListener("click", () => {
+  if(!confirm("Réinitialiser ton profil de goûts (genres et artistes connus) ?")) return;
+  localStorage.removeItem(PROFILE_KEY);
+  profile = { liked: [], known: {} };
+  renderGenreChips();
+  renderKnownArtists();
+  flashSettingsStatus("Profil de goûts réinitialisé.");
+});
+
+document.getElementById("resetBangersBtn").addEventListener("click", () => {
+  if(!confirm("Vider ta liste de bangers dans La Piste ?")) return;
+  localStorage.removeItem(BANGERS_KEY);
+  renderBangers();
+  flashSettingsStatus("Liste de bangers vidée.");
+});
+
 // ---------- chat flottant ----------
 const chatWidgetPanel = document.getElementById("chatWidgetPanel");
 document.getElementById("chatWidgetLauncher").addEventListener("click", () => {
@@ -2764,6 +3011,36 @@ document.querySelectorAll(".accueil-mode-btn[data-creuser-mode]").forEach(btn=>{
 document.querySelectorAll(".accueil-link[data-tab]").forEach(btn=>{
   btn.onclick = () => switchTab(btn.dataset.tab);
 });
+
+// carrousel des 3 modes de creusage : points synchronisés avec le défilement, cliquables
+(function(){
+  const track = document.getElementById("accueilModes");
+  const dots = Array.from(document.querySelectorAll(".accueil-dot"));
+  if(!track || !dots.length) return;
+  function updateActiveDot(){
+    const cards = Array.from(track.children);
+    const trackRect = track.getBoundingClientRect();
+    const trackCenter = trackRect.left + trackRect.width / 2;
+    let closestIdx = 0, closestDist = Infinity;
+    cards.forEach((card, i) => {
+      const r = card.getBoundingClientRect();
+      const dist = Math.abs((r.left + r.width / 2) - trackCenter);
+      if(dist < closestDist){ closestDist = dist; closestIdx = i; }
+    });
+    dots.forEach((d, i) => d.classList.toggle("active", i === closestIdx));
+  }
+  let scrollTimeout;
+  track.addEventListener("scroll", () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(updateActiveDot, 80);
+  });
+  dots.forEach((dot, i) => {
+    dot.addEventListener("click", () => {
+      const card = track.children[i];
+      if(card) card.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    });
+  });
+})();
 
 // ---------- Le Tunnel (explore) ----------
 let currentDepth = 0;
@@ -2951,7 +3228,7 @@ function saveCollectionList(list){
 }
 function removeFromCollection(mbid){
   saveCollectionList(loadCollection().filter(a => a.mbid !== mbid));
-  updateLibraryTeaser();
+  updateProfileStats();
   if(libraryOverlay.classList.contains("open")) renderLibraryOverlay();
 }
 function starString(rating){
@@ -3556,7 +3833,7 @@ ratingModalSaveBtn.addEventListener("click", () => {
   };
   if(idx >= 0) list[idx] = entry; else list.unshift(entry);
   saveCollectionList(list);
-  updateLibraryTeaser();
+  updateProfileStats();
 
   const discoCard = artistOverlayBody.querySelector(`.disco-card[data-mbid="${entry.mbid}"]`);
   if(discoCard){
@@ -3669,11 +3946,6 @@ function renderAlbumTracklist(tracks, rgMbid, artistName, year){
 const libraryOverlay = document.getElementById("libraryOverlay");
 const libraryOverlayBody = document.getElementById("libraryOverlayBody");
 document.getElementById("libraryOverlayClose").addEventListener("click", () => libraryOverlay.classList.remove("open"));
-document.getElementById("openLibraryBtn").addEventListener("click", () => {
-  dockSearchHome();
-  libraryOverlay.classList.add("open");
-  renderLibraryOverlay();
-});
 
 function renderLibraryOverlay(){
   const list = loadCollection();
@@ -3706,13 +3978,24 @@ function renderLibraryOverlay(){
   libraryOverlayBody.appendChild(grid);
 }
 
-function updateLibraryTeaser(){
-  const el = document.getElementById("libraryTeaser");
+function updateProfileStats(){
+  const el = document.getElementById("profileStatsRow");
   if(!el) return;
-  const n = loadCollection().length;
-  el.textContent = n ? `${n} album${n>1?"s":""} noté${n>1?"s":""}.` : "Aucun album noté pour l'instant.";
+  const list = loadCollection();
+  if(!list.length){
+    el.innerHTML = '<div class="profile-stats-empty">Aucun son noté pour l\'instant — cherche un album ou un morceau et note-le pour voir tes stats ici.</div>';
+    return;
+  }
+  const avg = (list.reduce((s, a) => s + (a.rating || 0), 0) / list.length).toFixed(1);
+  const lastAt = Math.max(...list.map(a => a.addedAt || 0));
+  const lastDate = lastAt ? new Date(lastAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : "—";
+  el.innerHTML = `
+    <div class="profile-stat"><div class="profile-stat-num">${list.length}</div><div class="profile-stat-label">son${list.length > 1 ? "s" : ""} noté${list.length > 1 ? "s" : ""}</div></div>
+    <div class="profile-stat"><div class="profile-stat-num">${avg}★</div><div class="profile-stat-label">moyenne</div></div>
+    <div class="profile-stat"><div class="profile-stat-num">${lastDate}</div><div class="profile-stat-label">dernière activité</div></div>
+  `;
 }
-updateLibraryTeaser();
+updateProfileStats();
 
 // ---------- Terrain vague : découverte brute via une base de données factuelle ----------
 const terrainGenre = document.getElementById("terrainGenre");
@@ -4280,21 +4563,7 @@ function openRecosAlbumOverlay(item){
     (item.style ? `<div class="recos-style-tag">${escapeHtml(item.style)}${item.substyle ? ` <span class="recos-substyle">· ${escapeHtml(item.substyle)}</span>` : ""}</div>` : "") +
     (item.note ? `<div style="margin-top:8px;">${escapeHtml(item.note)}</div>` : "");
 
-  const tracks = Array.isArray(item.recommendedTracks) ? item.recommendedTracks : [];
-  if(tracks.length){
-    albumTracklistBody.innerHTML =
-      `<div class="overlay-status" style="text-align:left;padding:0 0 6px;">La taupe recommande particulièrement :</div>` +
-      tracks.map((t, i) => `
-        <div class="track-row">
-          <div class="track-num">${i + 1}</div>
-          <div class="track-title">${escapeHtml(t)}</div>
-        </div>
-      `).join("");
-  } else if(item.type === "album"){
-    albumTracklistBody.innerHTML = '<div class="overlay-status">La taupe n\'a pas mis en avant de morceaux précis sur cet album.</div>';
-  } else {
-    albumTracklistBody.innerHTML = "";
-  }
+  fillRecosTracklist(item, title);
 
   const links = item.links || {};
   albumRecosLinksEl.innerHTML = `
@@ -4303,6 +4572,114 @@ function openRecosAlbumOverlay(item){
     ${links.appleMusic ? `<a class="terrain-preview-btn ghost" href="${links.appleMusic}" target="_blank" rel="noopener">Apple Music</a>` : ""}
   `;
   albumRecosGifEl.innerHTML = item.gifNote ? `<img class="recos-gif" src="${item.gifNote}" alt="" style="margin-top:14px;max-width:200px;">` : "";
+}
+
+// Résout un release-group MusicBrainz à partir d'un artiste + titre connus avec précision
+// (recherche structurée par champs) — contrairement à searchEverything, pensée pour une saisie
+// humaine courte, ici on connaît déjà les deux champs séparément donc autant les préciser.
+async function resolveReleaseGroupByArtistTitle(artist, title){
+  const safeArtist = (artist || "").replace(/"/g, "");
+  const safeTitle = (title || "").replace(/"/g, "");
+  try{
+    const res = await fetch(`https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(`release:"${safeTitle}" AND artist:"${safeArtist}"`)}&fmt=json&limit=5`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const groups = data["release-groups"] || [];
+    if(groups.length) return groups[0].id;
+  }catch(e){ /* on tente le repli ci-dessous */ }
+  try{
+    const res = await fetch(`https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(safeTitle)}&fmt=json&limit=10`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const groups = data["release-groups"] || [];
+    const artistNorm = safeArtist.trim().toLowerCase();
+    const creditName = g => {
+      const ac = g["artist-credit"] && g["artist-credit"][0] && g["artist-credit"][0].artist;
+      return ac ? ac.name.trim().toLowerCase() : "";
+    };
+    const exact = groups.find(g => creditName(g) === artistNorm);
+    if(exact) return exact.id;
+    const loose = groups.find(g => {
+      const n = creditName(g);
+      return n && (n.includes(artistNorm) || artistNorm.includes(n));
+    });
+    return loose ? loose.id : null;
+  }catch(e){ return null; }
+}
+
+// Complète la fiche d'une reco avec la vraie tracklist (via MusicBrainz), en plus des morceaux
+// mis en avant à la main par la taupe — évite que la fiche paraisse vide sur les albums.
+async function fillRecosTracklist(item, mainTitle){
+  const curated = Array.isArray(item.recommendedTracks) ? item.recommendedTracks : [];
+  let html = curated.length
+    ? `<div class="overlay-status" style="text-align:left;padding:0 0 6px;">La taupe recommande particulièrement :</div>` +
+      curated.map((t, i) => `
+        <div class="track-row">
+          <div class="track-num">${i + 1}</div>
+          <div class="track-title">${escapeHtml(t)}</div>
+        </div>
+      `).join("")
+    : "";
+
+  if(item.type !== "album"){
+    albumTracklistBody.innerHTML = html;
+    return;
+  }
+
+  albumTracklistBody.innerHTML = html + '<div class="overlay-status" id="recosFullTracklistStatus">Recherche de la tracklist complète...</div>';
+
+  try{
+    const rgId = await resolveReleaseGroupByArtistTitle(item.artist, mainTitle);
+    if(!rgId) throw new Error("no match");
+
+    const res = await fetch(`https://musicbrainz.org/ws/2/release?release-group=${rgId}&inc=recordings&fmt=json&limit=10`, { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    const releases = data.releases || [];
+    const rel = releases.find(r => r.status === "Official" && r.media && r.media.length) || releases.find(r => r.media && r.media.length);
+    const tracks = [];
+    if(rel) rel.media.forEach(m => (m.tracks || []).forEach(t => tracks.push(t)));
+    if(!tracks.length) throw new Error("no tracklist");
+
+    const statusEl = document.getElementById("recosFullTracklistStatus");
+    if(statusEl) statusEl.remove();
+
+    const collection = loadCollection();
+    const frag = document.createDocumentFragment();
+    if(curated.length){
+      const divider = document.createElement("div");
+      divider.className = "overlay-status";
+      divider.style.cssText = "text-align:left;padding:10px 0 6px;";
+      divider.textContent = "Tracklist complète :";
+      frag.appendChild(divider);
+    }
+    tracks.forEach(t => {
+      const recordingId = t.recording && t.recording.id;
+      const trackTitle = t.title || (t.recording && t.recording.title) || "";
+      const existing = recordingId ? collection.find(a => a.mbid === recordingId) : null;
+      const row = document.createElement("div");
+      row.className = "track-row";
+      if(recordingId) row.dataset.recordingId = recordingId;
+      row.innerHTML = `
+        <div class="track-num">${t.number || t.position || ""}</div>
+        <div class="track-title">${escapeHtml(trackTitle)}</div>
+        <div class="track-duration">${formatDuration(t.length || (t.recording && t.recording.length))}</div>
+        <button class="track-add-btn${existing ? " added" : ""}" title="${existing ? "Modifier ma note" : "Noter ce morceau"}">${existing ? "&#10003;" : "+"}</button>
+      `;
+      const btn = row.querySelector(".track-add-btn");
+      if(recordingId){
+        btn.addEventListener("click", () => {
+          openRatingModal({ mbid: recordingId, title: trackTitle, artist: item.artist, year: item.date, coverMbid: rgId });
+        });
+      } else {
+        btn.disabled = true;
+      }
+      frag.appendChild(row);
+    });
+    albumTracklistBody.appendChild(frag);
+  }catch(e){
+    const statusEl = document.getElementById("recosFullTracklistStatus");
+    if(statusEl){
+      statusEl.textContent = curated.length ? "" : "Tracklist complète introuvable pour cet album.";
+    }
+  }
 }
 
 document.addEventListener("click", (e) => {
@@ -4409,9 +4786,28 @@ recosSearchInput.addEventListener("input", () => {
   recosSearchDebounce = setTimeout(renderRecosWall, 200);
 });
 
+let recosDiscoverTypeValue = "";
+const recosTypeToggle = document.getElementById("recosTypeToggle");
+const recosTypeLabel = document.getElementById("recosTypeLabel");
+const recosAsSwitch = document.getElementById("recosAsSwitch");
+recosTypeToggle.addEventListener("click", () => {
+  const isOn = recosTypeToggle.classList.toggle("on");
+  recosTypeToggle.setAttribute("aria-checked", String(isOn));
+  recosTypeLabel.style.display = isOn ? "none" : "";
+  recosAsSwitch.style.display = isOn ? "flex" : "none";
+  recosDiscoverTypeValue = isOn ? recosAsSwitch.querySelector(".type-switch-as-opt.active").dataset.val : "";
+});
+recosAsSwitch.querySelectorAll(".type-switch-as-opt").forEach(btn => {
+  btn.addEventListener("click", () => {
+    recosAsSwitch.querySelectorAll(".type-switch-as-opt").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    recosDiscoverTypeValue = btn.dataset.val;
+  });
+});
+
 document.getElementById("recosDiscoverBtn").addEventListener("click", async () => {
   await loadRecosWallIfNeeded();
-  const wantedType = document.getElementById("recosDiscoverType").value;
+  const wantedType = recosDiscoverTypeValue;
   const pool = wantedType ? recosWallCache.filter(it => it.type === wantedType) : recosWallCache;
   const resultEl = document.getElementById("recosDiscoverResult");
   if(!pool.length){

@@ -2030,7 +2030,7 @@
       </select>
     </div>
     <div id="terrainStyleDesc" class="terrain-style-desc"></div>
-    <button class="save-btn" id="unearthBtn">⛏ Déterrer l'inconnu</button>
+    <button class="save-btn" id="unearthBtn">Déterrer l'inconnu</button>
     <div id="terrainResult"></div>
   </section>
 
@@ -2064,7 +2064,7 @@
           <button class="type-switch-as-opt" data-val="single" type="button">Single</button>
         </div>
       </div>
-      <button class="save-btn" id="recosDiscoverBtn">🎲 Surprends-moi</button>
+      <button class="save-btn" id="recosDiscoverBtn">Surprends-moi</button>
     </div>
     <div id="recosDiscoverResult"></div>
 
@@ -2088,7 +2088,7 @@
           <option value="year-desc">Année (récent → ancien)</option>
           <option value="year-asc">Année (ancien → récent)</option>
         </select>
-        <label class="recos-indispensable-toggle"><input type="checkbox" id="recosIndispensableOnly"> ★ Indispensables uniquement</label>
+        <label class="recos-indispensable-toggle"><input type="checkbox" id="recosIndispensableOnly"> Indispensables uniquement</label>
       </div>
     </div>
     <div id="recosWallGrid"></div>
@@ -2097,7 +2097,7 @@
   <!-- ===== ACTUS VIEW (placeholder) ===== -->
   <section id="view-actus" class="view">
     <div class="actus-stub">
-      🚧 Bientôt ici : actus musicales et nouvelles pépites déterrées par la taupe.<br>
+      Bientôt ici : actus musicales et nouvelles pépites déterrées par la taupe.<br>
       Contenu pas encore tranché (actu générale du milieu digger, ou actu de l'app elle-même).
     </div>
   </section>
@@ -2144,7 +2144,7 @@
         <button class="overlay-close" id="searchOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
     </div>
     <div class="search-filter-tabs" id="searchFilterTabs"></div>
@@ -2160,7 +2160,7 @@
         <button class="overlay-close" id="profileOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
     </div>
     <div class="profile-id-row">
@@ -2190,7 +2190,7 @@
         <button class="overlay-close" id="libraryOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
     </div>
     <div id="libraryOverlayBody"></div>
@@ -2205,7 +2205,7 @@
         <button class="overlay-close" id="creditsOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
     </div>
 
@@ -2271,7 +2271,7 @@
         <button class="overlay-close" id="settingsOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
     </div>
     <div class="settings-row">
@@ -2334,7 +2334,7 @@
         <button class="overlay-close" id="artistOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
     </div>
     <div class="artist-bio-block" id="artistBioBlock">
@@ -2353,7 +2353,7 @@
         <button class="overlay-close" id="albumOverlayClose" title="Fermer">&times;</button>
       </div>
       <div class="mini-tabs">
-        <button class="tab-btn mini" data-tab="accueil">Accueil</button>
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
     </div>
     <div class="album-header">
@@ -2764,8 +2764,8 @@ function ytLink(artist, term){
 function entryLinksHTML(e, useAlbum){
   const term = useAlbum ? e.album : e.track;
   return `<div class="links">
-    <a class="am" href="${amLink(e.artist, term)}" target="_blank" rel="noopener">🎵 Apple Music</a>
-    <a class="yt" href="${ytLink(e.artist, term)}" target="_blank" rel="noopener">▶ YouTube</a>
+    <a class="am" href="${amLink(e.artist, term)}" target="_blank" rel="noopener">Apple Music</a>
+    <a class="yt" href="${ytLink(e.artist, term)}" target="_blank" rel="noopener">YouTube</a>
   </div>`;
 }
 
@@ -3159,7 +3159,7 @@ function renderIceberg(genre){
     if(idx === currentDepth && currentDepth < tiers.length - 1){
       const btn = document.createElement("button");
       btn.className = "dive-btn";
-      btn.textContent = "⛏ Creuser un peu plus";
+      btn.textContent = "Creuser un peu plus";
       btn.onclick = (ev) => { ev.stopPropagation(); jumpToDepth(genre, currentDepth+1); };
       col.appendChild(btn);
     }
@@ -4278,7 +4278,7 @@ function renderTerrainResult(summary, detail, depthLabel, platformMatch){
   const previewEl = wrap.querySelector("#terrainPreview");
   let previewHtml = "";
   if(platformMatch.youtubeId){
-    previewHtml += `<a class="terrain-preview-btn ghost" href="https://www.youtube.com/watch?v=${platformMatch.youtubeId}" target="_blank" rel="noopener">▶ Écouter sur YouTube</a>`;
+    previewHtml += `<a class="terrain-preview-btn ghost" href="https://www.youtube.com/watch?v=${platformMatch.youtubeId}" target="_blank" rel="noopener">Écouter sur YouTube</a>`;
   }
   if(platformMatch.appleUrl){
     previewHtml += `<a class="terrain-preview-btn ghost" href="${platformMatch.appleUrl}" target="_blank" rel="noopener">Écouter sur Apple Music</a>`;
@@ -4485,7 +4485,7 @@ function renderPisteResults(ranked){
       <div class="terrain-title">${escapeHtml(r.artist)} – ${escapeHtml(r.track)}</div>
       <div class="terrain-meta">${pct}% proche${r.hits > 1 ? ` · fait écho à ${r.hits} de tes bangers` : ""}</div>
       <div class="terrain-preview">
-        ${r.video_id ? `<a class="terrain-preview-btn ghost" href="${r.video_uri || `https://www.youtube.com/watch?v=${r.video_id}`}" target="_blank" rel="noopener">▶ Écouter sur YouTube</a>` : ""}
+        ${r.video_id ? `<a class="terrain-preview-btn ghost" href="${r.video_uri || `https://www.youtube.com/watch?v=${r.video_id}`}" target="_blank" rel="noopener">Écouter sur YouTube</a>` : ""}
         ${r.external_link ? `<a class="terrain-preview-btn ghost" href="${r.external_link}" target="_blank" rel="noopener">Voir sur Discogs</a>` : ""}
         <button class="terrain-preview-btn piste-add-banger-btn ghost">+ Ajouter à mes bangers</button>
       </div>
@@ -4548,7 +4548,7 @@ function recosCardHtml(it){
   const isAlbum = it.type === "album";
   return `
     <div class="res-card${it.indispensable ? " is-indispensable" : ""} res-card-clickable" data-id="${it.id}">
-      ${it.indispensable ? `<div class="indispensable-badge">★ Indispensable</div>` : ""}
+      ${it.indispensable ? `<div class="indispensable-badge">Indispensable</div>` : ""}
       ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
       <div class="res-title">${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
       <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (isAlbum ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""} · <span class="res-open-hint">voir la fiche →</span></div>

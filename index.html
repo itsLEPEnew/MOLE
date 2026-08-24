@@ -439,26 +439,63 @@
 
   .subtabs{
     display:flex;
-    flex-wrap:wrap;
-    gap:8px;
-    margin:0 0 20px;
-    border-bottom:1px solid var(--line);
-    padding-bottom:14px;
+    gap:14px;
+    overflow-x:auto;
+    scroll-snap-type:x mandatory;
+    padding-bottom:2px;
+    margin:0 0 14px;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
   }
+  .subtabs::-webkit-scrollbar{ display:none; }
   .subtab-btn{
-    background:transparent;
-    border:1.5px solid var(--line);
-    color:var(--ink-soft);
-    padding:7px 14px;
-    border-radius:3px 10px 3px 10px;
+    scroll-snap-align:center;
+    flex:0 0 78%;
+    max-width:340px;
+    aspect-ratio:2.2/1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:flex-start;
+    gap:6px;
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:3px 12px 3px 12px;
+    padding:16px 18px;
     cursor:pointer;
-    font-size:12px;
-    font-weight:700;
+    text-align:left;
+    color:var(--ink);
   }
   .subtab-btn.active{
     background:var(--ink);
     color:var(--paper);
     border-color:var(--ink);
+  }
+  .subtab-card-title{ font-size:16px; font-weight:700; }
+  .subtab-card-desc{ font-size:12px; color:var(--ink-soft); }
+  .subtab-btn.active .subtab-card-desc{ color:var(--paper); opacity:.75; }
+  .subtabs-dots{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin:0 0 26px;
+  }
+  .subtabs-dot{
+    width:11px;
+    height:11px;
+    border-radius:50%;
+    background:var(--paper-dim);
+    border:2px solid var(--line);
+    cursor:pointer;
+    padding:0;
+  }
+  .subtabs-dot.active{
+    background:var(--ink);
+    border-color:var(--ink);
+  }
+  @media (min-width:600px){
+    .subtab-btn{ flex:0 0 calc(33.33% - 10px); max-width:none; }
+    .subtabs-dots{ display:none; }
   }
   .subview{display:none;}
   .subview.active{display:block;}
@@ -1979,10 +2016,24 @@
 
   <!-- ===== CREUSER (regroupe Terrain vague / Le Tunnel / La Piste) ===== -->
   <section id="view-creuser" class="view">
-    <div class="subtabs">
-      <button class="subtab-btn active" data-subtab="terrain">Terrain vague</button>
-      <button class="subtab-btn" data-subtab="explore">Le Tunnel</button>
-      <button class="subtab-btn" data-subtab="piste">La Piste</button>
+    <div class="subtabs" id="creuserSubtabs">
+      <button class="subtab-btn active" data-subtab="terrain">
+        <span class="subtab-card-title">Terrain vague</span>
+        <span class="subtab-card-desc">Aléatoire, profondeur réglable</span>
+      </button>
+      <button class="subtab-btn" data-subtab="explore">
+        <span class="subtab-card-title">Le Tunnel</span>
+        <span class="subtab-card-desc">Explorer par genre, du surface au niche</span>
+      </button>
+      <button class="subtab-btn" data-subtab="piste">
+        <span class="subtab-card-title">La Piste</span>
+        <span class="subtab-card-desc">Sons proches de tes bangers</span>
+      </button>
+    </div>
+    <div class="subtabs-dots" id="creuserSubtabsDots">
+      <span class="subtabs-dot active" data-idx="0"></span>
+      <span class="subtabs-dot" data-idx="1"></span>
+      <span class="subtabs-dot" data-idx="2"></span>
     </div>
 
   <!-- ===== TUNNEL (EXPLORE) VIEW ===== -->
@@ -3026,6 +3077,41 @@ function switchSubTab(subtabName){
 document.querySelectorAll(".subtab-btn[data-subtab]").forEach(btn=>{
   btn.onclick = () => switchSubTab(btn.dataset.subtab);
 });
+
+// carrousel des sous-onglets de Creuser : points synchronisés avec le défilement, cliquables
+(function(){
+  const track = document.getElementById("creuserSubtabs");
+  const dots = Array.from(document.querySelectorAll(".subtabs-dot"));
+  if(!track || !dots.length) return;
+  function updateActiveDot(){
+    const cards = Array.from(track.children);
+    const trackRect = track.getBoundingClientRect();
+    const trackCenter = trackRect.left + trackRect.width / 2;
+    let closestIdx = 0, closestDist = Infinity;
+    cards.forEach((card, i) => {
+      const r = card.getBoundingClientRect();
+      const dist = Math.abs((r.left + r.width / 2) - trackCenter);
+      if(dist < closestDist){ closestDist = dist; closestIdx = i; }
+    });
+    dots.forEach((d, i) => d.classList.toggle("active", i === closestIdx));
+  }
+  let scrollTimeout;
+  track.addEventListener("scroll", () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(updateActiveDot, 80);
+  });
+  dots.forEach((dot, i) => {
+    dot.addEventListener("click", () => {
+      const card = track.children[i];
+      if(card) card.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    });
+  });
+  track.querySelectorAll(".subtab-btn").forEach((card, i) => {
+    card.addEventListener("click", () => {
+      dots.forEach((d, di) => d.classList.toggle("active", di === i));
+    });
+  });
+})();
 document.querySelectorAll(".accueil-mode-btn[data-creuser-mode]").forEach(btn=>{
   btn.onclick = () => { switchTab("creuser"); switchSubTab(btn.dataset.creuserMode); };
 });

@@ -2364,8 +2364,8 @@
         <p class="album-header-desc" id="albumHeaderDesc"></p>
       </div>
     </div>
-    <div id="albumTracklistBody"></div>
     <div id="albumRecosLinks" class="terrain-preview"></div>
+    <div id="albumTracklistBody"></div>
     <div id="albumRecosGif"></div>
   </div>
 </div>
@@ -3908,6 +3908,8 @@ async function openAlbumOverlay(rgMbid, albumTitle, artistName, year){
   albumHeaderArtist.textContent = artistName + (year ? ` · ${year}` : "");
   albumHeaderDesc.textContent = "";
   albumTracklistBody.innerHTML = '<div class="overlay-status">Chargement des morceaux...</div>';
+  albumRecosLinksEl.innerHTML = "";
+  albumRecosGifEl.innerHTML = "";
 
   fetchWikiSummaryForEntity("release-group", rgMbid).then(info => {
     albumHeaderDesc.textContent = info.bio || "";

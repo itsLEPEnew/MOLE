@@ -477,7 +477,14 @@
     display:flex;
     justify-content:center;
     gap:10px;
-    margin:0 0 26px;
+    margin:0 0 14px;
+  }
+  .subtabs-current-title{
+    text-align:center;
+    font-family:Georgia, "Times New Roman", serif;
+    font-size:21px;
+    font-weight:700;
+    margin:0 0 30px;
   }
   .subtabs-dot{
     width:11px;
@@ -2044,6 +2051,7 @@
       <span class="subtabs-dot" data-idx="1"></span>
       <span class="subtabs-dot" data-idx="2"></span>
     </div>
+    <h2 class="subtabs-current-title" id="creuserCurrentTitle">Terrain vague</h2>
 
   <!-- ===== TUNNEL (EXPLORE) VIEW ===== -->
   <section id="view-explore" class="subview">
@@ -3070,6 +3078,9 @@ function switchSubTab(subtabName){
   document.querySelectorAll(".subtab-btn[data-subtab]").forEach(b=>b.classList.toggle("active", b.dataset.subtab === subtabName));
   document.querySelectorAll(".subview").forEach(v=>v.classList.remove("active"));
   document.getElementById("view-" + subtabName).classList.add("active");
+  const activeCardTitle = document.querySelector(`.subtab-btn[data-subtab="${subtabName}"] .subtab-card-title`);
+  const currentTitleEl = document.getElementById("creuserCurrentTitle");
+  if(currentTitleEl && activeCardTitle) currentTitleEl.textContent = activeCardTitle.textContent;
 }
 document.querySelectorAll(".subtab-btn[data-subtab]").forEach(btn=>{
   btn.onclick = () => switchSubTab(btn.dataset.subtab);

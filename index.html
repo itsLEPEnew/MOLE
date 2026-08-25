@@ -4942,11 +4942,9 @@ function renderAccueilRecosPreview(){
     el.innerHTML = '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';
     return;
   }
-  const picks = recosWallCache.filter(it => it.indispensable).slice(0, 4);
-  for(const it of recosWallCache){
-    if(picks.length >= 4) break;
-    if(!picks.includes(it)) picks.push(it);
-  }
+  // le mur est stocké du plus récemment publié au plus ancien -> les 4 premiers
+  // sont les tout derniers ajouts, pour que l'accueil bouge à chaque publication
+  const picks = recosWallCache.slice(0, 4);
   el.innerHTML = `<div class="card-grid accueil-recos-grid">${picks.map(recosCardHtml).join("")}</div>`;
 }
 

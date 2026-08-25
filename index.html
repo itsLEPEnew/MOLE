@@ -2410,7 +2410,6 @@
       <div class="mini-tabs">
         <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
       </div>
-      <h3 id="albumOverlayTitle">Album</h3>
     </div>
     <div class="album-header">
       <img class="album-cover-big" id="albumCoverBig" alt="">
@@ -3975,7 +3974,6 @@ ratingModalSaveBtn.addEventListener("click", () => {
 
 // --- overlay plein écran : page album (cover, description, tracklist) ---
 const albumOverlay = document.getElementById("albumOverlay");
-const albumOverlayTitle = document.getElementById("albumOverlayTitle");
 const albumCoverBig = document.getElementById("albumCoverBig");
 const albumHeaderTitle = document.getElementById("albumHeaderTitle");
 const albumHeaderArtist = document.getElementById("albumHeaderArtist");
@@ -3994,7 +3992,6 @@ function formatDuration(ms){
 async function openAlbumOverlay(rgMbid, albumTitle, artistName, year){
   dockSearchHome();
   albumOverlay.classList.add("open");
-  albumOverlayTitle.textContent = albumTitle;
   albumCoverBig.src = `https://coverartarchive.org/release-group/${rgMbid}/front-500`;
   albumCoverBig.style.visibility = "visible";
   albumCoverBig.onerror = () => { albumCoverBig.style.visibility = "hidden"; };
@@ -4666,7 +4663,6 @@ function openRecosAlbumOverlay(item){
   dockSearchHome();
   albumOverlay.classList.add("open");
   const title = item.title || item.album || "";
-  albumOverlayTitle.textContent = title;
   if(item.cover){
     albumCoverBig.src = item.cover;
     albumCoverBig.style.visibility = "visible";
@@ -4741,6 +4737,24 @@ async function fillRecosTracklist(item, mainTitle){
     return;
   }
 
+  // tracklist déjà importée depuis Apple Music au moment de l'ajout (voir
+  // mole-recos-admin-worker.js) -> rendu instantané et fiable, sans avoir à deviner
+  // la bonne édition sur MusicBrainz à chaque ouverture de la fiche
+  if(Array.isArray(item.tracklist) && item.tracklist.length){
+    albumTracklistBody.innerHTML = html;
+    if(curated.length){
+      const divider = document.createElement("div");
+      divider.className = "overlay-status";
+      divider.style.cssText = "text-align:left;padding:10px 0 6px;";
+      divider.textContent = "Tracklist complète :";
+      albumTracklistBody.appendChild(divider);
+    }
+    renderStoredRecosTracklist(item);
+    return;
+  }
+
+  // repli pour les recos ajoutées avant l'import automatique de la tracklist :
+  // on tente de la retrouver sur MusicBrainz par recherche artiste+titre
   albumTracklistBody.innerHTML = html + '<div class="overlay-status" id="recosFullTracklistStatus">Recherche de la tracklist complète...</div>';
 
   try{
@@ -4797,6 +4811,30 @@ async function fillRecosTracklist(item, mainTitle){
       statusEl.textContent = curated.length ? "" : "Tracklist complète introuvable pour cet album.";
     }
   }
+}
+
+// rend une tracklist déjà stockée sur l'item (importée depuis Apple Music) —
+// pas de mbid MusicBrainz ici, donc un id synthétique stable pour pouvoir quand même noter
+function renderStoredRecosTracklist(item){
+  const collection = loadCollection();
+  const frag = document.createDocumentFragment();
+  item.tracklist.forEach((t, i) => {
+    const syntheticId = `reco-${item.id}-t${t.position || (i + 1)}`;
+    const existing = collection.find(a => a.mbid === syntheticId);
+    const row = document.createElement("div");
+    row.className = "track-row";
+    row.innerHTML = `
+      <div class="track-num">${t.position || (i + 1)}</div>
+      <div class="track-title">${escapeHtml(t.title || "")}</div>
+      <div class="track-duration">${formatDuration(t.duration)}</div>
+      <button class="track-add-btn${existing ? " added" : ""}" title="${existing ? "Modifier ma note" : "Noter ce morceau"}">${existing ? "&#10003;" : "+"}</button>
+    `;
+    row.querySelector(".track-add-btn").addEventListener("click", () => {
+      openRatingModal({ mbid: syntheticId, title: t.title || "", artist: item.artist, year: item.date, coverUrl: item.cover || null });
+    });
+    frag.appendChild(row);
+  });
+  albumTracklistBody.appendChild(frag);
 }
 
 document.addEventListener("click", (e) => {

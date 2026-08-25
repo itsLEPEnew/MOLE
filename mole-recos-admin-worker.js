@@ -372,6 +372,7 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
   if (!rawUrl) return null;
   let artist = "", title = "", album = "", date = "", cover = "", type = "single";
   let appleUrl = null, deezerUrl = null, spotifyUrl = null;
+  let collectionId = null, tracklist = [];
 
   if (rawUrl.includes("music.apple.com")) {
     let appleId = null;
@@ -403,6 +404,7 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
       date = (clientApple.releaseDate || "").slice(0, 10);
       cover = (clientApple.artworkUrl100 || "").replace("100x100bb", "600x600bb");
       appleUrl = clientApple.trackViewUrl || clientApple.collectionViewUrl || rawUrl;
+      collectionId = clientApple.collectionId || null;
     }
     if (!itunesOk && appleId) {
       try {
@@ -423,6 +425,7 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
             date = (t.releaseDate || "").slice(0, 10);
             cover = (t.artworkUrl100 || "").replace("100x100bb", "600x600bb");
             appleUrl = t.trackViewUrl || t.collectionViewUrl || null;
+            collectionId = t.collectionId || null;
           }
         }
       } catch (e) { if (debug) debug.push("itunes lookup error: " + e.message); }
@@ -456,6 +459,27 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
         }
       }
       if (meta.image) cover = meta.image;
+      // pas de lookup itunes réussi ici -> à défaut de collectionId connu, l'id
+      // de l'URL est probablement déjà celui de l'album (pas de paramètre "i=")
+      if (!collectionId && !hasTrackParam && appleId) collectionId = appleId;
+    }
+    // l'admin importe la tracklist complète directement depuis Apple Music au moment
+    // du partage, plutôt que MOLE ne la redevine plus tard par une recherche MusicBrainz
+    // approximative (artiste+titre) à chaque ouverture de la fiche côté public.
+    if (type === "album" && collectionId) {
+      try {
+        const clRes = await fetch("https://itunes.apple.com/lookup?id=" + collectionId + "&entity=song", {
+          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
+        });
+        if (debug) debug.push("tracklist lookup status=" + clRes.status);
+        if (clRes.ok) {
+          const clData = await clRes.json();
+          tracklist = (clData.results || [])
+            .filter((r) => r.wrapperType === "track")
+            .map((r) => ({ position: r.trackNumber || null, title: r.trackName || "", duration: r.trackTimeMillis || null }));
+          if (debug) debug.push("tracklist tracks found=" + tracklist.length);
+        }
+      } catch (e) { if (debug) debug.push("tracklist lookup error: " + e.message); }
     }
   } else {
     const meta = await fetchMeta(rawUrl);
@@ -518,6 +542,7 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
     note: "",
     cover,
     links: { spotify: spotifyUrl, deezer: deezerUrl, appleMusic: appleUrl },
+    tracklist,
   };
   const queue = await loadQueue(env);
   queue.unshift(newItem);

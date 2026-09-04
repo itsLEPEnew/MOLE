@@ -1019,6 +1019,99 @@
     color:var(--ink);
     margin-top:8px;
   }
+  .taste-quiz-section-title{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--ink-soft);
+    margin:20px 0 10px;
+  }
+  .chip.small-chip{
+    font-size:11.5px;
+    padding:6px 11px;
+    border-width:1.5px;
+  }
+  .genre-group{ margin-bottom:14px; }
+  .genre-group-head{ margin-bottom:6px; }
+  .chip.genre-parent-chip{
+    font-weight:800;
+    border-color:var(--ink-soft);
+  }
+  .genre-sub-row{ margin-bottom:0; padding-left:4px; }
+  .taste-quiz-search{
+    width:100%;
+    background:var(--paper);
+    border:2px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:16px;
+    color:var(--ink);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .artist-search-results{ margin-bottom:10px; }
+  .artist-search-item{
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+    font-size:13px;
+    cursor:pointer;
+  }
+  .artist-search-item:hover{ background:var(--card); }
+  .artist-search-empty{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    padding:6px 2px;
+  }
+  .chip-remove{ margin-left:4px; opacity:0.7; }
+  .artist-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(78px, 1fr));
+    gap:10px;
+    margin:12px 0 18px;
+  }
+  .artist-tile{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    padding:4px;
+    border-radius:8px;
+    border:2px solid transparent;
+  }
+  .artist-tile.selected{ border-color:var(--ink); background:var(--card); }
+  .artist-tile-photo{
+    position:relative;
+    width:100%;
+    aspect-ratio:1/1;
+    border-radius:50%;
+    overflow:hidden;
+    background:var(--card);
+    border:2px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .artist-tile-icon{
+    font-size:20px;
+    color:var(--ink-soft);
+  }
+  .artist-tile-photo img{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    opacity:0;
+    transition:opacity .2s;
+  }
+  .artist-tile-photo img.loaded{ opacity:1; }
+  .artist-tile-name{
+    font-size:10.5px;
+    font-weight:700;
+    text-align:center;
+    line-height:1.2;
+  }
   .profile-status{
     font-size:13px;
     color:var(--ink);
@@ -2366,8 +2459,17 @@
       </div>
       <h3>Tes goûts</h3>
     </div>
-    <p class="profil-intro">Choisis les styles qui te parlent parmi ceux déjà passés dans les recos de la taupe — ça sert de base pour "Recommandé pour toi", qui s'affine ensuite tout seul avec tes notes.</p>
-    <div id="tasteQuizChips" class="chip-row"></div>
+    <p class="profil-intro">Genres et artistes que tu aimes — ça sert de base pour "Recommandé pour toi", qui s'affine ensuite tout seul avec tes notes.</p>
+
+    <h4 class="taste-quiz-section-title">Genres</h4>
+    <div id="tasteQuizGenres"></div>
+
+    <h4 class="taste-quiz-section-title">Artistes</h4>
+    <input type="text" id="tasteQuizArtistSearch" class="taste-quiz-search" placeholder="Chercher un artiste précis...">
+    <div id="tasteQuizArtistSearchResults" class="artist-search-results"></div>
+    <div id="tasteQuizCustomArtists" class="chip-row"></div>
+    <div id="tasteQuizArtists" class="artist-grid"></div>
+
     <button class="save-btn" id="tasteQuizSaveBtn">Valider</button>
     <button class="save-btn ghost" id="tasteQuizSkipBtn">Passer pour l'instant</button>
   </div>
@@ -5351,58 +5453,226 @@ function renderAccueilRecosPreview(){
   el.innerHTML = `<div class="card-grid accueil-recos-grid">${picks.map(recosCardHtml).join("")}</div>`;
 }
 
-// ---------- Recommandé pour toi (quiz de styles + apprentissage par les notes) ----------
+// ---------- Recommandé pour toi (quiz de genres/artistes + apprentissage par les notes) ----------
 const TASTE_QUIZ_KEY = "mole_taste_quiz_v1";
 const RECO_PERSO_SHUFFLE_KEY = "mole_reco_perso_shuffle_v1";
+
+// arborescence large volontairement (façon musicmap) : chaque style libre saisi par
+// l'admin sur une reco (souvent très précis, ex: "Cloud rap") est ensuite rattaché au
+// genre parent le plus proche via les mots-clés, même sans correspondance exacte
+const TASTE_GENRE_TREE = {
+  "Rock": { keywords:["rock"], sub:["Rock classique","Garage rock","Rock progressif","Post-punk","Shoegaze","Grunge"] },
+  "Metal": { keywords:["metal"], sub:["Heavy metal","Thrash metal","Death metal","Black metal","Doom","Metalcore"] },
+  "Punk": { keywords:["punk"], sub:["Punk rock","Pop punk","Hardcore punk"] },
+  "Alternative / Indie": { keywords:["indie","alternative"], sub:["Indie rock","Indie pop","Dream pop"] },
+  "Électronique": { keywords:["techno","house","electro","idm","ambient","trance","garage","dubstep","drum","bass","edm","synth"], sub:["Techno","House","Deep house","Drum & Bass","Dubstep","UK Garage","Ambient","IDM","Trance","Electro"] },
+  "Hip-Hop": { keywords:["rap","hip hop","hip-hop","trap","drill","boom bap"], sub:["Boom bap","Trap","Cloud rap","Drill","Rap conscient","Old school"] },
+  "R&B": { keywords:["r&b","rnb","rhythm and blues"], sub:["R&B classique","R&B contemporain","Néo-soul"] },
+  "Soul / Funk": { keywords:["soul","funk","motown"], sub:["Soul","Funk","Motown","P-Funk"] },
+  "Jazz": { keywords:["jazz","bebop","swing","fusion"], sub:["Bebop","Jazz fusion","Free jazz","Swing","Jazz spirituel","Nu jazz"] },
+  "Reggae / Dub": { keywords:["reggae","dub","ska","dancehall","roots"], sub:["Reggae roots","Dub","Ska","Dancehall"] },
+  "Disco": { keywords:["disco"], sub:["Disco","Nu-disco","Boogie"] },
+  "Latin": { keywords:["latin","salsa","reggaeton","bossa","cumbia","samba","cubain"], sub:["Salsa","Reggaeton","Bossa nova","Cumbia","Samba","Latin jazz"] },
+  "Pop": { keywords:["pop","synth-pop"], sub:["Synth-pop","French Pop","Britpop","K-pop"] },
+  "Folk / Country": { keywords:["folk","country","americana","bluegrass"], sub:["Folk","Country","Americana","Singer-songwriter"] },
+  "Classique": { keywords:["classical","classique","baroque","opera","orchestre"], sub:["Baroque","Romantique","Contemporain","Minimalisme","Opéra"] },
+  "World / Afrobeat": { keywords:["afrobeat","world","highlife","afro"], sub:["Afrobeat","Highlife","Musique du monde"] }
+};
+
+// grands noms variés (époques/régions différentes) par genre, pour le quiz visuel —
+// leur photo est récupérée à la volée (voir fetchArtistArtwork), pas hébergée ici
+const TASTE_ARTIST_POOL = [
+  {name:"The Beatles", genre:"Rock"}, {name:"Led Zeppelin", genre:"Rock"}, {name:"Fleetwood Mac", genre:"Rock"}, {name:"Radiohead", genre:"Rock"}, {name:"Nirvana", genre:"Rock"}, {name:"Queen", genre:"Rock"},
+  {name:"Black Sabbath", genre:"Metal"}, {name:"Metallica", genre:"Metal"}, {name:"Iron Maiden", genre:"Metal"}, {name:"Slayer", genre:"Metal"}, {name:"Tool", genre:"Metal"}, {name:"System of a Down", genre:"Metal"},
+  {name:"Ramones", genre:"Punk"}, {name:"Sex Pistols", genre:"Punk"}, {name:"The Clash", genre:"Punk"}, {name:"Bad Brains", genre:"Punk"}, {name:"Dead Kennedys", genre:"Punk"}, {name:"Patti Smith", genre:"Punk"},
+  {name:"Arctic Monkeys", genre:"Alternative / Indie"}, {name:"The Strokes", genre:"Alternative / Indie"}, {name:"Pixies", genre:"Alternative / Indie"}, {name:"Tame Impala", genre:"Alternative / Indie"}, {name:"Arcade Fire", genre:"Alternative / Indie"}, {name:"The National", genre:"Alternative / Indie"},
+  {name:"Daft Punk", genre:"Électronique"}, {name:"Aphex Twin", genre:"Électronique"}, {name:"Kraftwerk", genre:"Électronique"}, {name:"Jeff Mills", genre:"Électronique"}, {name:"Four Tet", genre:"Électronique"}, {name:"Bonobo", genre:"Électronique"},
+  {name:"Kendrick Lamar", genre:"Hip-Hop"}, {name:"Wu-Tang Clan", genre:"Hip-Hop"}, {name:"MF DOOM", genre:"Hip-Hop"}, {name:"J Dilla", genre:"Hip-Hop"}, {name:"Nas", genre:"Hip-Hop"}, {name:"Missy Elliott", genre:"Hip-Hop"},
+  {name:"Frank Ocean", genre:"R&B"}, {name:"Aaliyah", genre:"R&B"}, {name:"D'Angelo", genre:"R&B"}, {name:"SZA", genre:"R&B"}, {name:"Erykah Badu", genre:"R&B"}, {name:"Sade", genre:"R&B"},
+  {name:"James Brown", genre:"Soul / Funk"}, {name:"Stevie Wonder", genre:"Soul / Funk"}, {name:"Aretha Franklin", genre:"Soul / Funk"}, {name:"Parliament-Funkadelic", genre:"Soul / Funk"}, {name:"Curtis Mayfield", genre:"Soul / Funk"}, {name:"Sly and the Family Stone", genre:"Soul / Funk"},
+  {name:"Miles Davis", genre:"Jazz"}, {name:"John Coltrane", genre:"Jazz"}, {name:"Nina Simone", genre:"Jazz"}, {name:"Herbie Hancock", genre:"Jazz"}, {name:"Thelonious Monk", genre:"Jazz"}, {name:"Alice Coltrane", genre:"Jazz"},
+  {name:"Bob Marley", genre:"Reggae / Dub"}, {name:"Lee Scratch Perry", genre:"Reggae / Dub"}, {name:"King Tubby", genre:"Reggae / Dub"}, {name:"Burning Spear", genre:"Reggae / Dub"}, {name:"Toots and the Maytals", genre:"Reggae / Dub"}, {name:"Black Uhuru", genre:"Reggae / Dub"},
+  {name:"Chic", genre:"Disco"}, {name:"Donna Summer", genre:"Disco"}, {name:"Earth Wind and Fire", genre:"Disco"}, {name:"Sylvester", genre:"Disco"}, {name:"Gloria Gaynor", genre:"Disco"}, {name:"Bee Gees", genre:"Disco"},
+  {name:"Celia Cruz", genre:"Latin"}, {name:"Buena Vista Social Club", genre:"Latin"}, {name:"Rosalía", genre:"Latin"}, {name:"Bad Bunny", genre:"Latin"}, {name:"João Gilberto", genre:"Latin"}, {name:"Gilberto Gil", genre:"Latin"},
+  {name:"Michael Jackson", genre:"Pop"}, {name:"Madonna", genre:"Pop"}, {name:"ABBA", genre:"Pop"}, {name:"Prince", genre:"Pop"}, {name:"Beyoncé", genre:"Pop"}, {name:"Kate Bush", genre:"Pop"},
+  {name:"Bob Dylan", genre:"Folk / Country"}, {name:"Johnny Cash", genre:"Folk / Country"}, {name:"Joni Mitchell", genre:"Folk / Country"}, {name:"Nick Drake", genre:"Folk / Country"}, {name:"Dolly Parton", genre:"Folk / Country"}, {name:"Fleet Foxes", genre:"Folk / Country"},
+  {name:"Johann Sebastian Bach", genre:"Classique"}, {name:"Ludwig van Beethoven", genre:"Classique"}, {name:"Claude Debussy", genre:"Classique"}, {name:"Philip Glass", genre:"Classique"}, {name:"Maurice Ravel", genre:"Classique"}, {name:"Max Richter", genre:"Classique"},
+  {name:"Fela Kuti", genre:"World / Afrobeat"}, {name:"Ali Farka Touré", genre:"World / Afrobeat"}, {name:"Youssou N'Dour", genre:"World / Afrobeat"}, {name:"Ebo Taylor", genre:"World / Afrobeat"}, {name:"Tony Allen", genre:"World / Afrobeat"}, {name:"Angelique Kidjo", genre:"World / Afrobeat"}
+];
+
+function normalizeTasteText(s){
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+}
+function topGenreForLabel(label){
+  if(TASTE_GENRE_TREE[label]) return label;
+  for(const top of Object.keys(TASTE_GENRE_TREE)){
+    if(TASTE_GENRE_TREE[top].sub.includes(label)) return top;
+  }
+  return null;
+}
 
 function loadTasteQuiz(){
   try{
     const raw = localStorage.getItem(TASTE_QUIZ_KEY);
     const q = raw ? JSON.parse(raw) : null;
-    if(q && Array.isArray(q.styles)) return q;
+    if(q && Array.isArray(q.styles)){
+      return { styles: q.styles, artists: Array.isArray(q.artists) ? q.artists : [], doneAt: q.doneAt || null };
+    }
   }catch(e){ /* ignore */ }
-  return { styles: [], doneAt: null };
+  return { styles: [], artists: [], doneAt: null };
 }
 function saveTasteQuiz(q){ localStorage.setItem(TASTE_QUIZ_KEY, JSON.stringify(q)); }
 
-function availableRecosStyles(){
-  return Array.from(new Set(recosWallCache.map(it => it.style).filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr"));
-}
-
 const tasteQuizOverlay = document.getElementById("tasteQuizOverlay");
-const tasteQuizChipsEl = document.getElementById("tasteQuizChips");
+const tasteQuizGenresEl = document.getElementById("tasteQuizGenres");
+const tasteQuizArtistsEl = document.getElementById("tasteQuizArtists");
+const tasteQuizArtistSearchInput = document.getElementById("tasteQuizArtistSearch");
+const tasteQuizArtistSearchResults = document.getElementById("tasteQuizArtistSearchResults");
+const tasteQuizCustomArtistsEl = document.getElementById("tasteQuizCustomArtists");
 let tasteQuizSelection = [];
+let tasteQuizSelectedArtists = [];
 
-function renderTasteQuizChips(){
-  const styles = availableRecosStyles();
-  if(!styles.length){
-    tasteQuizChipsEl.innerHTML = '<p class="profil-intro">Pas encore assez de recos publiées pour proposer des styles — reviens après quelques vendredis.</p>';
-    return;
-  }
-  tasteQuizChipsEl.innerHTML = "";
-  styles.forEach(s => {
-    const chip = document.createElement("div");
-    chip.className = "chip" + (tasteQuizSelection.includes(s) ? " selected" : "");
-    chip.textContent = s;
-    chip.onclick = () => {
-      if(tasteQuizSelection.includes(s)) tasteQuizSelection = tasteQuizSelection.filter(x => x !== s);
-      else tasteQuizSelection.push(s);
-      renderTasteQuizChips();
-    };
-    tasteQuizChipsEl.appendChild(chip);
+function renderTasteQuizGenres(){
+  tasteQuizGenresEl.innerHTML = Object.keys(TASTE_GENRE_TREE).map(top => `
+    <div class="genre-group">
+      <div class="genre-group-head">
+        <span class="chip genre-parent-chip${tasteQuizSelection.includes(top) ? " selected" : ""}" data-label="${escapeHtml(top)}">${escapeHtml(top)}</span>
+      </div>
+      <div class="chip-row genre-sub-row">
+        ${TASTE_GENRE_TREE[top].sub.map(s => `<span class="chip small-chip${tasteQuizSelection.includes(s) ? " selected" : ""}" data-label="${escapeHtml(s)}">${escapeHtml(s)}</span>`).join("")}
+      </div>
+    </div>
+  `).join("");
+  tasteQuizGenresEl.querySelectorAll("[data-label]").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const label = chip.dataset.label;
+      if(tasteQuizSelection.includes(label)) tasteQuizSelection = tasteQuizSelection.filter(x => x !== label);
+      else tasteQuizSelection.push(label);
+      chip.classList.toggle("selected");
+    });
   });
 }
+
+// pochette d'un artiste récupérée via une recherche album iTunes (pas d'image dédiée
+// "artiste" côté API) -> mise en cache locale pour ne pas la re-télécharger à chaque
+// ouverture du quiz
+const ARTIST_ART_CACHE_KEY = "mole_artist_art_cache_v1";
+let artistArtCache = {};
+try{ artistArtCache = JSON.parse(localStorage.getItem(ARTIST_ART_CACHE_KEY) || "{}"); }catch(e){ artistArtCache = {}; }
+function saveArtistArtCache(){
+  try{ localStorage.setItem(ARTIST_ART_CACHE_KEY, JSON.stringify(artistArtCache)); }catch(e){ /* quota dépassé, tant pis */ }
+}
+async function fetchArtistArtwork(name){
+  if(artistArtCache[name] !== undefined) return artistArtCache[name];
+  try{
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(name)}&entity=album&limit=1`);
+    const data = await res.json();
+    const best = data.results && data.results[0];
+    const url = best && best.artworkUrl100 ? best.artworkUrl100.replace("100x100bb", "300x300bb") : null;
+    artistArtCache[name] = url;
+    saveArtistArtCache();
+    return url;
+  }catch(e){
+    return null;
+  }
+}
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+// pas trop de requêtes d'un coup (l'API iTunes n'aime pas les rafales) -> concurrence
+// limitée + petite pause entre deux appels d'un même worker
+async function loadArtworkForTiles(names){
+  const CONCURRENCY = 3;
+  let idx = 0;
+  async function worker(){
+    while(idx < names.length){
+      const name = names[idx++];
+      const url = await fetchArtistArtwork(name);
+      if(url){
+        const img = tasteQuizArtistsEl.querySelector(`.artist-tile[data-name="${CSS.escape(name)}"] img`);
+        if(img){ img.src = url; img.classList.add("loaded"); }
+      }
+      await sleep(150);
+    }
+  }
+  await Promise.all(Array.from({length: CONCURRENCY}, worker));
+}
+function renderTasteQuizArtists(){
+  tasteQuizArtistsEl.innerHTML = TASTE_ARTIST_POOL.map(a => `
+    <div class="artist-tile${tasteQuizSelectedArtists.includes(a.name) ? " selected" : ""}" data-name="${escapeHtml(a.name)}">
+      <div class="artist-tile-photo">
+        <span class="artist-tile-icon">&#9835;</span>
+        <img alt="" loading="lazy">
+      </div>
+      <div class="artist-tile-name">${escapeHtml(a.name)}</div>
+    </div>
+  `).join("");
+  tasteQuizArtistsEl.querySelectorAll(".artist-tile").forEach(tile => {
+    tile.addEventListener("click", () => {
+      const name = tile.dataset.name;
+      if(tasteQuizSelectedArtists.includes(name)) tasteQuizSelectedArtists = tasteQuizSelectedArtists.filter(x => x !== name);
+      else tasteQuizSelectedArtists.push(name);
+      tile.classList.toggle("selected");
+    });
+  });
+  loadArtworkForTiles(TASTE_ARTIST_POOL.map(a => a.name));
+}
+function renderTasteQuizCustomArtists(){
+  const poolNames = new Set(TASTE_ARTIST_POOL.map(a => a.name));
+  const custom = tasteQuizSelectedArtists.filter(n => !poolNames.has(n));
+  tasteQuizCustomArtistsEl.innerHTML = custom.map(n => `
+    <span class="chip selected" data-custom-artist="${escapeHtml(n)}">${escapeHtml(n)} <span class="chip-remove">&times;</span></span>
+  `).join("");
+  tasteQuizCustomArtistsEl.querySelectorAll("[data-custom-artist]").forEach(chip => {
+    chip.addEventListener("click", () => {
+      tasteQuizSelectedArtists = tasteQuizSelectedArtists.filter(x => x !== chip.dataset.customArtist);
+      renderTasteQuizCustomArtists();
+    });
+  });
+}
+let artistSearchDebounce = null;
+tasteQuizArtistSearchInput.addEventListener("input", () => {
+  clearTimeout(artistSearchDebounce);
+  const q = tasteQuizArtistSearchInput.value.trim();
+  if(!q){ tasteQuizArtistSearchResults.innerHTML = ""; return; }
+  artistSearchDebounce = setTimeout(async () => {
+    try{
+      const res = await fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(q)}&fmt=json&limit=8`, { headers: { Accept: "application/json" } });
+      const data = await res.json();
+      const names = Array.from(new Set((data.artists || []).map(a => a.name))).slice(0, 8);
+      tasteQuizArtistSearchResults.innerHTML = names.length
+        ? names.map(n => `<div class="artist-search-item" data-name="${escapeHtml(n)}">${escapeHtml(n)}</div>`).join("")
+        : '<div class="artist-search-empty">Aucun résultat.</div>';
+      tasteQuizArtistSearchResults.querySelectorAll(".artist-search-item").forEach(el => {
+        el.addEventListener("click", () => {
+          const name = el.dataset.name;
+          if(!tasteQuizSelectedArtists.includes(name)) tasteQuizSelectedArtists.push(name);
+          tasteQuizArtistSearchInput.value = "";
+          tasteQuizArtistSearchResults.innerHTML = "";
+          renderTasteQuizCustomArtists();
+        });
+      });
+    }catch(e){
+      tasteQuizArtistSearchResults.innerHTML = '<div class="artist-search-empty">Recherche indisponible.</div>';
+    }
+  }, 350);
+});
+
 function openTasteQuiz(){
   closeAllOverlays();
-  tasteQuizSelection = loadTasteQuiz().styles.slice();
-  renderTasteQuizChips();
+  const quiz = loadTasteQuiz();
+  tasteQuizSelection = quiz.styles.slice();
+  tasteQuizSelectedArtists = quiz.artists.slice();
+  tasteQuizArtistSearchInput.value = "";
+  tasteQuizArtistSearchResults.innerHTML = "";
+  renderTasteQuizGenres();
+  renderTasteQuizArtists();
+  renderTasteQuizCustomArtists();
   tasteQuizOverlay.classList.add("open");
 }
 document.getElementById("tasteQuizOverlayClose").addEventListener("click", () => {
   tasteQuizOverlay.classList.remove("open");
 });
 document.getElementById("tasteQuizSaveBtn").addEventListener("click", () => {
-  saveTasteQuiz({ styles: tasteQuizSelection, doneAt: Date.now() });
+  saveTasteQuiz({ styles: tasteQuizSelection, artists: tasteQuizSelectedArtists, doneAt: Date.now() });
   tasteQuizOverlay.classList.remove("open");
   renderRecoPerso();
 });
@@ -5411,9 +5681,9 @@ document.getElementById("tasteQuizSkipBtn").addEventListener("click", () => {
 });
 document.getElementById("settingsRedoQuizBtn").addEventListener("click", openTasteQuiz);
 
-// chaque étoile posée sur un son des recos de la taupe ajuste le poids de son style
-// (5 étoiles renforce, 1 étoile pénalise) -> les recos s'affinent avec l'usage, pas
-// besoin d'attendre que l'utilisateur refasse le quiz à la main
+// chaque étoile posée ajuste le poids du style (pour les sons issus des recos, seuls à
+// porter un style connu) et de l'artiste (pour toute note, reco ou pas) -> les recos
+// s'affinent avec l'usage, pas besoin d'attendre que l'utilisateur refasse le quiz
 function computeStyleRatingWeights(){
   const weights = {};
   const byWallId = new Map(recosWallCache.map(it => [it.id, it]));
@@ -5426,14 +5696,47 @@ function computeStyleRatingWeights(){
   });
   return weights;
 }
+function computeArtistRatingWeights(){
+  const weights = {};
+  loadCollection().forEach(entry => {
+    if(!entry.artist) return;
+    const key = normalizeTasteText(entry.artist);
+    weights[key] = (weights[key] || 0) + (entry.rating - 3);
+  });
+  return weights;
+}
 function isWallItemRated(item, collection){
   const gid = `reco-${item.id}`;
   return collection.some(a => a.mbid === gid || a.groupId === gid);
 }
-function scoreWallItemForPerso(item, likedStyles, ratingWeights){
+// pas de correspondance exacte -> on retrace le chemin vers le genre parent le plus
+// proche (mots-clés) plutôt que de ne rien compter du tout
+function styleMatchScore(wallStyleRaw, likedLabels){
+  if(!wallStyleRaw || !likedLabels.length) return 0;
+  const wallNorm = normalizeTasteText(wallStyleRaw);
+  let best = 0;
+  likedLabels.forEach(label => {
+    const labelNorm = normalizeTasteText(label);
+    if(wallNorm === labelNorm){ best = Math.max(best, 3); return; }
+    if(wallNorm.includes(labelNorm) || labelNorm.includes(wallNorm)){ best = Math.max(best, 3); return; }
+    // pas de recoupement textuel direct (ex: style "Rap" vs genre choisi "Hip-Hop") ->
+    // on retrace le chemin via les mots-clés du genre parent plutôt que de ne rien compter
+    const top = topGenreForLabel(label);
+    if(top && TASTE_GENRE_TREE[top].keywords.some(k => wallNorm.includes(k))) best = Math.max(best, 2);
+  });
+  return best;
+}
+function artistMatchScore(itemArtist, likedArtists){
+  if(!itemArtist || !likedArtists.length) return 0;
+  const norm = normalizeTasteText(itemArtist);
+  return likedArtists.some(a => normalizeTasteText(a) === norm) ? 4 : 0;
+}
+function scoreWallItemForPerso(item, quiz, styleRatingWeights, artistRatingWeights){
   let score = 0;
-  if(likedStyles.includes(item.style)) score += 3;
-  score += (ratingWeights[item.style] || 0) * 1.5;
+  score += styleMatchScore(item.style, quiz.styles);
+  score += artistMatchScore(item.artist, quiz.artists);
+  score += (styleRatingWeights[item.style] || 0) * 1.5;
+  score += (artistRatingWeights[normalizeTasteText(item.artist)] || 0) * 1.2;
   if(item.indispensable) score += 0.5;
   const weekIdx = recosActiveWeeks.indexOf(item.publishedWeek);
   if(weekIdx === 0) score += 0.6; else if(weekIdx === 1) score += 0.3;
@@ -5457,12 +5760,21 @@ function seededRng(seed){
     return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
   };
 }
-function seededShuffle(arr, seed){
-  const rng = seededRng(seed);
-  const out = arr.slice();
-  for(let i = out.length - 1; i > 0; i--){
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
+// tirage pondéré sans remise : un score élevé a plus de chances de sortir, mais rien
+// n'est jamais garanti à 100% ni totalement exclu -> les picks restent pertinents
+// sans que ce soit littéralement toujours strictement le même top 8
+function weightedPickWithoutReplacement(items, weights, count, rng){
+  const pool = items.map((it, i) => ({ it, w: weights[i] }));
+  const out = [];
+  while(out.length < count && pool.length){
+    const total = pool.reduce((s, p) => s + p.w, 0);
+    let r = rng() * total;
+    let idx = pool.length - 1;
+    for(let i = 0; i < pool.length; i++){
+      r -= pool[i].w;
+      if(r <= 0){ idx = i; break; }
+    }
+    out.push(pool.splice(idx, 1)[0].it);
   }
   return out;
 }
@@ -5470,19 +5782,23 @@ function seededShuffle(arr, seed){
 function computeRecoPerso(){
   const collection = loadCollection();
   const quiz = loadTasteQuiz();
-  const ratingWeights = computeStyleRatingWeights();
-  const eligible = recosWallCache.filter(it => it.style && !isWallItemRated(it, collection));
+  const styleWeights = computeStyleRatingWeights();
+  const artistWeights = computeArtistRatingWeights();
+  const eligible = recosWallCache.filter(it => !isWallItemRated(it, collection));
   const scored = eligible
-    .map(it => ({ it, score: scoreWallItemForPerso(it, quiz.styles, ratingWeights) }))
+    .map(it => ({ it, score: scoreWallItemForPerso(it, quiz, styleWeights, artistWeights) }))
     .sort((a, b) => b.score - a.score);
-  const pool = scored.slice(0, 24).map(s => s.it);
+  const pool = scored.slice(0, 24);
   const today = new Date().toISOString().slice(0, 10);
   const shuffleCount = parseInt(localStorage.getItem(RECO_PERSO_SHUFFLE_KEY) || "0", 10);
-  const shuffled = seededShuffle(pool, hashSeed(today + ":" + shuffleCount));
+  const rng = seededRng(hashSeed(today + ":" + shuffleCount));
+  const minScore = pool.length ? Math.min(...pool.map(p => p.score)) : 0;
+  const weights = pool.map(p => (p.score - minScore) + 0.5); // plancher pour garder une petite chance à tout le monde
+  const picks = weightedPickWithoutReplacement(pool.map(p => p.it), weights, 8, rng);
   return {
-    picks: shuffled.slice(0, 8),
+    picks,
     quizDone: !!quiz.doneAt,
-    hasSignal: quiz.styles.length > 0 || Object.keys(ratingWeights).length > 0
+    hasSignal: quiz.styles.length > 0 || quiz.artists.length > 0 || Object.keys(styleWeights).length > 0 || Object.keys(artistWeights).length > 0
   };
 }
 

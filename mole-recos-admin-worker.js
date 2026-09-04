@@ -40,6 +40,14 @@
 const SPOTIFY_CLIENT_ID = "REMPLACE_PAR_TON_CLIENT_ID";
 const SPOTIFY_CLIENT_SECRET = "REMPLACE_PAR_TON_CLIENT_SECRET";
 
+// ---------- notifications du rendez-vous du vendredi (Web Push, clé VAPID) ----------
+// Clé publique déjà collée dans index.html (VAPID_PUBLIC_KEY) — doit être EXACTEMENT
+// la même paire. Remplace VAPID_PRIVATE_KEY_JWK par le JSON généré, et VAPID_SUBJECT
+// par une adresse mail de contact (exigée par le protocole Web Push, jamais affichée).
+const VAPID_PUBLIC_KEY = "BP-n6bq3dq-xHW81sxxsb9Wps-sBgmsbHSfZzSORSgtjEvmAYWzTMa100bpq7i1rYyy9w1k1IpQ3N8sx1ZFhD18";
+const VAPID_PRIVATE_KEY_JWK = "REMPLACE_PAR_TA_CLE_PRIVEE_JSON";
+const VAPID_SUBJECT = "mailto:REMPLACE_PAR_TON_EMAIL";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -111,8 +119,30 @@ export default {
         return jsonResponse({ results });
       }
 
+      // abonnement/désabonnement aux notifications : ouvert à tout visiteur du site
+      // public, pas de mot de passe ici (un abonnement push n'est pas une action
+      // sensible — juste un jeton anonyme propre à cet appareil).
+      if (url.pathname === "/push-subscribe" && request.method === "POST") {
+        const sub = await request.json();
+        if (!sub || !sub.endpoint) return jsonResponse({ error: "Abonnement invalide" }, 400);
+        const subs = await loadPushSubs(env);
+        if (!subs.some((s) => s.endpoint === sub.endpoint)) {
+          subs.push(sub);
+          await savePushSubs(env, subs);
+        }
+        return jsonResponse({ ok: true });
+      }
+
+      if (url.pathname === "/push-unsubscribe" && request.method === "POST") {
+        const body = await request.json();
+        const subs = await loadPushSubs(env);
+        const filtered = subs.filter((s) => s.endpoint !== (body && body.endpoint));
+        await savePushSubs(env, filtered);
+        return jsonResponse({ ok: true });
+      }
+
       // tout ce qui suit (file, mur, publication, recherche...) exige le
-      // cookie posé par /login — /quick et /quick/save restent à part.
+      // cookie posé par /login — /quick, /quick/save et /push-* restent à part.
       if (!isAdminAuthed(request, env)) {
         return jsonResponse({ error: "Non connecté" }, 401);
       }
@@ -166,6 +196,12 @@ export default {
 
       if (url.pathname === "/publish" && request.method === "POST") {
         const result = await publishQueue(env);
+        return jsonResponse(result);
+      }
+
+      // envoi manuel, pour vérifier que tout le circuit marche sans attendre vendredi
+      if (url.pathname === "/push-test" && request.method === "POST") {
+        const result = await sendWeeklyPush(env);
         return jsonResponse(result);
       }
 
@@ -253,7 +289,11 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(publishQueue(env));
+    ctx.waitUntil(
+      publishQueue(env).then((result) => {
+        if (result.publishedCount > 0) return sendWeeklyPush(env);
+      })
+    );
   },
 };
 
@@ -307,6 +347,84 @@ async function publishQueue(env) {
     return { wall: newWall, publishedCount: queue.length };
   }
   return { wall, publishedCount: 0 };
+}
+
+// ---------- notifications push (VAPID, sans chiffrement de payload) ----------
+// Le push part sans contenu (pas de Content-Encoding, corps vide) -> pas besoin de
+// chiffrer un payload (ECDH/HKDF/aes128gcm, complexe), juste signer un JWT avec la clé
+// VAPID pour prouver l'identité du serveur. Le texte affiché est fixe, géré dans sw.js.
+async function loadPushSubs(env) {
+  const raw = await env.RECOS_KV.get("push_subscriptions");
+  return raw ? JSON.parse(raw) : [];
+}
+async function savePushSubs(env, subs) {
+  await env.RECOS_KV.put("push_subscriptions", JSON.stringify(subs));
+}
+
+function b64urlEncodeBytes(bytes) {
+  let str = "";
+  for (const b of bytes) str += String.fromCharCode(b);
+  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function b64urlEncodeStr(str) {
+  return b64urlEncodeBytes(new TextEncoder().encode(str));
+}
+
+let vapidKeyPromise = null;
+function getVapidPrivateKey() {
+  if (!vapidKeyPromise) {
+    const jwk = typeof VAPID_PRIVATE_KEY_JWK === "string" ? JSON.parse(VAPID_PRIVATE_KEY_JWK) : VAPID_PRIVATE_KEY_JWK;
+    vapidKeyPromise = crypto.subtle.importKey("jwk", jwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  }
+  return vapidKeyPromise;
+}
+
+async function buildVapidAuthHeader(endpoint) {
+  const audience = new URL(endpoint).origin;
+  const header = { typ: "JWT", alg: "ES256" };
+  const claims = {
+    aud: audience,
+    exp: Math.floor(Date.now() / 1000) + 12 * 3600,
+    sub: VAPID_SUBJECT,
+  };
+  const unsigned = b64urlEncodeStr(JSON.stringify(header)) + "." + b64urlEncodeStr(JSON.stringify(claims));
+  const key = await getVapidPrivateKey();
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(unsigned));
+  const jwt = unsigned + "." + b64urlEncodeBytes(new Uint8Array(sig));
+  return `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`;
+}
+
+async function sendWebPush(subscription) {
+  try {
+    const authHeader = await buildVapidAuthHeader(subscription.endpoint);
+    const res = await fetch(subscription.endpoint, {
+      method: "POST",
+      headers: { Authorization: authHeader, TTL: "86400", "Content-Length": "0" },
+    });
+    return res.status;
+  } catch (e) {
+    return 0;
+  }
+}
+
+async function sendWeeklyPush(env) {
+  const subs = await loadPushSubs(env);
+  if (!subs.length) return { sent: 0, removed: 0 };
+  let sent = 0;
+  const kept = [];
+  for (const sub of subs) {
+    const status = await sendWebPush(sub);
+    if (status >= 200 && status < 300) {
+      sent++;
+      kept.push(sub);
+    } else if (status === 404 || status === 410) {
+      // abonnement expiré/révoqué côté navigateur -> retiré
+    } else {
+      kept.push(sub); // erreur temporaire (réseau, 5xx...) -> on retente la prochaine fois
+    }
+  }
+  await savePushSubs(env, kept);
+  return { sent, removed: subs.length - kept.length };
 }
 
 // ---------- Spotify (OAuth client credentials, caché côté serveur) ----------
@@ -846,6 +964,10 @@ const ADMIN_HTML = `<!DOCTYPE html>
   </div>
   <div id="queueList" style="margin-top:10px;"></div>
   <div id="queueStatus" class="status"></div>
+  <div class="row" style="justify-content:space-between;align-items:center;">
+    <button id="pushTestBtn" class="ghost small">Tester les notifications</button>
+    <span id="pushTestStatus" class="status"></span>
+  </div>
 </div>
 </div>
 
@@ -967,6 +1089,7 @@ $("searchLinksBtn").addEventListener("click", searchLinks);
 $("addBtn").addEventListener("click", addToQueue);
 $("publishBtn").addEventListener("click", publishNow);
 $("backfillBtn").addEventListener("click", backfillTracklists);
+$("pushTestBtn").addEventListener("click", testPush);
 
 async function lookupSharedUrl(){
   const raw = $("sharedUrl").value.trim();
@@ -1224,6 +1347,22 @@ async function publishNow(){
   }
   loadQueue();
   wallCache = null;
+}
+
+async function testPush(){
+  const btn = $("pushTestBtn");
+  const status = $("pushTestStatus");
+  btn.disabled = true;
+  status.textContent = "Envoi...";
+  try{
+    const res = await fetch("/push-test", { method: "POST" });
+    const data = await res.json();
+    status.textContent = data.sent + " notification" + (data.sent !== 1 ? "s" : "") + " envoyée" + (data.sent !== 1 ? "s" : "") +
+      (data.removed ? " (" + data.removed + " abonnement" + (data.removed !== 1 ? "s" : "") + " expiré" + (data.removed !== 1 ? "s" : "") + " retiré" + (data.removed !== 1 ? "s" : "") + ")" : "");
+  }catch(e){
+    status.textContent = "Erreur lors de l'envoi — réessaie.";
+  }
+  btn.disabled = false;
 }
 
 // rattrape les tracklists des recos publiées avant l'import automatique — un clic traite

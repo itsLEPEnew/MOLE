@@ -39,3 +39,29 @@ self.addEventListener("fetch", (event) => {
       .catch(() => caches.match(event.request))
   );
 });
+
+// ---------- notification du rendez-vous du vendredi ----------
+// Push envoyé sans contenu chiffré (juste un signal) -> le texte affiché est fixe,
+// géré ici plutôt que dans le message reçu.
+self.addEventListener("push", (event) => {
+  event.waitUntil(
+    self.registration.showNotification("MOLE — nouvelle fournée", {
+      body: "La taupe a déterré de nouveaux sons cette semaine.",
+      icon: "./icon-192.png",
+      badge: "./icon-192.png",
+      data: { url: "./" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const c of clientList) {
+        if ("focus" in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(event.notification.data && event.notification.data.url || "./");
+    })
+  );
+});

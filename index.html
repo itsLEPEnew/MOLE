@@ -2373,6 +2373,13 @@
       </div>
       <button class="theme-toggle-btn" id="themeToggleBtn" title="Mode nuit">&#9789;</button>
     </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Rendez-vous du vendredi</div>
+        <div class="settings-row-desc" id="pushStatusDesc">Reçois une notification quand la taupe publie de nouveaux sons.</div>
+      </div>
+      <button class="type-switch-toggle" id="pushToggle" type="button" role="switch" aria-checked="false" title="Notifications du vendredi"><span class="type-switch-knob"></span></button>
+    </div>
 
     <div class="settings-section-title">Mes données</div>
     <div class="settings-row">
@@ -3084,6 +3091,89 @@ document.getElementById("resetBangersBtn").addEventListener("click", () => {
   localStorage.removeItem(BANGERS_KEY);
   renderBangers();
   flashSettingsStatus("Liste de bangers vidée.");
+});
+
+// ---------- notifications du rendez-vous du vendredi (Web Push) ----------
+const VAPID_PUBLIC_KEY = "BP-n6bq3dq-xHW81sxxsb9Wps-sBgmsbHSfZzSORSgtjEvmAYWzTMa100bpq7i1rYyy9w1k1IpQ3N8sx1ZFhD18";
+// Colle ici l'URL de ton Worker Cloudflare une fois les endpoints push déployés (voir mole-recos-admin-worker.js)
+const PUSH_WORKER_URL = ""; // ex: "https://mole-recos-admin.mister-taniark.workers.dev"
+
+function urlBase64ToUint8Array(base64String){
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const arr = new Uint8Array(rawData.length);
+  for(let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+  return arr;
+}
+
+const pushToggle = document.getElementById("pushToggle");
+const pushStatusDesc = document.getElementById("pushStatusDesc");
+
+function setPushToggleState(on){
+  pushToggle.classList.toggle("on", on);
+  pushToggle.setAttribute("aria-checked", String(on));
+}
+
+async function refreshPushToggleState(){
+  if(!("serviceWorker" in navigator) || !("PushManager" in window)){
+    pushStatusDesc.textContent = "Notifications non disponibles sur ce navigateur.";
+    pushToggle.disabled = true;
+    return;
+  }
+  if(!PUSH_WORKER_URL){
+    pushToggle.disabled = true;
+    return;
+  }
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    setPushToggleState(!!sub);
+  }catch(e){ /* pas grave */ }
+}
+refreshPushToggleState();
+
+pushToggle.addEventListener("click", async () => {
+  if(!PUSH_WORKER_URL){
+    pushStatusDesc.textContent = "Notifications pas encore branchées (voir mole-recos-admin-worker.js).";
+    return;
+  }
+  pushToggle.disabled = true;
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    if(existing){
+      await fetch(`${PUSH_WORKER_URL}/push-unsubscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: existing.endpoint })
+      });
+      await existing.unsubscribe();
+      setPushToggleState(false);
+      pushStatusDesc.textContent = "Notifications désactivées.";
+    } else {
+      const permission = await Notification.requestPermission();
+      if(permission !== "granted"){
+        pushStatusDesc.textContent = "Autorisation refusée — change ça dans les réglages du navigateur si tu changes d'avis.";
+        pushToggle.disabled = false;
+        return;
+      }
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+      await fetch(`${PUSH_WORKER_URL}/push-subscribe`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sub)
+      });
+      setPushToggleState(true);
+      pushStatusDesc.textContent = "Notifications activées — rendez-vous chaque vendredi.";
+    }
+  }catch(e){
+    pushStatusDesc.textContent = "Impossible de changer ça pour le moment — réessaie.";
+  }
+  pushToggle.disabled = false;
 });
 
 // ---------- chat flottant ----------

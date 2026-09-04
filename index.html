@@ -553,6 +553,36 @@
     white-space:nowrap;
   }
   .accueil-link:hover{ color:var(--ink); }
+  .reco-perso-intro{
+    background:var(--card);
+    border:2px solid var(--line);
+    border-radius:4px 14px 4px 14px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .reco-perso-intro p{
+    margin:0;
+    font-size:13px;
+    color:var(--ink-soft);
+    flex:1;
+    min-width:160px;
+  }
+  .reco-perso-cta-btn{
+    background:var(--ink);
+    color:var(--paper);
+    border:2px solid var(--line);
+    padding:9px 14px;
+    border-radius:4px 14px 4px 14px;
+    font-size:12.5px;
+    font-weight:800;
+    cursor:pointer;
+    white-space:nowrap;
+  }
   .accueil-modes{
     display:flex;
     gap:14px;
@@ -983,6 +1013,11 @@
     font-size:14.5px;
     font-weight:800;
     cursor:pointer;
+  }
+  .save-btn.ghost{
+    background:transparent;
+    color:var(--ink);
+    margin-top:8px;
   }
   .profile-status{
     font-size:13px;
@@ -2070,6 +2105,13 @@
       <div id="accueilRecosPreview"></div>
     </div>
     <div class="accueil-block">
+      <div class="accueil-block-head">
+        <h3>Recommandé pour toi</h3>
+        <button class="accueil-link" id="recoPersoShuffleBtn" style="display:none;">Autre sélection ↻</button>
+      </div>
+      <div id="accueilRecoPerso"></div>
+    </div>
+    <div class="accueil-block">
       <h3>Comment tu veux creuser aujourd'hui ?</h3>
       <div class="accueil-modes" id="accueilModes">
         <button class="accueil-mode-btn" data-creuser-mode="terrain">
@@ -2315,6 +2357,22 @@
   </div>
 </div>
 
+<div class="overlay" id="tasteQuizOverlay">
+  <div class="overlay-inner">
+    <div class="overlay-topbar">
+      <button class="overlay-close" id="tasteQuizOverlayClose" title="Fermer">&times;</button>
+      <div class="mini-tabs">
+        <button class="tab-btn mini tab-btn-icon" data-tab="accueil" title="Accueil"><span class="niche-icon"></span></button>
+      </div>
+      <h3>Tes goûts</h3>
+    </div>
+    <p class="profil-intro">Choisis les styles qui te parlent parmi ceux déjà passés dans les recos de la taupe — ça sert de base pour "Recommandé pour toi", qui s'affine ensuite tout seul avec tes notes.</p>
+    <div id="tasteQuizChips" class="chip-row"></div>
+    <button class="save-btn" id="tasteQuizSaveBtn">Valider</button>
+    <button class="save-btn ghost" id="tasteQuizSkipBtn">Passer pour l'instant</button>
+  </div>
+</div>
+
 <div class="overlay" id="libraryOverlay">
   <div class="overlay-inner">
     <div class="overlay-topbar">
@@ -2447,6 +2505,13 @@
         <div class="settings-row-desc">Genres et artistes déjà connus, à refaire depuis Profil.</div>
       </div>
       <button class="settings-action-btn danger" id="resetProfileBtn">Réinitialiser</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-row-title">Styles pour "Recommandé pour toi"</div>
+        <div class="settings-row-desc">Refaire le petit quiz de styles utilisé pour tes recos personnalisées.</div>
+      </div>
+      <button class="settings-action-btn" id="settingsRedoQuizBtn">Refaire le quiz</button>
     </div>
     <div class="settings-row">
       <div>
@@ -3015,6 +3080,7 @@ function closeAllOverlays(){
   document.getElementById("creditsOverlay").classList.remove("open");
   document.getElementById("settingsOverlay").classList.remove("open");
   document.getElementById("ratingModalBackdrop").classList.remove("open");
+  document.getElementById("tasteQuizOverlay").classList.remove("open");
   document.getElementById("profileMenu").classList.remove("open");
 }
 
@@ -3067,7 +3133,8 @@ document.getElementById("exportDataBtn").addEventListener("click", () => {
     exportedAt: new Date().toISOString(),
     collection: JSON.parse(localStorage.getItem(COLLECTION_KEY) || "[]"),
     profile: JSON.parse(localStorage.getItem(PROFILE_KEY) || "null"),
-    bangers: JSON.parse(localStorage.getItem(BANGERS_KEY) || "[]")
+    bangers: JSON.parse(localStorage.getItem(BANGERS_KEY) || "[]"),
+    tasteQuiz: JSON.parse(localStorage.getItem(TASTE_QUIZ_KEY) || "null")
   };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -3092,10 +3159,12 @@ document.getElementById("importDataInput").addEventListener("change", (e) => {
       if(Array.isArray(data.collection)) localStorage.setItem(COLLECTION_KEY, JSON.stringify(data.collection));
       if(data.profile) localStorage.setItem(PROFILE_KEY, JSON.stringify(data.profile));
       if(Array.isArray(data.bangers)) localStorage.setItem(BANGERS_KEY, JSON.stringify(data.bangers));
+      if(data.tasteQuiz) localStorage.setItem(TASTE_QUIZ_KEY, JSON.stringify(data.tasteQuiz));
       profile = loadProfile();
       renderGenreChips();
       renderKnownArtists();
       updateProfileStats();
+      renderRecoPerso();
       flashSettingsStatus("Données importées.");
     }catch(err){
       flashSettingsStatus("Fichier invalide.");
@@ -3110,6 +3179,7 @@ document.getElementById("resetCollectionBtn").addEventListener("click", () => {
   localStorage.removeItem(COLLECTION_KEY);
   updateProfileStats();
   if(libraryOverlay.classList.contains("open")) renderLibraryOverlay();
+  renderRecoPerso();
   flashSettingsStatus("Musicothèque vidée.");
 });
 
@@ -3497,6 +3567,9 @@ function loadCollection(){
 }
 function saveCollectionList(list){
   localStorage.setItem(COLLECTION_KEY, JSON.stringify(list));
+  // chaque note/suppression change ce qui est déjà connu et les poids par style ->
+  // rafraîchit "Recommandé pour toi" pour que la sélection bouge avec l'usage
+  if(typeof renderRecoPerso === "function") renderRecoPerso();
 }
 function removeFromCollection(mbid){
   saveCollectionList(loadCollection().filter(a => a.mbid !== mbid));
@@ -5278,6 +5351,172 @@ function renderAccueilRecosPreview(){
   el.innerHTML = `<div class="card-grid accueil-recos-grid">${picks.map(recosCardHtml).join("")}</div>`;
 }
 
+// ---------- Recommandé pour toi (quiz de styles + apprentissage par les notes) ----------
+const TASTE_QUIZ_KEY = "mole_taste_quiz_v1";
+const RECO_PERSO_SHUFFLE_KEY = "mole_reco_perso_shuffle_v1";
+
+function loadTasteQuiz(){
+  try{
+    const raw = localStorage.getItem(TASTE_QUIZ_KEY);
+    const q = raw ? JSON.parse(raw) : null;
+    if(q && Array.isArray(q.styles)) return q;
+  }catch(e){ /* ignore */ }
+  return { styles: [], doneAt: null };
+}
+function saveTasteQuiz(q){ localStorage.setItem(TASTE_QUIZ_KEY, JSON.stringify(q)); }
+
+function availableRecosStyles(){
+  return Array.from(new Set(recosWallCache.map(it => it.style).filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+const tasteQuizOverlay = document.getElementById("tasteQuizOverlay");
+const tasteQuizChipsEl = document.getElementById("tasteQuizChips");
+let tasteQuizSelection = [];
+
+function renderTasteQuizChips(){
+  const styles = availableRecosStyles();
+  if(!styles.length){
+    tasteQuizChipsEl.innerHTML = '<p class="profil-intro">Pas encore assez de recos publiées pour proposer des styles — reviens après quelques vendredis.</p>';
+    return;
+  }
+  tasteQuizChipsEl.innerHTML = "";
+  styles.forEach(s => {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (tasteQuizSelection.includes(s) ? " selected" : "");
+    chip.textContent = s;
+    chip.onclick = () => {
+      if(tasteQuizSelection.includes(s)) tasteQuizSelection = tasteQuizSelection.filter(x => x !== s);
+      else tasteQuizSelection.push(s);
+      renderTasteQuizChips();
+    };
+    tasteQuizChipsEl.appendChild(chip);
+  });
+}
+function openTasteQuiz(){
+  closeAllOverlays();
+  tasteQuizSelection = loadTasteQuiz().styles.slice();
+  renderTasteQuizChips();
+  tasteQuizOverlay.classList.add("open");
+}
+document.getElementById("tasteQuizOverlayClose").addEventListener("click", () => {
+  tasteQuizOverlay.classList.remove("open");
+});
+document.getElementById("tasteQuizSaveBtn").addEventListener("click", () => {
+  saveTasteQuiz({ styles: tasteQuizSelection, doneAt: Date.now() });
+  tasteQuizOverlay.classList.remove("open");
+  renderRecoPerso();
+});
+document.getElementById("tasteQuizSkipBtn").addEventListener("click", () => {
+  tasteQuizOverlay.classList.remove("open");
+});
+document.getElementById("settingsRedoQuizBtn").addEventListener("click", openTasteQuiz);
+
+// chaque étoile posée sur un son des recos de la taupe ajuste le poids de son style
+// (5 étoiles renforce, 1 étoile pénalise) -> les recos s'affinent avec l'usage, pas
+// besoin d'attendre que l'utilisateur refasse le quiz à la main
+function computeStyleRatingWeights(){
+  const weights = {};
+  const byWallId = new Map(recosWallCache.map(it => [it.id, it]));
+  loadCollection().forEach(entry => {
+    const gid = entry.groupId || entry.mbid;
+    if(typeof gid !== "string" || !gid.startsWith("reco-")) return;
+    const item = byWallId.get(gid.slice(5));
+    if(!item || !item.style) return;
+    weights[item.style] = (weights[item.style] || 0) + (entry.rating - 3);
+  });
+  return weights;
+}
+function isWallItemRated(item, collection){
+  const gid = `reco-${item.id}`;
+  return collection.some(a => a.mbid === gid || a.groupId === gid);
+}
+function scoreWallItemForPerso(item, likedStyles, ratingWeights){
+  let score = 0;
+  if(likedStyles.includes(item.style)) score += 3;
+  score += (ratingWeights[item.style] || 0) * 1.5;
+  if(item.indispensable) score += 0.5;
+  const weekIdx = recosActiveWeeks.indexOf(item.publishedWeek);
+  if(weekIdx === 0) score += 0.6; else if(weekIdx === 1) score += 0.3;
+  return score;
+}
+
+// tirage pseudo-aléatoire déterministe (mulberry32) : même seed -> même résultat,
+// donc la sélection reste stable pendant une journée sans se figer pour autant
+// (la seed change chaque jour, et à la demande via le bouton "Autre sélection")
+function hashSeed(str){
+  let h = 0;
+  for(let i = 0; i < str.length; i++){ h = (h << 5) - h + str.charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+function seededRng(seed){
+  let t = seed;
+  return function(){
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function seededShuffle(arr, seed){
+  const rng = seededRng(seed);
+  const out = arr.slice();
+  for(let i = out.length - 1; i > 0; i--){
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function computeRecoPerso(){
+  const collection = loadCollection();
+  const quiz = loadTasteQuiz();
+  const ratingWeights = computeStyleRatingWeights();
+  const eligible = recosWallCache.filter(it => it.style && !isWallItemRated(it, collection));
+  const scored = eligible
+    .map(it => ({ it, score: scoreWallItemForPerso(it, quiz.styles, ratingWeights) }))
+    .sort((a, b) => b.score - a.score);
+  const pool = scored.slice(0, 24).map(s => s.it);
+  const today = new Date().toISOString().slice(0, 10);
+  const shuffleCount = parseInt(localStorage.getItem(RECO_PERSO_SHUFFLE_KEY) || "0", 10);
+  const shuffled = seededShuffle(pool, hashSeed(today + ":" + shuffleCount));
+  return {
+    picks: shuffled.slice(0, 8),
+    quizDone: !!quiz.doneAt,
+    hasSignal: quiz.styles.length > 0 || Object.keys(ratingWeights).length > 0
+  };
+}
+
+const recoPersoEl = document.getElementById("accueilRecoPerso");
+const recoPersoShuffleBtn = document.getElementById("recoPersoShuffleBtn");
+
+function renderRecoPerso(){
+  if(!recosWallCache.length){
+    recoPersoEl.innerHTML = "";
+    recoPersoShuffleBtn.style.display = "none";
+    return;
+  }
+  const { picks, quizDone, hasSignal } = computeRecoPerso();
+  const intro = !quizDone
+    ? `<div class="reco-perso-intro"><p>Dis-moi ce que tu aimes pour affiner ces suggestions.</p><button class="reco-perso-cta-btn" id="recoPersoQuizBtn">Faire le quiz (30 sec)</button></div>`
+    : "";
+  if(!picks.length){
+    recoPersoEl.innerHTML = intro + (hasSignal
+      ? '<div class="recos-empty">Tu as déjà noté tout ce qui matche tes goûts pour l\'instant — reviens après la prochaine fournée.</div>'
+      : '<div class="recos-empty">Rien à te proposer pour l\'instant.</div>');
+    recoPersoShuffleBtn.style.display = "none";
+  } else {
+    recoPersoEl.innerHTML = intro + `<div class="card-grid accueil-recos-grid">${picks.map(recosCardHtml).join("")}</div>`;
+    recoPersoShuffleBtn.style.display = "";
+  }
+  const quizBtn = document.getElementById("recoPersoQuizBtn");
+  if(quizBtn) quizBtn.addEventListener("click", openTasteQuiz);
+}
+recoPersoShuffleBtn.addEventListener("click", () => {
+  const n = parseInt(localStorage.getItem(RECO_PERSO_SHUFFLE_KEY) || "0", 10);
+  localStorage.setItem(RECO_PERSO_SHUFFLE_KEY, String(n + 1));
+  renderRecoPerso();
+});
+
 function renderAccueilLibrarySummary(){
   const el = document.getElementById("accueilLibrarySummary");
   const count = groupCollection(loadCollection()).length;
@@ -5295,7 +5534,10 @@ function renderAccueilLibrarySummary(){
 
 // "Accueil" est la vue par défaut à l'ouverture -> on charge son contenu direct
 renderAccueilLibrarySummary();
-loadRecosWallIfNeeded().then(renderAccueilRecosPreview);
+loadRecosWallIfNeeded().then(() => {
+  renderAccueilRecosPreview();
+  renderRecoPerso();
+});
 
 // ---------- PWA install (service worker) ----------
 // Dès qu'une nouvelle version du service worker prend la main, on recharge la page

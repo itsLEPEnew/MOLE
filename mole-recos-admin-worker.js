@@ -193,6 +193,32 @@ export default {
         return jsonResponse({ ok: true });
       }
 
+      // rattrape les recos déjà publiées avant l'import automatique de la tracklist :
+      // pour chaque album avec un lien Apple Music mais sans tracklist stockée, va la
+      // chercher. Plafonné par appel (limite de sous-requêtes du Worker) -> rappeler
+      // ce endpoint tant que "remaining" > 0 pour traiter tout le mur par lots.
+      if (url.pathname === "/backfill-tracklists" && request.method === "POST") {
+        const wall = await loadWall(env);
+        const MAX_PER_RUN = 20;
+        let updated = 0, failed = 0, processed = 0;
+        for (const it of wall) {
+          if (processed >= MAX_PER_RUN) break;
+          if (it.type !== "album") continue;
+          if (Array.isArray(it.tracklist) && it.tracklist.length) continue;
+          const appleUrl = it.links && it.links.appleMusic;
+          if (!appleUrl) continue;
+          processed++;
+          const collectionId = await resolveCollectionIdFromAppleUrl(appleUrl);
+          const tracklist = collectionId ? await fetchAppleTracklist(collectionId) : [];
+          if (tracklist.length) { it.tracklist = tracklist; updated++; } else { failed++; }
+        }
+        await saveWall(env, wall);
+        const remaining = wall.filter(
+          (it) => it.type === "album" && !(Array.isArray(it.tracklist) && it.tracklist.length) && it.links && it.links.appleMusic
+        ).length;
+        return jsonResponse({ updated, failed, remaining });
+      }
+
       if (url.pathname === "/spotify-search" && request.method === "GET") {
         const q = url.searchParams.get("q") || "";
         const results = await spotifySearch(q);
@@ -467,19 +493,7 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
     // du partage, plutôt que MOLE ne la redevine plus tard par une recherche MusicBrainz
     // approximative (artiste+titre) à chaque ouverture de la fiche côté public.
     if (type === "album" && collectionId) {
-      try {
-        const clRes = await fetch("https://itunes.apple.com/lookup?id=" + collectionId + "&entity=song", {
-          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
-        });
-        if (debug) debug.push("tracklist lookup status=" + clRes.status);
-        if (clRes.ok) {
-          const clData = await clRes.json();
-          tracklist = (clData.results || [])
-            .filter((r) => r.wrapperType === "track")
-            .map((r) => ({ position: r.trackNumber || null, title: r.trackName || "", duration: r.trackTimeMillis || null }));
-          if (debug) debug.push("tracklist tracks found=" + tracklist.length);
-        }
-      } catch (e) { if (debug) debug.push("tracklist lookup error: " + e.message); }
+      tracklist = await fetchAppleTracklist(collectionId, debug);
     }
   } else {
     const meta = await fetchMeta(rawUrl);
@@ -548,6 +562,56 @@ async function quickAddFromUrl(rawUrl, env, debug, clientApple) {
   queue.unshift(newItem);
   await saveQueue(env, queue);
   return newItem;
+}
+
+// ---------- tracklist Apple Music (utilisé à l'ajout et pour le rattrapage /backfill-tracklists) ----------
+async function fetchAppleTracklist(collectionId, debug) {
+  if (!collectionId) return [];
+  try {
+    const res = await fetch("https://itunes.apple.com/lookup?id=" + collectionId + "&entity=song", {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
+    });
+    if (debug) debug.push("tracklist lookup status=" + res.status);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const tracklist = (data.results || [])
+      .filter((r) => r.wrapperType === "track")
+      .map((r) => ({ position: r.trackNumber || null, title: r.trackName || "", duration: r.trackTimeMillis || null }));
+    if (debug) debug.push("tracklist tracks found=" + tracklist.length);
+    return tracklist;
+  } catch (e) {
+    if (debug) debug.push("tracklist lookup error: " + e.message);
+    return [];
+  }
+}
+
+// à partir d'un lien Apple Music déjà stocké (peut pointer un morceau précis via
+// "?i=" ou directement l'album), retrouve l'id de la collection pour /backfill-tracklists
+async function resolveCollectionIdFromAppleUrl(rawUrl) {
+  let id = null, isTrack = false;
+  try {
+    const u = new URL(rawUrl);
+    const iParam = u.searchParams.get("i");
+    if (iParam && /^[0-9]+$/.test(iParam)) {
+      id = iParam;
+      isTrack = true;
+    } else {
+      const segments = u.pathname.split("/").filter(Boolean);
+      const last = segments[segments.length - 1];
+      if (last && /^[0-9]+$/.test(last)) id = last;
+    }
+  } catch (e) { return null; }
+  if (!id) return null;
+  if (!isTrack) return id;
+  try {
+    const res = await fetch("https://itunes.apple.com/lookup?id=" + id, {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15" },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const t = data.results && data.results[0];
+    return (t && t.collectionId) || null;
+  } catch (e) { return null; }
 }
 
 function jsonResponse(obj, status = 200) {
@@ -790,6 +854,10 @@ const ADMIN_HTML = `<!DOCTYPE html>
   <select id="wallStyleFilter"><option value="">Tous styles</option></select>
   <input type="text" id="wallSearchInput" placeholder="Chercher un artiste, un titre...">
 </div>
+<div class="row" style="justify-content:space-between;align-items:center;">
+  <button id="backfillBtn" class="ghost small">Importer les tracklists manquantes</button>
+  <span id="backfillStatus" class="status"></span>
+</div>
 <div id="wallContent"></div>
 </div>
 
@@ -898,6 +966,7 @@ $("lookupBtn").addEventListener("click", lookupSharedUrl);
 $("searchLinksBtn").addEventListener("click", searchLinks);
 $("addBtn").addEventListener("click", addToQueue);
 $("publishBtn").addEventListener("click", publishNow);
+$("backfillBtn").addEventListener("click", backfillTracklists);
 
 async function lookupSharedUrl(){
   const raw = $("sharedUrl").value.trim();
@@ -1155,6 +1224,28 @@ async function publishNow(){
   }
   loadQueue();
   wallCache = null;
+}
+
+// rattrape les tracklists des recos publiées avant l'import automatique — un clic traite
+// un lot (limite de sous-requêtes du Worker), reclique s'il reste des items à traiter
+async function backfillTracklists(){
+  const btn = $("backfillBtn");
+  const status = $("backfillStatus");
+  btn.disabled = true;
+  status.textContent = "Import en cours...";
+  try{
+    const res = await fetch("/backfill-tracklists", { method: "POST" });
+    const data = await res.json();
+    let msg = data.updated + " tracklist" + (data.updated !== 1 ? "s" : "") + " importée" + (data.updated !== 1 ? "s" : "");
+    if(data.failed) msg += ", " + data.failed + " introuvable" + (data.failed !== 1 ? "s" : "");
+    msg += data.remaining > 0 ? " — encore " + data.remaining + " à traiter, reclique pour continuer" : " — tout est à jour ✓";
+    status.textContent = msg;
+  }catch(e){
+    status.textContent = "Erreur lors de l'import — réessaie.";
+  }
+  btn.disabled = false;
+  wallCache = null;
+  loadWall();
 }
 
 function esc(s){

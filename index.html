@@ -507,6 +507,27 @@
   .subview.active{display:block;}
 
   .accueil-block{ margin-bottom:34px; }
+  .accueil-hero{
+    border:2px solid var(--line);
+    border-radius:4px 16px 4px 16px;
+    background:var(--card);
+    padding:16px;
+  }
+  .accueil-hero-kicker{
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .accueil-hero-hook{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+    line-height:1.4;
+    font-style:italic;
+  }
   .accueil-block h3{
     font-size:13px;
     text-transform:uppercase;
@@ -1610,6 +1631,15 @@
     letter-spacing:0.5px;
     margin:0 0 12px;
   }
+  .recos-week-head{
+    font-size:12.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--ink-soft);
+    margin:26px 0 12px;
+  }
+  .recos-week-head:first-child{ margin-top:0; }
   .recos-wall-head{
     display:flex;
     flex-direction:column;
@@ -1995,11 +2025,13 @@
 
   <!-- ===== ACCUEIL ===== -->
   <section id="view-accueil" class="view active">
-    <div class="accueil-block">
+    <div class="accueil-block accueil-hero">
+      <div class="accueil-hero-kicker" id="accueilWeekKicker"></div>
       <div class="accueil-block-head">
         <h3>Cette semaine chez la taupe</h3>
         <button class="accueil-link" data-tab="recos">Voir tout le mur →</button>
       </div>
+      <p class="accueil-hero-hook" id="accueilHookPhrase"></p>
       <div id="accueilRecosPreview"></div>
     </div>
     <div class="accueil-block">
@@ -4909,6 +4941,15 @@ function sortRecos(list, sortValue){
   return arr;
 }
 
+function formatRecosWeekLabel(w){
+  if(w === recosActiveWeeks[0]) return "Cette semaine";
+  if(w === recosActiveWeeks[1]) return "La semaine dernière";
+  if(w === "Non daté") return w;
+  const d = new Date(w + "T00:00:00");
+  if(isNaN(d)) return w;
+  return "Semaine du " + d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
 function renderRecosWall(){
   const styleValue = recosStyleFilter.value.trim().toLowerCase();
   const typeValue = document.getElementById("recosTypeFilter").value;
@@ -4922,12 +4963,28 @@ function renderRecosWall(){
     return recosMatchesSearch(it, query);
   });
   const sorted = sortRecos(filtered, sortValue);
-  if(sorted.length){
-    recosWallGridEl.innerHTML = `<div class="card-grid">${sorted.map(recosCardHtml).join("")}</div>`;
-  } else if(!recosWallCache.length){
-    recosWallGridEl.innerHTML = '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';
+  if(!sorted.length){
+    recosWallGridEl.innerHTML = recosWallCache.length
+      ? '<div class="recos-empty">Rien ne correspond à ta recherche.</div>'
+      : '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';
+    return;
+  }
+  if(sortValue === "recent"){
+    // vue archive : groupée par semaine de publication, la plus récente en premier —
+    // un vrai historique des vendredis plutôt qu'un tas plat, pour ancrer le rythme hebdo
+    const weeks = [];
+    const byWeek = {};
+    sorted.forEach(it => {
+      const w = it.publishedWeek || "Non daté";
+      if(!byWeek[w]){ byWeek[w] = []; weeks.push(w); }
+      byWeek[w].push(it);
+    });
+    recosWallGridEl.innerHTML = weeks.map(w => `
+      <div class="recos-week-head">${escapeHtml(formatRecosWeekLabel(w))}</div>
+      <div class="card-grid">${byWeek[w].map(recosCardHtml).join("")}</div>
+    `).join("");
   } else {
-    recosWallGridEl.innerHTML = '<div class="recos-empty">Rien ne correspond à ta recherche.</div>';
+    recosWallGridEl.innerHTML = `<div class="card-grid">${sorted.map(recosCardHtml).join("")}</div>`;
   }
 }
 
@@ -4974,7 +5031,51 @@ document.getElementById("recosDiscoverBtn").addEventListener("click", async () =
 });
 
 // ---------- Accueil ----------
+// ---------- rendez-vous du vendredi : date, compte à rebours, phrase d'accroche ----------
+function nextFridayTarget(){
+  const now = new Date();
+  const day = now.getDay(); // 0=dim ... 5=ven, 6=sam
+  let daysUntilFriday = (5 - day + 7) % 7;
+  const target = new Date(now);
+  target.setDate(now.getDate() + daysUntilFriday);
+  target.setHours(7, 0, 0, 0); // heure approximative de publication (voir cron du worker admin)
+  if(target <= now) target.setDate(target.getDate() + 7);
+  return target;
+}
+function formatCountdownToFriday(){
+  const diffMs = nextFridayTarget() - new Date();
+  const totalHours = Math.floor(diffMs / 3600000);
+  if(totalHours < 1) return "d'une minute à l'autre";
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  return days === 0 ? `dans ${hours}h` : `dans ${days}j ${hours}h`;
+}
+function accueilHookPhrase(){
+  const dow = new Date().getDay();
+  if(dow === 5) return "C'est vendredi — fraîchement déterré aujourd'hui.";
+  if(dow === 4) return "La taupe creuse encore un peu — nouvelle fournée demain.";
+  return "Nouvelle fournée tous les vendredis, sans exception.";
+}
+let accueilCountdownTimer = null;
+function renderAccueilWeekKicker(){
+  const el = document.getElementById("accueilWeekKicker");
+  if(!el) return;
+  let dateLabel = "";
+  const thisWeek = recosActiveWeeks[0];
+  if(thisWeek){
+    const d = new Date(thisWeek + "T00:00:00");
+    if(!isNaN(d)) dateLabel = "Sorti le " + d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) + " · ";
+  }
+  const update = () => { el.textContent = dateLabel + "Prochaine fournée " + formatCountdownToFriday(); };
+  update();
+  clearInterval(accueilCountdownTimer);
+  accueilCountdownTimer = setInterval(update, 60000);
+}
+
 function renderAccueilRecosPreview(){
+  renderAccueilWeekKicker();
+  const hookEl = document.getElementById("accueilHookPhrase");
+  if(hookEl) hookEl.textContent = accueilHookPhrase();
   const el = document.getElementById("accueilRecosPreview");
   if(!recosWallCache.length){
     el.innerHTML = '<div class="recos-empty">Rien de publié pour l\'instant — reviens vendredi.</div>';

@@ -1394,6 +1394,41 @@
     background:var(--paper);
     color:var(--ink);
   }
+  .res-btn.small{
+    flex:0 0 auto;
+    padding:5px 9px;
+    font-size:10.5px;
+  }
+  .lib-group-tracks{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-top:4px;
+    padding-top:8px;
+    border-top:1px solid var(--paper-dim);
+  }
+  .lib-group-track{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .lib-group-track-info{ min-width:0; flex:1; }
+  .lib-group-track-title{
+    font-size:11.5px;
+    font-weight:700;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .lib-group-track-actions{
+    display:flex;
+    gap:4px;
+    flex-shrink:0;
+  }
+  .lib-album-rate-btn{
+    margin-top:10px;
+  }
 
   /* --- Modale de notation --- */
   .modal-backdrop{
@@ -2456,6 +2491,7 @@
         <div class="album-header-title" id="albumHeaderTitle"></div>
         <div class="album-header-artist" id="albumHeaderArtist"></div>
         <p class="album-header-desc" id="albumHeaderDesc"></p>
+        <button class="save-btn lib-album-rate-btn" id="albumRateWholeBtn">Noter l'album</button>
       </div>
     </div>
     <div id="albumRecosLinks" class="terrain-preview"></div>
@@ -4065,7 +4101,15 @@ ratingModalSaveBtn.addEventListener("click", () => {
     coverUrl: currentRatingAlbum.coverUrl || null,
     rating: currentRatingValue,
     comment: ratingModalComment.value.trim(),
-    addedAt: idx >= 0 ? list[idx].addedAt : Date.now()
+    addedAt: idx >= 0 ? list[idx].addedAt : Date.now(),
+    // pour regrouper plusieurs morceaux notés d'un même album sous une seule fiche
+    // dans la Musicothèque — par défaut un item se regroupe sous lui-même (mbid)
+    groupId: currentRatingAlbum.groupId || currentRatingAlbum.mbid,
+    groupTitle: currentRatingAlbum.groupTitle || currentRatingAlbum.title,
+    groupArtist: currentRatingAlbum.groupArtist || currentRatingAlbum.artist,
+    groupYear: currentRatingAlbum.groupYear || currentRatingAlbum.year,
+    groupCover: currentRatingAlbum.groupCover || currentRatingAlbum.coverUrl || null,
+    groupCoverMbid: currentRatingAlbum.groupCoverMbid || currentRatingAlbum.coverMbid || currentRatingAlbum.mbid
   };
   if(idx >= 0) list[idx] = entry; else list.unshift(entry);
   saveCollectionList(list);
@@ -4101,6 +4145,7 @@ const albumHeaderTitle = document.getElementById("albumHeaderTitle");
 const albumHeaderArtist = document.getElementById("albumHeaderArtist");
 const albumHeaderDesc = document.getElementById("albumHeaderDesc");
 const albumTracklistBody = document.getElementById("albumTracklistBody");
+const albumRateWholeBtn = document.getElementById("albumRateWholeBtn");
 document.getElementById("albumOverlayClose").addEventListener("click", () => albumOverlay.classList.remove("open"));
 
 function formatDuration(ms){
@@ -4123,6 +4168,7 @@ async function openAlbumOverlay(rgMbid, albumTitle, artistName, year){
   albumTracklistBody.innerHTML = '<div class="overlay-status">Chargement des morceaux...</div>';
   albumRecosLinksEl.innerHTML = "";
   albumRecosGifEl.innerHTML = "";
+  albumRateWholeBtn.onclick = () => openRatingModal({ mbid: rgMbid, title: albumTitle, artist: artistName, year });
 
   fetchWikiSummaryForEntity("release-group", rgMbid).then(info => {
     albumHeaderDesc.textContent = info.bio || "";
@@ -4139,13 +4185,13 @@ async function openAlbumOverlay(rgMbid, albumTitle, artistName, year){
     }
     const tracks = [];
     best.media.forEach(m => (m.tracks || []).forEach(t => tracks.push(t)));
-    renderAlbumTracklist(tracks, rgMbid, artistName, year);
+    renderAlbumTracklist(tracks, rgMbid, albumTitle, artistName, year);
   }catch(err){
     albumTracklistBody.innerHTML = '<div class="overlay-status">Impossible de charger la tracklist.</div>';
   }
 }
 
-function renderAlbumTracklist(tracks, rgMbid, artistName, year){
+function renderAlbumTracklist(tracks, rgMbid, albumTitle, artistName, year){
   if(!tracks.length){
     albumTracklistBody.innerHTML = '<div class="overlay-status">Pas de tracklist disponible.</div>';
     return;
@@ -4169,7 +4215,10 @@ function renderAlbumTracklist(tracks, rgMbid, artistName, year){
     const btn = row.querySelector(".track-add-btn");
     if(recordingId){
       btn.addEventListener("click", () => {
-        openRatingModal({ mbid: recordingId, title: trackTitle, artist: artistName, year, coverMbid: rgMbid });
+        openRatingModal({
+          mbid: recordingId, title: trackTitle, artist: artistName, year, coverMbid: rgMbid,
+          groupId: rgMbid, groupTitle: albumTitle, groupArtist: artistName, groupYear: year, groupCoverMbid: rgMbid
+        });
       });
     } else {
       btn.disabled = true;
@@ -4183,31 +4232,73 @@ const libraryOverlay = document.getElementById("libraryOverlay");
 const libraryOverlayBody = document.getElementById("libraryOverlayBody");
 document.getElementById("libraryOverlayClose").addEventListener("click", () => libraryOverlay.classList.remove("open"));
 
+// regroupe les entrées notées (albums entiers + morceaux isolés) par album d'origine
+// (groupId) -> évite qu'un album dont on a noté 3-4 morceaux crée 3-4 fiches identiques
+function groupCollection(list){
+  const groups = new Map();
+  const order = [];
+  list.forEach(a => {
+    const gid = a.groupId || a.mbid;
+    if(!groups.has(gid)){
+      groups.set(gid, {
+        groupId: gid,
+        title: a.groupTitle || a.title,
+        artist: a.groupArtist || a.artist,
+        year: a.groupYear || a.year,
+        cover: a.groupCover || a.coverUrl || null,
+        coverMbid: a.groupCoverMbid || a.coverMbid || gid,
+        items: [],
+        latestAddedAt: 0
+      });
+      order.push(gid);
+    }
+    const g = groups.get(gid);
+    g.items.push(a);
+    g.latestAddedAt = Math.max(g.latestAddedAt, a.addedAt || 0);
+  });
+  return order
+    .map(gid => groups.get(gid))
+    .sort((a, b) => b.latestAddedAt - a.latestAddedAt);
+}
+
 function renderLibraryOverlay(){
   const list = loadCollection();
   if(!list.length){
     libraryOverlayBody.innerHTML = '<div class="overlay-status">Ta musicothèque est vide &mdash; cherche un album en haut de page et note-le pour le voir apparaître ici.</div>';
     return;
   }
+  const groups = groupCollection(list);
   const grid = document.createElement("div");
   grid.className = "card-grid";
-  list.forEach(a => {
+  groups.forEach(g => {
     const card = document.createElement("div");
     card.className = "res-card";
     card.innerHTML = `
-      <img class="res-cover" src="${a.coverUrl || `https://coverartarchive.org/release-group/${a.coverMbid || a.mbid}/front-250`}" onerror="this.style.visibility='hidden'" alt="">
-      <div class="res-title">${escapeHtml(a.title)}</div>
-      <div class="res-sub">${escapeHtml(a.artist)}${a.year ? " · " + escapeHtml(a.year) : ""}</div>
-      <div class="res-stars">${starString(a.rating)}</div>
-      ${a.comment ? `<div class="res-comment">${escapeHtml(a.comment)}</div>` : ""}
-      <div class="res-actions">
-        <button class="res-btn">Modifier</button>
-        <button class="res-btn ghost">Retirer</button>
-      </div>
+      <img class="res-cover" src="${g.cover || `https://coverartarchive.org/release-group/${g.coverMbid}/front-250`}" onerror="this.style.visibility='hidden'" alt="">
+      <div class="res-title">${escapeHtml(g.title)}</div>
+      <div class="res-sub">${escapeHtml(g.artist)}${g.year ? " · " + escapeHtml(String(g.year)) : ""}</div>
+      <div class="lib-group-tracks"></div>
     `;
-    const [editBtn, removeBtn] = card.querySelectorAll(".res-btn");
-    editBtn.addEventListener("click", () => openRatingModal({ mbid:a.mbid, title:a.title, artist:a.artist, year:a.year }));
-    removeBtn.addEventListener("click", () => removeFromCollection(a.mbid));
+    const tracksEl = card.querySelector(".lib-group-tracks");
+    g.items.forEach(a => {
+      const row = document.createElement("div");
+      row.className = "lib-group-track";
+      row.innerHTML = `
+        <div class="lib-group-track-info">
+          <div class="lib-group-track-title">${a.mbid === g.groupId ? "Album complet" : escapeHtml(a.title)}</div>
+          <div class="res-stars">${starString(a.rating)}</div>
+          ${a.comment ? `<div class="res-comment">${escapeHtml(a.comment)}</div>` : ""}
+        </div>
+        <div class="lib-group-track-actions">
+          <button class="res-btn small">Modifier</button>
+          <button class="res-btn ghost small">Retirer</button>
+        </div>
+      `;
+      const [editBtn, removeBtn] = row.querySelectorAll(".res-btn");
+      editBtn.addEventListener("click", () => openRatingModal(a));
+      removeBtn.addEventListener("click", () => removeFromCollection(a.mbid));
+      tracksEl.appendChild(row);
+    });
     grid.appendChild(card);
   });
   libraryOverlayBody.innerHTML = "";
@@ -4797,6 +4888,10 @@ function openRecosAlbumOverlay(item){
   albumHeaderDesc.innerHTML =
     (item.style ? `<div class="recos-style-tag">${escapeHtml(item.style)}${item.substyle ? ` <span class="recos-substyle">· ${escapeHtml(item.substyle)}</span>` : ""}</div>` : "") +
     (item.note ? `<div style="margin-top:8px;">${escapeHtml(item.note)}</div>` : "");
+  albumRateWholeBtn.textContent = item.type === "album" ? "Noter l'album" : "Noter";
+  albumRateWholeBtn.onclick = () => openRatingModal({
+    mbid: `reco-${item.id}`, title, artist: item.artist, year: item.date, coverUrl: item.cover || null
+  });
 
   fillRecosTracklist(item, title);
 
@@ -4871,7 +4966,7 @@ async function fillRecosTracklist(item, mainTitle){
       divider.textContent = "Tracklist complète :";
       albumTracklistBody.appendChild(divider);
     }
-    renderStoredRecosTracklist(item);
+    renderStoredRecosTracklist(item, mainTitle);
     return;
   }
 
@@ -4919,7 +5014,10 @@ async function fillRecosTracklist(item, mainTitle){
       const btn = row.querySelector(".track-add-btn");
       if(recordingId){
         btn.addEventListener("click", () => {
-          openRatingModal({ mbid: recordingId, title: trackTitle, artist: item.artist, year: item.date, coverMbid: rgId });
+          openRatingModal({
+            mbid: recordingId, title: trackTitle, artist: item.artist, year: item.date, coverMbid: rgId,
+            groupId: `reco-${item.id}`, groupTitle: mainTitle, groupArtist: item.artist, groupYear: item.date, groupCover: item.cover || null
+          });
         });
       } else {
         btn.disabled = true;
@@ -4937,7 +5035,7 @@ async function fillRecosTracklist(item, mainTitle){
 
 // rend une tracklist déjà stockée sur l'item (importée depuis Apple Music) —
 // pas de mbid MusicBrainz ici, donc un id synthétique stable pour pouvoir quand même noter
-function renderStoredRecosTracklist(item){
+function renderStoredRecosTracklist(item, albumTitle){
   const collection = loadCollection();
   const frag = document.createDocumentFragment();
   item.tracklist.forEach((t, i) => {
@@ -4952,7 +5050,10 @@ function renderStoredRecosTracklist(item){
       <button class="track-add-btn${existing ? " added" : ""}" title="${existing ? "Modifier ma note" : "Noter ce morceau"}">${existing ? "&#10003;" : "+"}</button>
     `;
     row.querySelector(".track-add-btn").addEventListener("click", () => {
-      openRatingModal({ mbid: syntheticId, title: t.title || "", artist: item.artist, year: item.date, coverUrl: item.cover || null });
+      openRatingModal({
+        mbid: syntheticId, title: t.title || "", artist: item.artist, year: item.date, coverUrl: item.cover || null,
+        groupId: `reco-${item.id}`, groupTitle: albumTitle, groupArtist: item.artist, groupYear: item.date, groupCover: item.cover || null
+      });
     });
     frag.appendChild(row);
   });
@@ -5179,7 +5280,7 @@ function renderAccueilRecosPreview(){
 
 function renderAccueilLibrarySummary(){
   const el = document.getElementById("accueilLibrarySummary");
-  const count = loadCollection().length;
+  const count = groupCollection(loadCollection()).length;
   el.innerHTML = `
     <div class="accueil-library-summary">
       <p>${count ? `<strong>${count}</strong> album${count > 1 ? "s" : ""} dans ta musicothèque` : "Ta musicothèque est vide pour l'instant."}</p>

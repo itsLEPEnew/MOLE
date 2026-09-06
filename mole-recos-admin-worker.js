@@ -61,11 +61,11 @@ export default {
       if (url.pathname === "/" && request.method === "GET") {
         if (!isAdminAuthed(request, env)) {
           return new Response(LOGIN_HTML, {
-            headers: { "Content-Type": "text/html; charset=utf-8" },
+            headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
           });
         }
         return new Response(ADMIN_HTML, {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
+          headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
         });
       }
 
@@ -92,7 +92,7 @@ export default {
           return new Response("Accès refusé", { status: 403 });
         }
         return new Response(QUICK_HTML, {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
+          headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
         });
       }
 
@@ -1695,10 +1695,17 @@ const QUICK_HTML = `<!DOCTYPE html>
 </div>
 
 <script>
+window.addEventListener("error", (e) => {
+  const banner = document.createElement("div");
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:10px;font-size:12px;z-index:9999;white-space:pre-wrap;";
+  banner.textContent = "Erreur JS : " + e.message + " (ligne " + e.lineno + ")";
+  document.body.prepend(banner);
+});
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const KEY = params.get("key") || "";
 const SHARED = params.get("shared") || "";
+document.body.insertAdjacentHTML("afterbegin", `<div style="font-size:10px;color:#a89f8f;padding:4px 0;">debug: key=${KEY ? "présente" : "VIDE"} · shared=${SHARED ? "présent" : "VIDE"}</div>`);
 let entryType = "single";
 let resolvedCover = "";
 let links = { spotify: null, deezer: null, appleMusic: null };

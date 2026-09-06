@@ -42,11 +42,12 @@ const SPOTIFY_CLIENT_SECRET = "REMPLACE_PAR_TON_CLIENT_SECRET";
 
 // ---------- notifications du rendez-vous du vendredi (Web Push, clé VAPID) ----------
 // Clé publique déjà collée dans index.html (VAPID_PUBLIC_KEY) — doit être EXACTEMENT
-// la même paire. Remplace VAPID_PRIVATE_KEY_JWK par le JSON généré, et VAPID_SUBJECT
-// par une adresse mail de contact (exigée par le protocole Web Push, jamais affichée).
+// la même paire, celle-ci n'est pas secrète donc reste en dur ici. La clé privée et
+// l'adresse de contact, elles, vivent uniquement en variables d'environnement
+// Cloudflare (Settings > Variables and Secrets) : VAPID_PRIVATE_KEY_JWK (le JSON
+// généré) et VAPID_SUBJECT (mailto:ton-email, exigé par le protocole, jamais affiché)
+// — jamais commitées, comme QUICK_ADD_SECRET et GIPHY_API_KEY.
 const VAPID_PUBLIC_KEY = "BP-n6bq3dq-xHW81sxxsb9Wps-sBgmsbHSfZzSORSgtjEvmAYWzTMa100bpq7i1rYyy9w1k1IpQ3N8sx1ZFhD18";
-const VAPID_PRIVATE_KEY_JWK = "REMPLACE_PAR_TA_CLE_PRIVEE_JSON";
-const VAPID_SUBJECT = "mailto:REMPLACE_PAR_TON_EMAIL";
 
 export default {
   async fetch(request, env) {
@@ -371,32 +372,33 @@ function b64urlEncodeStr(str) {
 }
 
 let vapidKeyPromise = null;
-function getVapidPrivateKey() {
+function getVapidPrivateKey(env) {
   if (!vapidKeyPromise) {
-    const jwk = typeof VAPID_PRIVATE_KEY_JWK === "string" ? JSON.parse(VAPID_PRIVATE_KEY_JWK) : VAPID_PRIVATE_KEY_JWK;
+    const raw = env.VAPID_PRIVATE_KEY_JWK;
+    const jwk = typeof raw === "string" ? JSON.parse(raw) : raw;
     vapidKeyPromise = crypto.subtle.importKey("jwk", jwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
   }
   return vapidKeyPromise;
 }
 
-async function buildVapidAuthHeader(endpoint) {
+async function buildVapidAuthHeader(endpoint, env) {
   const audience = new URL(endpoint).origin;
   const header = { typ: "JWT", alg: "ES256" };
   const claims = {
     aud: audience,
     exp: Math.floor(Date.now() / 1000) + 12 * 3600,
-    sub: VAPID_SUBJECT,
+    sub: env.VAPID_SUBJECT,
   };
   const unsigned = b64urlEncodeStr(JSON.stringify(header)) + "." + b64urlEncodeStr(JSON.stringify(claims));
-  const key = await getVapidPrivateKey();
+  const key = await getVapidPrivateKey(env);
   const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(unsigned));
   const jwt = unsigned + "." + b64urlEncodeBytes(new Uint8Array(sig));
   return `vapid t=${jwt}, k=${VAPID_PUBLIC_KEY}`;
 }
 
-async function sendWebPush(subscription) {
+async function sendWebPush(subscription, env) {
   try {
-    const authHeader = await buildVapidAuthHeader(subscription.endpoint);
+    const authHeader = await buildVapidAuthHeader(subscription.endpoint, env);
     const res = await fetch(subscription.endpoint, {
       method: "POST",
       headers: { Authorization: authHeader, TTL: "86400", "Content-Length": "0" },
@@ -408,12 +410,13 @@ async function sendWebPush(subscription) {
 }
 
 async function sendWeeklyPush(env) {
+  if (!env.VAPID_PRIVATE_KEY_JWK || !env.VAPID_SUBJECT) return { sent: 0, removed: 0 };
   const subs = await loadPushSubs(env);
   if (!subs.length) return { sent: 0, removed: 0 };
   let sent = 0;
   const kept = [];
   for (const sub of subs) {
-    const status = await sendWebPush(sub);
+    const status = await sendWebPush(sub, env);
     if (status >= 200 && status < 300) {
       sent++;
       kept.push(sub);

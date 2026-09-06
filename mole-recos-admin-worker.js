@@ -1711,7 +1711,7 @@ const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const KEY = params.get("key") || "";
 const SHARED = params.get("shared") || "";
-document.body.insertAdjacentHTML("afterbegin", `<div style="font-size:10px;color:#a89f8f;padding:4px 0;">debug: key=${KEY ? "présente" : "VIDE"} · shared=${SHARED ? "présent" : "VIDE"}</div>`);
+document.body.insertAdjacentHTML("afterbegin", "<div style='font-size:10px;color:#a89f8f;padding:4px 0;'>debug: key=" + (KEY ? "présente" : "VIDE") + " . shared=" + (SHARED ? "présent" : "VIDE") + "</div>");
 let entryType = "single";
 let resolvedCover = "";
 let links = { spotify: null, deezer: null, appleMusic: null };

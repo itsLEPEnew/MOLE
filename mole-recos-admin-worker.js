@@ -1026,6 +1026,12 @@ const ADMIN_HTML = `<!DOCTYPE html>
 </div>
 
 <script>
+window.addEventListener("error", (e) => {
+  const banner = document.createElement("div");
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;background:#c0392b;color:#fff;padding:10px;font-size:12px;z-index:9999;white-space:pre-wrap;";
+  banner.textContent = "Erreur JS : " + e.message + " (ligne " + e.lineno + ")";
+  document.body.prepend(banner);
+});
 let selected = { spotify: null, deezer: null, apple: null };
 let resolvedCover = "";
 let entryType = "single";

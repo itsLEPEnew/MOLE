@@ -3774,7 +3774,7 @@ async function searchEverything(query, limit){
   const [artistData, albumData] = await Promise.all([
     fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&fmt=json&limit=${perTypeLimit}`, { headers: { "Accept": "application/json" } })
       .then(r => r.json()).catch(() => ({ artists: [] })),
-    fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=album&limit=${perTypeLimit}`)
+    fetch(`${RECOS_PUBLIC_URL}/apple/search?term=${encodeURIComponent(query)}&entity=album&limit=${perTypeLimit}`)
       .then(r => r.json()).catch(() => ({ results: [] }))
   ]);
 
@@ -4100,7 +4100,7 @@ async function resolveItunesArtistId(name){
   if(itunesArtistIdCache.has(name)) return itunesArtistIdCache.get(name);
   let id = null;
   try{
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(name)}&media=music&entity=musicArtist&limit=1`);
+    const res = await fetch(`${RECOS_PUBLIC_URL}/apple/search?term=${encodeURIComponent(name)}&entity=musicArtist&limit=1`);
     const data = await res.json();
     id = (data.results && data.results[0] && data.results[0].artistId) || null;
   }catch(e){ /* pas grave */ }
@@ -4113,7 +4113,7 @@ async function fetchItunesDiscography(artistId){
   if(itunesDiscographyCache.has(artistId)) return itunesDiscographyCache.get(artistId);
   let groups = [];
   try{
-    const res = await fetch(`https://itunes.apple.com/lookup?id=${artistId}&entity=album&limit=200`);
+    const res = await fetch(`${RECOS_PUBLIC_URL}/apple/lookup?id=${artistId}&entity=album&limit=200`);
     const data = await res.json();
     groups = (data.results || []).filter(r => r.wrapperType === "collection");
   }catch(e){ /* pas grave */ }
@@ -4371,19 +4371,20 @@ function formatDuration(ms){
   return `${min}:${String(sec).padStart(2, "0")}`;
 }
 
-// tracklist iTunes d'un album (collectionId) — même endpoint que fetchAppleTracklist côté
-// Worker (mole-recos-admin-worker.js), un seul appel, mis en cache le temps de la session pour
-// que rouvrir le même album n'y retape pas
+// tracklist d'un album (collectionId) — passe par le Worker public, qui essaie iTunes puis
+// Deezer en repli (certaines éditions/imports n'existent pas côté iTunes) et met le résultat
+// en cache côté serveur (RECOS_KV) pour que N'IMPORTE QUEL visiteur bénéficie du cache, pas
+// seulement cette session -> on garde aussi un cache mémoire local pour éviter de retaper le
+// Worker en rouvrant le même album dans la même session
 const itunesTracklistCache = new Map();
-async function fetchItunesTracklist(collectionId){
+async function fetchItunesTracklist(collectionId, artistName, albumTitle){
   if(itunesTracklistCache.has(collectionId)) return itunesTracklistCache.get(collectionId);
   let tracks = [];
   try{
-    const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&entity=song`);
+    const params = new URLSearchParams({ collectionId, artist: artistName || "", title: albumTitle || "" });
+    const res = await fetch(`${RECOS_PUBLIC_URL}/apple/tracklist?${params.toString()}`);
     const data = await res.json();
-    tracks = (data.results || [])
-      .filter(r => r.wrapperType === "track")
-      .map(t => ({ position: t.trackNumber, recordingId: t.trackId, title: t.trackName, duration: t.trackTimeMillis }));
+    tracks = data.tracks || [];
   }catch(e){ /* pas grave */ }
   itunesTracklistCache.set(collectionId, tracks);
   return tracks;
@@ -4416,7 +4417,7 @@ async function openAlbumOverlay(collectionId, albumTitle, artistName, year, cove
   }).catch(() => {});
 
   try{
-    const tracks = await fetchItunesTracklist(collectionId);
+    const tracks = await fetchItunesTracklist(collectionId, artistName, albumTitle);
     renderAlbumTracklist(tracks, collectionId, albumTitle, artistName, year, coverUrl);
   }catch(err){
     albumTracklistBody.innerHTML = '<div class="overlay-status">Impossible de charger la tracklist.</div>';
@@ -5622,7 +5623,7 @@ function saveArtistArtCache(){
 async function fetchArtistArtwork(name){
   if(artistArtCache[name] !== undefined) return artistArtCache[name];
   try{
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(name)}&entity=album&limit=1`);
+    const res = await fetch(`${RECOS_PUBLIC_URL}/apple/search?term=${encodeURIComponent(name)}&entity=album&limit=1`);
     const data = await res.json();
     const best = data.results && data.results[0];
     const url = best && best.artworkUrl100 ? best.artworkUrl100.replace("100x100bb", "300x300bb") : null;

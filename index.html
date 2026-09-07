@@ -4109,11 +4109,12 @@ async function resolveItunesArtistId(name){
 }
 
 const itunesDiscographyCache = new Map();
-async function fetchItunesDiscography(artistId){
+async function fetchItunesDiscography(artistId, artistName){
   if(itunesDiscographyCache.has(artistId)) return itunesDiscographyCache.get(artistId);
   let groups = [];
   try{
-    const res = await fetch(`${RECOS_PUBLIC_URL}/apple/lookup?id=${artistId}&entity=album&limit=200`);
+    const params = new URLSearchParams({ id: artistId, entity: "album", limit: "200", name: artistName || "" });
+    const res = await fetch(`${RECOS_PUBLIC_URL}/apple/lookup?${params.toString()}`);
     const data = await res.json();
     groups = (data.results || []).filter(r => r.wrapperType === "collection");
   }catch(e){ /* pas grave */ }
@@ -4138,7 +4139,7 @@ async function openArtistOverlay(artistMbid, artistName){
 
   try{
     const itunesArtistId = await resolveItunesArtistId(artistName);
-    const groups = itunesArtistId ? await fetchItunesDiscography(itunesArtistId) : [];
+    const groups = itunesArtistId ? await fetchItunesDiscography(itunesArtistId, artistName) : [];
     renderArtistDiscography(groups, artistName);
   }catch(err){
     artistOverlayBody.innerHTML = '<div class="overlay-status">Impossible de charger la discographie pour le moment.</div>';

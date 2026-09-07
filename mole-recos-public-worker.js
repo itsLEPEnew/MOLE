@@ -32,6 +32,14 @@
 const CACHE_TTL = 60 * 60 * 24 * 30; // 30 jours : les métadonnées d'un album ne changent quasi jamais
 const MISS_TTL = 60 * 60 * 6; // 6h pour un résultat vide -> on retente plus tôt qu'un vrai résultat
 
+// Apple bloque/vide silencieusement certaines réponses (surtout entity=album) quand la requête
+// vient des IP partagées de Cloudflare sans en-tête de navigateur -> même repli que
+// mole-recos-admin-worker.js (fetchAppleTracklist) : se faire passer pour Safari desktop
+const ITUNES_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+  "Accept-Language": "en-US,en;q=0.9",
+};
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
@@ -89,7 +97,7 @@ async function cachedItunesFetch(env, cacheKey, apiUrl) {
   if (cached !== null) return JSON.parse(cached);
   let data = { results: [] };
   try {
-    const res = await fetch(apiUrl);
+    const res = await fetch(apiUrl, { headers: ITUNES_HEADERS });
     data = await res.json();
   } catch (e) {
     return data; // échec réseau -> pas mis en cache, on retentera au prochain appel
@@ -115,7 +123,7 @@ async function handleTracklist(url, env) {
   let tracks = [];
   let source = "itunes";
   try {
-    const res = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(collectionId)}&entity=song`);
+    const res = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(collectionId)}&entity=song`, { headers: ITUNES_HEADERS });
     const data = await res.json();
     tracks = (data.results || [])
       .filter(r => r.wrapperType === "track")

@@ -30,7 +30,11 @@
  */
 
 const CACHE_TTL = 60 * 60 * 24 * 30; // 30 jours : les métadonnées d'un album ne changent quasi jamais
-const MISS_TTL = 60 * 60 * 6; // 6h pour un résultat vide -> on retente plus tôt qu'un vrai résultat
+// Apple bloque/vide parfois une réponse de façon TRANSITOIRE (pas systématique - constaté en
+// test : la même requête échoue puis réussit quelques secondes après) depuis les IP partagées
+// de Cloudflare -> un résultat vide n'est pas forcément définitif, TTL court pour retenter vite
+// plutôt que figer un faux "aucun résultat" pendant des heures
+const MISS_TTL = 60 * 5;
 
 // Apple bloque/vide silencieusement certaines réponses (surtout entity=album) quand la requête
 // vient des IP partagées de Cloudflare sans en-tête de navigateur -> même repli que
@@ -92,16 +96,25 @@ async function handleAppleLookup(url, env) {
   return jsonResponse(data);
 }
 
+// 2 tentatives avec une courte pause : un blocage/rate-limit Apple observé en test est
+// transitoire, la même requête peut réussir quelques centaines de ms plus tard
+async function fetchItunesJsonWithRetry(apiUrl, attempts = 2) {
+  let data = { results: [] };
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(apiUrl, { headers: ITUNES_HEADERS });
+      data = await res.json();
+      if (data.results && data.results.length) return data;
+    } catch (e) { /* on retente */ }
+    if (i < attempts - 1) await new Promise(r => setTimeout(r, 300));
+  }
+  return data;
+}
+
 async function cachedItunesFetch(env, cacheKey, apiUrl) {
   const cached = await env.RECOS_KV.get(cacheKey);
   if (cached !== null) return JSON.parse(cached);
-  let data = { results: [] };
-  try {
-    const res = await fetch(apiUrl, { headers: ITUNES_HEADERS });
-    data = await res.json();
-  } catch (e) {
-    return data; // échec réseau -> pas mis en cache, on retentera au prochain appel
-  }
+  const data = await fetchItunesJsonWithRetry(apiUrl);
   const ttl = (data.results && data.results.length) ? CACHE_TTL : MISS_TTL;
   await env.RECOS_KV.put(cacheKey, JSON.stringify(data), { expirationTtl: ttl });
   return data;
@@ -122,13 +135,10 @@ async function handleTracklist(url, env) {
 
   let tracks = [];
   let source = "itunes";
-  try {
-    const res = await fetch(`https://itunes.apple.com/lookup?id=${encodeURIComponent(collectionId)}&entity=song`, { headers: ITUNES_HEADERS });
-    const data = await res.json();
-    tracks = (data.results || [])
-      .filter(r => r.wrapperType === "track")
-      .map(t => ({ position: t.trackNumber, recordingId: t.trackId, title: t.trackName, duration: t.trackTimeMillis }));
-  } catch (e) { /* on tente Deezer ci-dessous */ }
+  const data = await fetchItunesJsonWithRetry(`https://itunes.apple.com/lookup?id=${encodeURIComponent(collectionId)}&entity=song`);
+  tracks = (data.results || [])
+    .filter(r => r.wrapperType === "track")
+    .map(t => ({ position: t.trackNumber, recordingId: t.trackId, title: t.trackName, duration: t.trackTimeMillis }));
 
   if (!tracks.length && artist && title) {
     source = "deezer";

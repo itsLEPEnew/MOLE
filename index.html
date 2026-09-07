@@ -3761,15 +3761,21 @@ function titleCloseMatch(titleNorm, qNorm, minRatio){
   return false;
 }
 
+// les artistes restent cherchés sur MusicBrainz : leur mbid alimente ensuite l'avatar
+// (photo Wikipedia), la bio et les artistes associés (renderAvatarInto, fetchArtistWikiInfo,
+// fetchRelatedArtists) qui n'ont pas d'équivalent côté iTunes -> changer cet id casserait
+// ces trois fonctionnalités. Les albums/singles, eux, viennent d'iTunes Search : un seul appel
+// qui renvoie déjà l'artwork (fini le double appel Cover Art Archive) et trie par pertinence
+// (fini le bruit d'obscurités que MusicBrainz remontait sans scoring de popularité).
 async function searchEverything(query, limit){
   const qNorm = query.trim().toLowerCase();
   const perTypeLimit = Math.max(limit, 12);
 
-  const [artistData, rgData] = await Promise.all([
+  const [artistData, albumData] = await Promise.all([
     fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&fmt=json&limit=${perTypeLimit}`, { headers: { "Accept": "application/json" } })
       .then(r => r.json()).catch(() => ({ artists: [] })),
-    fetch(`https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(query)}&fmt=json&limit=${perTypeLimit}`, { headers: { "Accept": "application/json" } })
-      .then(r => r.json()).catch(() => ({ "release-groups": [] }))
+    fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=album&limit=${perTypeLimit}`)
+      .then(r => r.json()).catch(() => ({ results: [] }))
   ]);
 
   const items = [];
@@ -3788,31 +3794,34 @@ async function searchEverything(query, limit){
     });
   });
 
-  (rgData["release-groups"] || []).forEach(g => {
-    if((g.score || 0) < 55) return;
-    const primary = g["primary-type"];
-    if(primary !== "Album" && primary !== "EP" && primary !== "Single") return;
-    const ac = (g["artist-credit"] && g["artist-credit"][0] && g["artist-credit"][0].artist) || null;
-    if(!ac) return;
-    if(/^various artists$/i.test(ac.name)) return;
+  // iTunes ne distingue pas "Single"/"EP" via un champ dédié (collectionType vaut toujours
+  // "Album") -> seul le suffixe du nom ("... - Single" / "... - EP") le révèle
+  (albumData.results || []).forEach((g, idx) => {
+    if(!g.artistName) return;
+    if(/^various artists$/i.test(g.artistName)) return;
+    const rawTitle = g.collectionName || "";
+    const isSingleOrEp = /\s-\s(Single|EP)$/i.test(rawTitle);
+    const title = rawTitle.replace(/\s-\s(Single|EP)$/i, "");
     // on ne garde ce résultat que si c'est vraiment une sortie DE cet artiste (nom qui matche
     // la recherche) ou si le TITRE lui-même correspond de près à ce qui a été tapé — ça exclut
     // les reprises/tributes/remixes tiers qui mentionnent juste l'artiste dans leur titre
-    const artistNameNorm = (ac.name || "").trim().toLowerCase();
+    const artistNameNorm = g.artistName.trim().toLowerCase();
     const artistMatchesQuery = looseNameMatch(artistNameNorm, qNorm, 0.6);
-    const titleNorm = (g.title || "").trim().toLowerCase();
-    const titleMatchesQuery = titleCloseMatch(titleNorm, qNorm, 0.7);
+    const titleMatchesQuery = titleCloseMatch(title.trim().toLowerCase(), qNorm, 0.7);
     if(!artistMatchesQuery && !titleMatchesQuery) return;
-    const year = g["first-release-date"] ? g["first-release-date"].slice(0, 4) : "";
+    const year = g.releaseDate ? g.releaseDate.slice(0, 4) : "";
     items.push({
-      type: primary === "Single" ? "single" : "album",
-      id: g.id,
-      name: g.title,
-      subtitle: ac.name + (year ? " · " + year : ""),
-      artistId: ac.id,
-      artistName: ac.name,
+      type: isSingleOrEp ? "single" : "album",
+      id: g.collectionId,
+      name: title,
+      subtitle: g.artistName + (year ? " · " + year : ""),
+      artistId: g.artistId,
+      artistName: g.artistName,
       year,
-      score: (g.score || 0) + (artistMatchesQuery ? 25 : 0)
+      cover: g.artworkUrl100 ? g.artworkUrl100.replace("100x100bb", "600x600bb") : null,
+      // iTunes trie déjà par pertinence -> on garde cet ordre (60 = base comparable aux scores
+      // MusicBrainz des artistes ci-dessus, + position + bonus si l'artiste matche vraiment)
+      score: 60 + (perTypeLimit - idx) + (artistMatchesQuery ? 25 : 0)
     });
   });
 
@@ -3959,7 +3968,7 @@ function renderAlbumSearchResults(items){
       });
     } else {
       item.innerHTML = `
-        <img class="hsr-cover square" src="https://coverartarchive.org/release-group/${it.id}/front-250" onerror="this.style.visibility='hidden'" alt="">
+        <img class="hsr-cover square" src="${it.cover || ""}" onerror="this.style.visibility='hidden'" alt="">
         <div class="hsr-info">
           <div class="hsr-title">${escapeHtml(it.name)}</div>
           <div class="hsr-sub"><span class="hsr-type">${TYPE_LABELS[it.type]}</span>${escapeHtml(it.subtitle)}</div>
@@ -3968,7 +3977,7 @@ function renderAlbumSearchResults(items){
       `;
       item.addEventListener("click", () => {
         albumSearchResults.classList.remove("open");
-        openAlbumOverlay(it.id, it.name, it.artistName, it.year);
+        openAlbumOverlay(it.id, it.name, it.artistName, it.year, it.cover);
       });
     }
     albumSearchResults.appendChild(item);
@@ -4059,14 +4068,14 @@ function renderSearchOverlayResults(){
     } else {
       card.className = "res-card";
       card.innerHTML = `
-        <img class="res-cover" src="https://coverartarchive.org/release-group/${it.id}/front-250" onerror="this.style.visibility='hidden'" alt="">
+        <img class="res-cover" src="${it.cover || ""}" onerror="this.style.visibility='hidden'" alt="">
         <div class="res-title"><span class="hsr-type">${TYPE_LABELS[it.type]}</span>${escapeHtml(it.name)}</div>
         <div class="res-sub">${escapeHtml(it.subtitle)}</div>
         <div class="res-actions">
           <button class="res-btn">Voir l'album</button>
         </div>
       `;
-      card.querySelector(".res-btn").addEventListener("click", () => openAlbumOverlay(it.id, it.name, it.artistName, it.year));
+      card.querySelector(".res-btn").addEventListener("click", () => openAlbumOverlay(it.id, it.name, it.artistName, it.year, it.cover));
     }
     grid.appendChild(card);
   });
@@ -4082,6 +4091,35 @@ const artistBioBlock = document.getElementById("artistBioBlock");
 const artistProfileAvatar = document.getElementById("artistProfileAvatar");
 const artistProfileBio = document.getElementById("artistProfileBio");
 document.getElementById("artistOverlayClose").addEventListener("click", () => artistOverlay.classList.remove("open"));
+
+// résout l'artistId iTunes correspondant à un nom d'artiste, pour charger sa discographie
+// (bio/avatar/artistes associés restent sur MusicBrainz via artistMbid, voir searchEverything)
+// -> mis en cache le temps de la session pour ne pas refaire cette recherche à chaque réouverture
+const itunesArtistIdCache = new Map();
+async function resolveItunesArtistId(name){
+  if(itunesArtistIdCache.has(name)) return itunesArtistIdCache.get(name);
+  let id = null;
+  try{
+    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(name)}&media=music&entity=musicArtist&limit=1`);
+    const data = await res.json();
+    id = (data.results && data.results[0] && data.results[0].artistId) || null;
+  }catch(e){ /* pas grave */ }
+  itunesArtistIdCache.set(name, id);
+  return id;
+}
+
+const itunesDiscographyCache = new Map();
+async function fetchItunesDiscography(artistId){
+  if(itunesDiscographyCache.has(artistId)) return itunesDiscographyCache.get(artistId);
+  let groups = [];
+  try{
+    const res = await fetch(`https://itunes.apple.com/lookup?id=${artistId}&entity=album&limit=200`);
+    const data = await res.json();
+    groups = (data.results || []).filter(r => r.wrapperType === "collection");
+  }catch(e){ /* pas grave */ }
+  itunesDiscographyCache.set(artistId, groups);
+  return groups;
+}
 
 async function openArtistOverlay(artistMbid, artistName){
   dockSearchHome();
@@ -4099,10 +4137,9 @@ async function openArtistOverlay(artistMbid, artistName){
   const relatedPromise = fetchRelatedArtists(artistMbid);
 
   try{
-    const url = `https://musicbrainz.org/ws/2/release-group?artist=${artistMbid}&limit=100&fmt=json`;
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
-    const json = await res.json();
-    renderArtistDiscography(json["release-groups"] || [], artistName, artistMbid);
+    const itunesArtistId = await resolveItunesArtistId(artistName);
+    const groups = itunesArtistId ? await fetchItunesDiscography(itunesArtistId) : [];
+    renderArtistDiscography(groups, artistName);
   }catch(err){
     artistOverlayBody.innerHTML = '<div class="overlay-status">Impossible de charger la discographie pour le moment.</div>';
     return;
@@ -4139,15 +4176,16 @@ function renderArtistDiscography(groups, artistName){
     artistOverlayBody.innerHTML = '<div class="overlay-status">Aucune sortie trouvée pour cet artiste.</div>';
     return;
   }
-  const buckets = { Album: [], Single: [], Live: [], Autres: [] };
+  // iTunes n'a pas de champ "primary-type" comme MusicBrainz (collectionType vaut toujours
+  // "Album") -> on déduit Single/EP du suffixe du nom, et Live d'une mention "(Live" dans le titre
+  const buckets = { Album: [], Single: [], Autres: [] };
   groups.forEach(g => {
-    const secondary = g["secondary-types"] || [];
-    if(secondary.includes("Live")) buckets.Live.push(g);
-    else if(g["primary-type"] === "Single") buckets.Single.push(g);
-    else if(g["primary-type"] === "Album") buckets.Album.push(g);
-    else buckets.Autres.push(g);
+    const name = g.collectionName || "";
+    if(/\s-\s(Single|EP)$/i.test(name)) buckets.Single.push(g);
+    else if(/\(live\b/i.test(name)) buckets.Autres.push(g);
+    else buckets.Album.push(g);
   });
-  const order = [["Album","Albums"], ["Single","Singles"], ["Live","Live"], ["Autres","Autres sorties"]];
+  const order = [["Album","Albums"], ["Single","Singles / EP"], ["Autres","Autres sorties"]];
   artistOverlayBody.innerHTML = "";
   let anySection = false;
   order.forEach(([key, label]) => {
@@ -4155,7 +4193,7 @@ function renderArtistDiscography(groups, artistName){
     if(!list.length) return;
     anySection = true;
     // plus récent en premier ; les sorties sans date connue passent en dernier
-    list.sort((a,b) => (b["first-release-date"] || "0000").localeCompare(a["first-release-date"] || "0000"));
+    list.sort((a,b) => (b.releaseDate || "0000").localeCompare(a.releaseDate || "0000"));
 
     const section = document.createElement("div");
     section.className = "disco-section";
@@ -4167,24 +4205,26 @@ function renderArtistDiscography(groups, artistName){
     scrollRow.className = "disco-row-scroll";
 
     list.forEach(g => {
-      const year = g["first-release-date"] ? g["first-release-date"].slice(0,4) : "?";
-      const mbid = g.id;
-      const existing = loadCollection().find(a => a.mbid === mbid);
+      const year = g.releaseDate ? g.releaseDate.slice(0,4) : "?";
+      const id = g.collectionId;
+      const title = (g.collectionName || "").replace(/\s-\s(Single|EP)$/i, "");
+      const cover = g.artworkUrl100 ? g.artworkUrl100.replace("100x100bb", "600x600bb") : "";
+      const existing = loadCollection().find(a => a.mbid === id);
 
       const card = document.createElement("div");
       card.className = "disco-card";
-      card.dataset.mbid = mbid;
+      card.dataset.mbid = id;
       card.innerHTML = `
-        <img class="disco-cover" src="https://coverartarchive.org/release-group/${mbid}/front-250" onerror="this.style.visibility='hidden'" alt="">
-        <div class="disco-title">${escapeHtml(g.title)}</div>
+        <img class="disco-cover" src="${cover}" onerror="this.style.visibility='hidden'" alt="">
+        <div class="disco-title">${escapeHtml(title)}</div>
         <div class="disco-year">${year}</div>
         ${existing ? `<div class="disco-stars">${starString(existing.rating)}</div>` : ""}
         <button class="disco-rate-btn">${existing ? "Modifier" : "Noter"}</button>
       `;
       card.querySelector(".disco-rate-btn").addEventListener("click", () => {
-        openRatingModal({ mbid, title: g.title, artist: artistName, year });
+        openRatingModal({ mbid: id, title, artist: artistName, year, coverUrl: cover || null });
       });
-      const openAlbum = () => openAlbumOverlay(mbid, g.title, artistName, year);
+      const openAlbum = () => openAlbumOverlay(id, title, artistName, year, cover);
       card.querySelector(".disco-cover").addEventListener("click", openAlbum);
       card.querySelector(".disco-title").addEventListener("click", openAlbum);
       scrollRow.appendChild(card);
@@ -4331,42 +4371,59 @@ function formatDuration(ms){
   return `${min}:${String(sec).padStart(2, "0")}`;
 }
 
-async function openAlbumOverlay(rgMbid, albumTitle, artistName, year){
+// tracklist iTunes d'un album (collectionId) — même endpoint que fetchAppleTracklist côté
+// Worker (mole-recos-admin-worker.js), un seul appel, mis en cache le temps de la session pour
+// que rouvrir le même album n'y retape pas
+const itunesTracklistCache = new Map();
+async function fetchItunesTracklist(collectionId){
+  if(itunesTracklistCache.has(collectionId)) return itunesTracklistCache.get(collectionId);
+  let tracks = [];
+  try{
+    const res = await fetch(`https://itunes.apple.com/lookup?id=${collectionId}&entity=song`);
+    const data = await res.json();
+    tracks = (data.results || [])
+      .filter(r => r.wrapperType === "track")
+      .map(t => ({ position: t.trackNumber, recordingId: t.trackId, title: t.trackName, duration: t.trackTimeMillis }));
+  }catch(e){ /* pas grave */ }
+  itunesTracklistCache.set(collectionId, tracks);
+  return tracks;
+}
+
+async function openAlbumOverlay(collectionId, albumTitle, artistName, year, coverUrl){
   dockSearchHome();
   albumOverlay.classList.add("open");
-  albumCoverBig.src = `https://coverartarchive.org/release-group/${rgMbid}/front-500`;
-  albumCoverBig.style.visibility = "visible";
-  albumCoverBig.onerror = () => { albumCoverBig.style.visibility = "hidden"; };
+  if(coverUrl){
+    albumCoverBig.src = coverUrl;
+    albumCoverBig.style.visibility = "visible";
+    albumCoverBig.onerror = () => { albumCoverBig.style.visibility = "hidden"; };
+  } else {
+    albumCoverBig.style.visibility = "hidden";
+  }
   albumHeaderTitle.textContent = albumTitle;
   albumHeaderArtist.textContent = artistName + (year ? ` · ${year}` : "");
   albumHeaderDesc.textContent = "";
   albumTracklistBody.innerHTML = '<div class="overlay-status">Chargement des morceaux...</div>';
   albumRecosLinksEl.innerHTML = "";
   albumRecosGifEl.innerHTML = "";
-  albumRateWholeBtn.onclick = () => openRatingModal({ mbid: rgMbid, title: albumTitle, artist: artistName, year });
+  albumRateWholeBtn.onclick = () => openRatingModal({ mbid: collectionId, title: albumTitle, artist: artistName, year, coverUrl: coverUrl || null });
 
-  fetchWikiSummaryForEntity("release-group", rgMbid).then(info => {
-    albumHeaderDesc.textContent = info.bio || "";
-  });
+  // la description vient toujours de Wikipédia via MusicBrainz (pas d'équivalent iTunes) ->
+  // on résout l'id MusicBrainz par titre+artiste en tâche de fond, sans bloquer la tracklist
+  resolveReleaseGroupByArtistTitle(artistName, albumTitle).then(rgId => {
+    return rgId ? fetchWikiSummaryForEntity("release-group", rgId) : null;
+  }).then(info => {
+    if(info) albumHeaderDesc.textContent = info.bio || "";
+  }).catch(() => {});
 
   try{
-    const res = await fetch(`https://musicbrainz.org/ws/2/release?release-group=${rgMbid}&inc=recordings&fmt=json&limit=10`, { headers: { "Accept": "application/json" } });
-    const data = await res.json();
-    const releases = data.releases || [];
-    const best = releases.find(r => r.status === "Official" && r.media && r.media.length) || releases.find(r => r.media && r.media.length);
-    if(!best){
-      albumTracklistBody.innerHTML = '<div class="overlay-status">Pas de tracklist disponible.</div>';
-      return;
-    }
-    const tracks = [];
-    best.media.forEach(m => (m.tracks || []).forEach(t => tracks.push(t)));
-    renderAlbumTracklist(tracks, rgMbid, albumTitle, artistName, year);
+    const tracks = await fetchItunesTracklist(collectionId);
+    renderAlbumTracklist(tracks, collectionId, albumTitle, artistName, year, coverUrl);
   }catch(err){
     albumTracklistBody.innerHTML = '<div class="overlay-status">Impossible de charger la tracklist.</div>';
   }
 }
 
-function renderAlbumTracklist(tracks, rgMbid, albumTitle, artistName, year){
+function renderAlbumTracklist(tracks, collectionId, albumTitle, artistName, year, coverUrl){
   if(!tracks.length){
     albumTracklistBody.innerHTML = '<div class="overlay-status">Pas de tracklist disponible.</div>';
     return;
@@ -4374,25 +4431,25 @@ function renderAlbumTracklist(tracks, rgMbid, albumTitle, artistName, year){
   albumTracklistBody.innerHTML = "";
   const collection = loadCollection();
   tracks.forEach(t => {
-    const recordingId = t.recording && t.recording.id;
-    const trackTitle = t.title || (t.recording && t.recording.title) || "";
+    const recordingId = t.recordingId;
+    const trackTitle = t.title || "";
     const existing = recordingId ? collection.find(a => a.mbid === recordingId) : null;
 
     const row = document.createElement("div");
     row.className = "track-row";
     if(recordingId) row.dataset.recordingId = recordingId;
     row.innerHTML = `
-      <div class="track-num">${t.number || t.position || ""}</div>
+      <div class="track-num">${t.position || ""}</div>
       <div class="track-title">${escapeHtml(trackTitle)}</div>
-      <div class="track-duration">${formatDuration(t.length || (t.recording && t.recording.length))}</div>
+      <div class="track-duration">${formatDuration(t.duration)}</div>
       <button class="track-add-btn${existing ? " added" : ""}" title="${existing ? "Modifier ma note" : "Noter ce morceau"}">${existing ? "&#10003;" : "+"}</button>
     `;
     const btn = row.querySelector(".track-add-btn");
     if(recordingId){
       btn.addEventListener("click", () => {
         openRatingModal({
-          mbid: recordingId, title: trackTitle, artist: artistName, year, coverMbid: rgMbid,
-          groupId: rgMbid, groupTitle: albumTitle, groupArtist: artistName, groupYear: year, groupCoverMbid: rgMbid
+          mbid: recordingId, title: trackTitle, artist: artistName, year, coverUrl: coverUrl || null,
+          groupId: collectionId, groupTitle: albumTitle, groupArtist: artistName, groupYear: year, groupCover: coverUrl || null
         });
       });
     } else {

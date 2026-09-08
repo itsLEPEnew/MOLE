@@ -23,7 +23,9 @@
  */
 
 const GEMINI_API_KEY = "REMPLACE_PAR_TA_CLE_GRATUITE";
-const GEMINI_MODEL = "gemini-2.5-flash"; // modèle rapide, gratuit dans les limites du free tier, supporte le function calling
+const GEMINI_MODEL = "gemini-3.6-flash"; // modèle rapide, gratuit dans les limites du free tier, supporte le function calling
+// (gemini-2.5-flash a été déprécié côté Google pour les nouvelles clés — message d'erreur
+// explicite les invitant à migrer vers gemini-3.6-flash, constaté en test le 2026-09-08)
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const SYSTEM_INSTRUCTION = `Tu es la Taupe de MOLE, la mascotte du site. Tu es espiègle, chaleureuse, un peu taquine, passionnée de musique, et tu adores creuser des tunnels pour dénicher des pépites musicales.

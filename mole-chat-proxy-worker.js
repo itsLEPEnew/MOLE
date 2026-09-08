@@ -142,6 +142,12 @@ export default {
       generationConfig: {
         temperature: 0.8,
         maxOutputTokens: 400,
+        // gemini-3.6-flash a la "réflexion" activée par défaut (medium) : un raisonnement
+        // caché avant chaque réponse, qui prend du temps sans rien changer à la qualité
+        // pour un chat court à personnalité fixe + un tool-routing sur seulement 3 outils.
+        // "minimal" coupe l'essentiel de cette latence (constaté : ~33s pour un aller-retour
+        // d'outil avant, sensiblement moins après).
+        thinkingLevel: "minimal",
       },
     };
 

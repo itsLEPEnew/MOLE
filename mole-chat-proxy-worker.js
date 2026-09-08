@@ -125,9 +125,13 @@ export default {
     });
 
     // rejoue les allers-retours d'outils déjà faits PENDANT ce tour (le Worker est sans état,
-    // le client renvoie tout l'échange à chaque appel pour que Gemini garde le fil)
+    // le client renvoie tout l'échange à chaque appel pour que Gemini garde le fil).
+    // IMPORTANT : on rejoue le "modelContent" BRUT tel que Gemini l'a renvoyé (pas reconstruit
+    // à la main) — les modèles récents attachent un thought_signature au functionCall, que
+    // l'API exige de retrouver à l'identique au prochain tour ; le reconstruire soi-même avec
+    // juste {name, args} fait échouer l'appel avec une erreur 400.
     toolExchange.forEach((t) => {
-      contents.push({ role: "model", parts: [{ functionCall: { name: t.name, args: t.args || {} } }] });
+      contents.push(t.modelContent || { role: "model", parts: [{ functionCall: { name: t.name, args: t.args || {} } }] });
       contents.push({ role: "user", parts: [{ functionResponse: { name: t.name, response: t.response || {} } }] });
     });
 
@@ -165,7 +169,11 @@ export default {
     const fnCallPart = parts.find((p) => p.functionCall);
 
     if (fnCallPart) {
-      return jsonResponse({ toolCall: { name: fnCallPart.functionCall.name, args: fnCallPart.functionCall.args || {} } });
+      return jsonResponse({
+        toolCall: { name: fnCallPart.functionCall.name, args: fnCallPart.functionCall.args || {} },
+        // le tour "model" complet et brut, à renvoyer tel quel au prochain appel (voir plus haut)
+        modelContent: data.candidates[0].content,
+      });
     }
 
     const reply =

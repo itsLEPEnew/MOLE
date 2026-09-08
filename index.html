@@ -3789,7 +3789,7 @@ async function sendChatMessage(){
       if(data.toolCall){
         pendingEl.innerHTML = '<span class="msg-tag">La taupe</span><em>' + toolStatusLabel(data.toolCall.name) + '</em>';
         const response = await executeChatTool(data.toolCall.name, data.toolCall.args);
-        toolExchange.push({ name: data.toolCall.name, args: data.toolCall.args || {}, response });
+        toolExchange.push({ name: data.toolCall.name, args: data.toolCall.args || {}, modelContent: data.modelContent, response });
         continue;
       }
       finalReply = data.reply || null;

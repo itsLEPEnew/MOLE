@@ -5080,25 +5080,16 @@ function populateRecosStyleFilter(){
     styles.map(s => `<option value="${escapeHtml(s)}">`).join("");
 }
 
+// carte épurée : cover, titre et genre seulement — tout le reste (date, notes, liens
+// d'écoute) ne s'affiche que dans la fiche (openRecosAlbumOverlay), au clic sur la carte
 function recosCardHtml(it){
-  const links = it.links || {};
   const mainTitle = it.title || it.album || "";
-  // pour un album, le titre EST déjà le nom d'album -> pas la peine de le répéter en sous-titre
-  const showAlbumInSub = it.album && it.album !== mainTitle;
-  const isAlbum = it.type === "album";
   return `
     <div class="res-card${it.indispensable ? " is-indispensable" : ""} res-card-clickable" data-id="${it.id}">
       ${it.indispensable ? `<div class="indispensable-badge">Indispensable</div>` : ""}
       ${it.cover ? `<img class="res-cover" src="${it.cover}" onerror="this.style.visibility='hidden'" alt="">` : ""}
       <div class="res-title">${escapeHtml(it.artist)} – ${escapeHtml(mainTitle)}</div>
-      <div class="res-sub">${showAlbumInSub ? escapeHtml(it.album) : (isAlbum ? "Album" : "Single")}${it.date ? " · " + escapeHtml(it.date) : ""} · <span class="res-open-hint">voir la fiche →</span></div>
       ${it.style ? `<div class="recos-style-tag">${escapeHtml(it.style)}${it.substyle ? ` <span class="recos-substyle">· ${escapeHtml(it.substyle)}</span>` : ""}</div>` : ""}
-      ${it.note ? `<div class="recos-note">${escapeHtml(it.note)}</div>` : ""}
-      <div class="terrain-preview">
-        ${links.spotify ? `<a class="terrain-preview-btn ghost" href="${links.spotify}" target="_blank" rel="noopener">Spotify</a>` : ""}
-        ${links.deezer ? `<a class="terrain-preview-btn ghost" href="${links.deezer}" target="_blank" rel="noopener">Deezer</a>` : ""}
-        ${links.appleMusic ? `<a class="terrain-preview-btn ghost" href="${links.appleMusic}" target="_blank" rel="noopener">Apple Music</a>` : ""}
-      </div>
     </div>
   `;
 }
@@ -5118,7 +5109,11 @@ function openRecosAlbumOverlay(item){
     albumCoverBig.style.visibility = "hidden";
   }
   albumHeaderTitle.textContent = title;
-  albumHeaderArtist.textContent = item.artist + (item.date ? ` · ${item.date}` : "");
+  // type (Album/Single) + nom d'album si différent du titre + date : infos retirées de la
+  // carte épurée sur le mur, affichées ici à la place
+  const showAlbumInSub = item.album && item.album !== title;
+  const subParts = [showAlbumInSub ? item.album : (item.type === "album" ? "Album" : "Single"), item.date].filter(Boolean);
+  albumHeaderArtist.textContent = item.artist + (subParts.length ? " · " + subParts.join(" · ") : "");
   albumHeaderDesc.innerHTML =
     (item.style ? `<div class="recos-style-tag">${escapeHtml(item.style)}${item.substyle ? ` <span class="recos-substyle">· ${escapeHtml(item.substyle)}</span>` : ""}</div>` : "") +
     (item.note ? `<div style="margin-top:8px;">${escapeHtml(item.note)}</div>` : "");

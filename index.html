@@ -3637,6 +3637,130 @@ function appendMsg(role, text, pending){
   return div;
 }
 
+// ---------- contexte transmis à la Taupe : ce qui est à l'écran + la vraie musicothèque
+// (sans ça, les outils ci-dessous ne pourraient agir "à l'aveugle") ----------
+function buildChatContext(){
+  const parts = [];
+  if(currentOpenAlbum){
+    parts.push(`Fiche actuellement ouverte : album/morceau "${currentOpenAlbum.title}" de ${currentOpenAlbum.artist}${currentOpenAlbum.year ? " (" + currentOpenAlbum.year + ")" : ""}.`);
+  } else if(currentOpenArtist){
+    parts.push(`Fiche actuellement ouverte : artiste "${currentOpenArtist.name}".`);
+  } else {
+    parts.push("Aucune fiche album/artiste n'est ouverte actuellement.");
+  }
+  const collection = loadCollection();
+  if(collection.length){
+    const lines = collection.slice(0, 40).map(a =>
+      `- ${a.artist} — ${a.title}${a.rating ? ` (${a.rating}★)` : ""}${a.comment ? ` : "${a.comment}"` : ""}`
+    );
+    parts.push("Musicothèque de l'utilisateur (notes les plus récentes) :\n" + lines.join("\n"));
+  } else {
+    parts.push("La musicothèque de l'utilisateur est vide pour l'instant.");
+  }
+  return parts.join("\n\n");
+}
+
+// ---------- outils que la Taupe peut déclencher elle-même ----------
+// tape directement le moteur de recherche, SANS le filtre de pertinence de searchEverything
+// (celui-ci est calibré pour une saisie courte tapée à la main dans la barre — trop strict
+// pour une requête combinée "artiste titre" comme en produit naturellement le modèle ; iTunes/
+// Deezer classent déjà leurs résultats par pertinence, pas besoin de filtrer en plus ici)
+async function toolSearchAndOpenAlbum(args){
+  const query = (args.query || "").trim();
+  if(!query) return { found: false, error: "query manquant" };
+  try{
+    const res = await fetch(`${RECOS_PUBLIC_URL}/apple/search?term=${encodeURIComponent(query)}&entity=album&limit=5`);
+    const data = await res.json();
+    const best = (data.results || []).find(r => r.wrapperType === "collection");
+    if(!best) return { found: false };
+    const title = (best.collectionName || "").replace(/\s-\s(Single|EP)$/i, "");
+    const cover = best.artworkUrl100 ? best.artworkUrl100.replace("100x100bb", "600x600bb") : null;
+    const year = best.releaseDate ? best.releaseDate.slice(0, 4) : null;
+    openAlbumOverlay(best.collectionId, title, best.artistName, year, cover);
+    return { found: true, title, artist: best.artistName, year };
+  }catch(e){
+    return { found: false };
+  }
+}
+
+async function toolRateCurrentAlbum(args){
+  const stars = Number(args.stars);
+  if(!currentOpenAlbum){
+    return { error: "Aucune fiche album n'est ouverte actuellement — ouvre-en une d'abord (via search_and_open_album par exemple)." };
+  }
+  if(!Number.isFinite(stars) || stars < 0.5 || stars > 5){
+    return { error: "stars doit être un nombre entre 0.5 et 5." };
+  }
+  const rounded = Math.round(stars * 2) / 2;
+  const entry = saveRatingEntry(currentOpenAlbum, rounded, args.comment || "");
+  return { saved: true, title: entry.title, artist: entry.artist, rating: entry.rating };
+}
+
+async function toolDigSimilar(args){
+  const mode = args.mode === "piste" ? "piste" : "terrain";
+  switchTab("creuser");
+  switchSubTab(mode);
+
+  if(mode === "terrain"){
+    const seed = (args.seed || "").trim().toLowerCase();
+    if(seed){
+      const genreMatch = Object.keys(SUBGENRES_BY_GENRE).find(g => g.toLowerCase() === seed || g.toLowerCase().includes(seed) || seed.includes(g.toLowerCase()));
+      const styleMatch = allSubgenres().find(s => s.toLowerCase() === seed) ||
+        allSubgenres().find(s => s.toLowerCase().includes(seed) || seed.includes(s.toLowerCase()));
+      const parentOfStyle = styleMatch && !genreMatch
+        ? Object.keys(SUBGENRES_BY_GENRE).find(g => SUBGENRES_BY_GENRE[g].includes(styleMatch))
+        : null;
+      if(genreMatch || parentOfStyle){
+        terrainGenre.value = genreMatch || parentOfStyle;
+        populateStyleSelect();
+      }
+      if(styleMatch) terrainStyle.value = styleMatch;
+    }
+    if(!terrainGenre.value && !terrainStyle.value){
+      // rien de matché dans le seed (ou pas de seed) -> un genre au hasard plutôt que rien
+      const genres = Object.keys(SUBGENRES_BY_GENRE);
+      terrainGenre.value = genres[Math.floor(Math.random() * genres.length)];
+      populateStyleSelect();
+    }
+    await unearthRandom();
+    return { launched: true, mode: "terrain", genre: terrainGenre.value, style: terrainStyle.value };
+  }
+
+  // mode "piste"
+  const seed = (args.seed || "").trim();
+  if(seed && COSINE_PROXY_URL){
+    try{
+      const res = await fetch(`${COSINE_PROXY_URL}/search?q=${encodeURIComponent(seed)}&limit=1`);
+      const data = await res.json();
+      const best = data.data && data.data[0];
+      if(best) addBanger({ id: best.id, artist: best.artist, track: best.track });
+    }catch(e){ /* pas grave, on tente quand même avec les bangers déjà présents */ }
+  }
+  if(!loadBangers().length){
+    return { error: "Aucun banger dans La Piste — donne un artiste/morceau de départ, ou ajoutes-en un manuellement d'abord." };
+  }
+  await followThePiste();
+  return { launched: true, mode: "piste" };
+}
+
+async function executeChatTool(name, args){
+  try{
+    if(name === "search_and_open_album") return await toolSearchAndOpenAlbum(args || {});
+    if(name === "rate_current_album") return await toolRateCurrentAlbum(args || {});
+    if(name === "dig_similar") return await toolDigSimilar(args || {});
+    return { error: "outil inconnu" };
+  }catch(e){
+    return { error: "échec de l'action" };
+  }
+}
+
+function toolStatusLabel(name){
+  if(name === "search_and_open_album") return "cherche dans le catalogue...";
+  if(name === "rate_current_album") return "note ça...";
+  if(name === "dig_similar") return "creuse un peu plus profond...";
+  return "creuse...";
+}
+
 async function sendChatMessage(){
   const text = chatInput.value.trim();
   if(!text) return;
@@ -3650,30 +3774,57 @@ async function sendChatMessage(){
   }
 
   const pendingEl = appendMsg("mole", "<em>creuse un peu...</em>", true);
+  const context = buildChatContext();
+  const toolExchange = [];
+  let finalReply = null;
 
   try{
-    const res = await fetch(CHAT_PROXY_URL, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ message: text, history: chatHistory })
-    });
-    const data = await res.json();
-    pendingEl.classList.remove("pending");
-    if(data.reply){
-      pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>' + escapeHtml(data.reply).replace(/\n/g, "<br>");
-      chatHistory.push({role:"mole", text:data.reply});
-    } else {
-      pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>Oups, un eboulement dans le tunnel &mdash; reessaie dans un instant.';
+    for(let round = 0; round < 4; round++){
+      const res = await fetch(CHAT_PROXY_URL, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ message: text, history: chatHistory, context, toolExchange })
+      });
+      const data = await res.json();
+      if(data.toolCall){
+        pendingEl.innerHTML = '<span class="msg-tag">La taupe</span><em>' + toolStatusLabel(data.toolCall.name) + '</em>';
+        const response = await executeChatTool(data.toolCall.name, data.toolCall.args);
+        toolExchange.push({ name: data.toolCall.name, args: data.toolCall.args || {}, response });
+        continue;
+      }
+      finalReply = data.reply || null;
+      break;
     }
   } catch(e){
     pendingEl.classList.remove("pending");
     pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>Impossible de creuser jusqu\'a mon cerveau la, reessaie plus tard.';
+    return;
+  }
+
+  pendingEl.classList.remove("pending");
+  if(finalReply){
+    pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>' + escapeHtml(finalReply).replace(/\n/g, "<br>");
+    chatHistory.push({role:"mole", text:finalReply});
+  } else {
+    pendingEl.innerHTML = '<span class="msg-tag">La taupe</span>Oups, un eboulement dans le tunnel &mdash; reessaie dans un instant.';
   }
 }
 
 chatSendBtn.onclick = sendChatMessage;
 chatInput.addEventListener("keydown", (e) => {
   if(e.key === "Enter") sendChatMessage();
+});
+
+// raccourci clavier pour ouvrir/fermer le chat sans cliquer sur le lanceur flottant —
+// ignoré si le focus est déjà dans un champ de saisie (pour ne pas interférer en tapant)
+document.addEventListener("keydown", (e) => {
+  const key = e.key.toLowerCase();
+  if(!(key === "k" && (e.ctrlKey || e.metaKey))) return;
+  const tag = document.activeElement && document.activeElement.tagName;
+  if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  e.preventDefault();
+  chatWidgetPanel.classList.toggle("open");
+  if(chatWidgetPanel.classList.contains("open")) chatInput.focus();
 });
 
 // ---------- Recherche d'albums (MusicBrainz), notation & Ma Bibliothèque ----------
@@ -4142,6 +4293,8 @@ async function fetchItunesDiscography(artistId, artistName){
 
 async function openArtistOverlay(artistMbid, artistName){
   dockSearchHome();
+  currentOpenArtist = { mbid: artistMbid, name: artistName };
+  currentOpenAlbum = null;
   artistOverlay.classList.add("open");
   artistOverlayTitle.textContent = artistName;
   artistOverlayBody.innerHTML = '<div class="overlay-status">Chargement de la discographie...</div>';
@@ -4318,32 +4471,29 @@ ratingModalCancelBtn.addEventListener("click", closeRatingModal);
 ratingModalBackdrop.addEventListener("click", (e) => {
   if(e.target === ratingModalBackdrop) closeRatingModal();
 });
-ratingModalSaveBtn.addEventListener("click", () => {
-  if(!currentRatingAlbum) return;
-  if(currentRatingValue < 0.5){
-    ratingModalHint.textContent = "Choisis au moins une étoile.";
-    return;
-  }
+// construit/sauvegarde l'entrée de notation pour "album" (même forme que ce qu'attend
+// openRatingModal) — partagée par la modale ET par l'outil de notation du chat (la Taupe)
+function saveRatingEntry(album, ratingValue, comment){
   const list = loadCollection();
-  const idx = list.findIndex(a => a.mbid === currentRatingAlbum.mbid);
+  const idx = list.findIndex(a => a.mbid === album.mbid);
   const entry = {
-    mbid: currentRatingAlbum.mbid,
-    title: currentRatingAlbum.title,
-    artist: currentRatingAlbum.artist,
-    year: currentRatingAlbum.year,
-    coverMbid: currentRatingAlbum.coverMbid || currentRatingAlbum.mbid,
-    coverUrl: currentRatingAlbum.coverUrl || null,
-    rating: currentRatingValue,
-    comment: ratingModalComment.value.trim(),
+    mbid: album.mbid,
+    title: album.title,
+    artist: album.artist,
+    year: album.year,
+    coverMbid: album.coverMbid || album.mbid,
+    coverUrl: album.coverUrl || null,
+    rating: ratingValue,
+    comment: (comment || "").trim(),
     addedAt: idx >= 0 ? list[idx].addedAt : Date.now(),
     // pour regrouper plusieurs morceaux notés d'un même album sous une seule fiche
     // dans la Musicothèque — par défaut un item se regroupe sous lui-même (mbid)
-    groupId: currentRatingAlbum.groupId || currentRatingAlbum.mbid,
-    groupTitle: currentRatingAlbum.groupTitle || currentRatingAlbum.title,
-    groupArtist: currentRatingAlbum.groupArtist || currentRatingAlbum.artist,
-    groupYear: currentRatingAlbum.groupYear || currentRatingAlbum.year,
-    groupCover: currentRatingAlbum.groupCover || currentRatingAlbum.coverUrl || null,
-    groupCoverMbid: currentRatingAlbum.groupCoverMbid || currentRatingAlbum.coverMbid || currentRatingAlbum.mbid
+    groupId: album.groupId || album.mbid,
+    groupTitle: album.groupTitle || album.title,
+    groupArtist: album.groupArtist || album.artist,
+    groupYear: album.groupYear || album.year,
+    groupCover: album.groupCover || album.coverUrl || null,
+    groupCoverMbid: album.groupCoverMbid || album.coverMbid || album.mbid
   };
   if(idx >= 0) list[idx] = entry; else list.unshift(entry);
   saveCollectionList(list);
@@ -4368,7 +4518,16 @@ ratingModalSaveBtn.addEventListener("click", () => {
     btn.title = "Modifier ma note";
   }
   if(libraryOverlay.classList.contains("open")) renderLibraryOverlay();
+  return entry;
+}
 
+ratingModalSaveBtn.addEventListener("click", () => {
+  if(!currentRatingAlbum) return;
+  if(currentRatingValue < 0.5){
+    ratingModalHint.textContent = "Choisis au moins une étoile.";
+    return;
+  }
+  saveRatingEntry(currentRatingAlbum, currentRatingValue, ratingModalComment.value);
   closeRatingModal();
 });
 
@@ -4409,8 +4568,16 @@ async function fetchItunesTracklist(collectionId, artistName, albumTitle){
   return tracks;
 }
 
+// dernière fiche album/artiste ouverte -> permet à la Taupe (chat) de savoir ce que
+// l'utilisateur regarde sans avoir à scraper le DOM, et de noter "l'album courant" sans
+// lui faire deviner un id
+let currentOpenAlbum = null;
+let currentOpenArtist = null;
+
 async function openAlbumOverlay(collectionId, albumTitle, artistName, year, coverUrl){
   dockSearchHome();
+  currentOpenAlbum = { mbid: collectionId, title: albumTitle, artist: artistName, year, coverUrl: coverUrl || null };
+  currentOpenArtist = null;
   albumOverlay.classList.add("open");
   if(coverUrl){
     albumCoverBig.src = coverUrl;
@@ -5136,6 +5303,8 @@ function openRecosAlbumOverlay(item){
   dockSearchHome();
   albumOverlay.classList.add("open");
   const title = item.title || item.album || "";
+  currentOpenAlbum = { mbid: `reco-${item.id}`, title, artist: item.artist, year: item.date, coverUrl: item.cover || null };
+  currentOpenArtist = null;
   if(item.cover){
     albumCoverBig.src = item.cover;
     albumCoverBig.style.visibility = "visible";

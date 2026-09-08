@@ -146,8 +146,9 @@ export default {
         // caché avant chaque réponse, qui prend du temps sans rien changer à la qualité
         // pour un chat court à personnalité fixe + un tool-routing sur seulement 3 outils.
         // "minimal" coupe l'essentiel de cette latence (constaté : ~33s pour un aller-retour
-        // d'outil avant, sensiblement moins après).
-        thinkingLevel: "minimal",
+        // d'outil avant, sensiblement moins après). Le champ plat "thinkingLevel" est rejeté
+        // par l'API (400 "Cannot find field") -> il faut le nester dans thinkingConfig.
+        thinkingConfig: { thinkingLevel: "minimal" },
       },
     };
 

@@ -1479,7 +1479,14 @@
     border:1px solid var(--line);
     background:var(--paper-dim);
   }
-  .res-title{font-size:13px; font-weight:700; line-height:1.25;}
+  /* hauteur réservée à 2 lignes (même sur un titre court) pour que le genre qui suit
+     s'aligne à la même hauteur d'une carte à l'autre, peu importe la longueur du titre */
+  .res-title{
+    font-size:13px; font-weight:700; line-height:1.25;
+    min-height:2.5em;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
   .res-sub{font-size:11.5px; color:var(--ink-soft);}
   .search-filter-tabs{
     display:flex; gap:8px; flex-wrap:wrap;
@@ -1527,6 +1534,13 @@
     padding:5px 9px;
     font-size:10.5px;
   }
+  .lib-group-open{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    cursor:pointer;
+  }
+  .lib-group-open:hover .res-cover{ border-color:var(--ink); }
   .lib-group-tracks{
     display:flex;
     flex-direction:column;
@@ -1537,11 +1551,14 @@
   }
   .lib-group-track{
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     justify-content:space-between;
     gap:8px;
+    flex-wrap:wrap;
   }
-  .lib-group-track-info{ min-width:0; flex:1; }
+  /* flex-basis fixe -> quand la carte est trop étroite pour les deux boutons à côté du
+     texte, les actions passent proprement à la ligne au lieu de se chevaucher */
+  .lib-group-track-info{ min-width:0; flex:1 1 140px; }
   .lib-group-track-title{
     font-size:11.5px;
     font-weight:700;
@@ -1553,6 +1570,7 @@
     display:flex;
     gap:4px;
     flex-shrink:0;
+    margin-left:auto;
   }
   .lib-album-rate-btn{
     margin-top:10px;
@@ -4495,6 +4513,20 @@ function groupCollection(list){
     .sort((a, b) => b.latestAddedAt - a.latestAddedAt);
 }
 
+// ouvre la fiche correspondant à un groupe de la musicothèque (cover/tracklist/liens) —
+// route vers la fiche recos si le groupe vient du mur ("reco-XXX"), sinon vers la fiche
+// album classique (collectionId iTunes/Deezer, ou legacy MusicBrainz/Discogs)
+async function openLibraryGroupFiche(g){
+  const gid = String(g.groupId);
+  if(gid.startsWith("reco-")){
+    await loadRecosWallIfNeeded();
+    const recoId = gid.slice(5);
+    const item = recosWallCache.find(it => String(it.id) === recoId);
+    if(item){ openRecosAlbumOverlay(item); return; }
+  }
+  openAlbumOverlay(gid, g.title, g.artist, g.year, g.cover);
+}
+
 function renderLibraryOverlay(){
   const list = loadCollection();
   if(!list.length){
@@ -4508,11 +4540,14 @@ function renderLibraryOverlay(){
     const card = document.createElement("div");
     card.className = "res-card";
     card.innerHTML = `
-      <img class="res-cover" src="${g.cover || `https://coverartarchive.org/release-group/${g.coverMbid}/front-250`}" onerror="this.style.visibility='hidden'" alt="">
-      <div class="res-title">${escapeHtml(g.title)}</div>
-      <div class="res-sub">${escapeHtml(g.artist)}${g.year ? " · " + escapeHtml(String(g.year)) : ""}</div>
+      <div class="lib-group-open" title="Voir la fiche">
+        <img class="res-cover" src="${g.cover || `https://coverartarchive.org/release-group/${g.coverMbid}/front-250`}" onerror="this.style.visibility='hidden'" alt="">
+        <div class="res-title">${escapeHtml(g.title)}</div>
+        <div class="res-sub">${escapeHtml(g.artist)}${g.year ? " · " + escapeHtml(String(g.year)) : ""}</div>
+      </div>
       <div class="lib-group-tracks"></div>
     `;
+    card.querySelector(".lib-group-open").addEventListener("click", () => openLibraryGroupFiche(g));
     const tracksEl = card.querySelector(".lib-group-tracks");
     g.items.forEach(a => {
       const row = document.createElement("div");

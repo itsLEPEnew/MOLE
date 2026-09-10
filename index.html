@@ -5241,9 +5241,12 @@ function renderPisteResults(ranked){
   });
 }
 
-// ---------- Recos de la taupe (mur éditorial hebdo, via mole-recos-public-worker) ----------
-// Colle ici l'URL de ton Worker public une fois déployé (voir mole-recos-public-worker.js)
-const RECOS_PUBLIC_URL = "https://mole-recos-public-worker.mister-taniark.workers.dev";
+// ---------- Recos de la taupe (mur éditorial hebdo) ----------
+// Migré vers Vercel (Phase 1) : mêmes routes (/wall, /apple/search|lookup|tracklist) que
+// l'ancien Worker Cloudflare public, portées dans /api + lib/mole-public-core.js, avec un
+// rewrite dans vercel.json pour garder les chemins identiques. L'ancien Worker Cloudflare
+// reste déployé pour l'instant (pas encore désactivé) mais n'est plus appelé par le site.
+const RECOS_PUBLIC_URL = "https://mole-mole4.vercel.app";
 
 let recosWallCache = [];
 let recosActiveWeeks = [];

@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/wall", "destination": "/api/wall" },
+    { "source": "/apple/:path*", "destination": "/api/apple/:path*" }
+  ]
+}

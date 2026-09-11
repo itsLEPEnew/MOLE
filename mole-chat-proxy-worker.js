@@ -66,7 +66,7 @@ const TOOLS = [
       parameters: {
         type: "object",
         properties: {
-          query: { type: "string", description: "Termes de recherche : nom d'artiste seul, ou \"artiste titre\" si un album précis est visé." },
+          query: { type: "string", description: "Termes de recherche : nom d'artiste seul, ou \"artiste titre\" UNIQUEMENT si l'utilisateur a nommé un album précis ou si tu es sûre qu'il existe. N'invente jamais un titre d'album pour compléter la requête : un titre inventé ne renvoie aucun résultat et fait échouer la recherche. Dans le doute, cherche le nom d'artiste seul." },
         },
         required: ["query"],
       },

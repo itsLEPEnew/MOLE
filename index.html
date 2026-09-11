@@ -74,14 +74,21 @@
     align-items:center;
     justify-content:space-between;
     gap:12px;
-    padding:14px 16px;
+    padding:8px 16px;
     background:var(--paper);
     border-bottom:1px solid var(--card-border);
   }
-  .app-header-logo{
-    position:relative;
+  /* largeur identique à .profile-icon-btn : avec justify-content:space-between, deux
+     éléments de bord de même largeur centrent vraiment celui du milieu (le logo). */
+  .app-header-spacer{
     width:38px;
     height:38px;
+    flex-shrink:0;
+  }
+  .app-header-logo{
+    position:relative;
+    width:52px;
+    height:52px;
     flex-shrink:0;
   }
   .profile-icon-btn{
@@ -2175,6 +2182,7 @@
 </div>
 
 <header class="app-header">
+  <span class="app-header-spacer" aria-hidden="true"></span>
   <div class="app-header-logo" title="MOLE">
     <div class="mole-layer mole-paws"></div>
     <div class="mole-layer mole-head"></div>

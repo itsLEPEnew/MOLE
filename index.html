@@ -3610,8 +3610,8 @@ function renderIceberg(genre){
 }
 
 // ---------- chat avec la taupe ----------
-// Colle ici l'URL de ton Worker Cloudflare une fois deploye (voir mole-chat-proxy-worker.js)
-const CHAT_PROXY_URL = "https://mole-chat.mister-taniark.workers.dev/"; // proxy Cloudflare deploye
+// Proxy de chat, servi par Vercel comme le reste du backend (voir api/chat.js)
+const CHAT_PROXY_URL = "https://mole-mole4.vercel.app/chat"; // meme domaine que RECOS_PUBLIC_URL, declare plus bas
 
 const chatLog = document.getElementById("chatLog");
 const chatInput = document.getElementById("chatInput");

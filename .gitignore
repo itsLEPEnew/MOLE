@@ -1,0 +1,33 @@
+# --- Secrets : ne JAMAIS committer, le repo est public ---
+# Ces motifs sont larges à dessein : un fichier de secrets oublié dans un
+# `git add -A` est irrécupérable une fois poussé (l'historique le garde).
+*TOKEN*
+*token*.txt
+*.env
+.env*
+*secret*
+*credentials*
+*.pem
+*.key
+
+# --- Documents et exports locaux (pas du code du site) ---
+*.pdf
+*.odt
+*.docx
+*.zip
+
+# --- Sources d'images / brouillons de logo ---
+*.psd
+*.ai
+mole-icon-source*
+home niche logo.jpg
+logo pictogramme.jpg
+
+# --- Dossier de travail local ---
+/MOLE/
+
+# --- Outils ---
+node_modules/
+.vercel
+.DS_Store
+Thumbs.db

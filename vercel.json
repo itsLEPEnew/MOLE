@@ -1,12 +1,31 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/wall", "destination": "/api/wall" },
-    { "source": "/apple/:path*", "destination": "/api/apple/:path*" },
-    { "source": "/admin", "destination": "/api/admin" },
-    { "source": "/admin/:path*", "destination": "/api/admin" }
+    {
+      "source": "/wall",
+      "destination": "/api/wall"
+    },
+    {
+      "source": "/apple/:path*",
+      "destination": "/api/apple/:path*"
+    },
+    {
+      "source": "/chat",
+      "destination": "/api/chat"
+    },
+    {
+      "source": "/admin",
+      "destination": "/api/admin"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/api/admin"
+    }
   ],
   "crons": [
-    { "path": "/api/cron/friday", "schedule": "0 5 * * 5" }
+    {
+      "path": "/api/cron/friday",
+      "schedule": "0 5 * * 5"
+    }
   ]
 }

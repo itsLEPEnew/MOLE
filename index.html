@@ -3321,8 +3321,8 @@ document.getElementById("resetBangersBtn").addEventListener("click", () => {
 
 // ---------- notifications du rendez-vous du vendredi (Web Push) ----------
 const VAPID_PUBLIC_KEY = "BP-n6bq3dq-xHW81sxxsb9Wps-sBgmsbHSfZzSORSgtjEvmAYWzTMa100bpq7i1rYyy9w1k1IpQ3N8sx1ZFhD18";
-// Colle ici l'URL de ton Worker Cloudflare une fois les endpoints push déployés (voir mole-recos-admin-worker.js)
-const PUSH_WORKER_URL = "https://mole-recos-admin.mister-taniark.workers.dev";
+// Endpoints push, servis par l'admin sur Vercel (voir api/admin.js)
+const PUSH_WORKER_URL = "https://mole-mole4.vercel.app/admin";
 
 function urlBase64ToUint8Array(base64String){
   const padding = "=".repeat((4 - base64String.length % 4) % 4);

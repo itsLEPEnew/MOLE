@@ -1195,7 +1195,7 @@
   .overlay-inner{
     max-width:900px;
     margin:0 auto;
-    padding:64px 16px 60px;
+    padding:16px 16px 60px; /* 64px avant réservait la place de l'ancien en-tête flottant */
   }
   .overlay-topbar{
     display:flex;
@@ -1206,7 +1206,7 @@
     border-bottom:2px solid var(--line);
     margin-bottom:16px;
     position:sticky;
-    top:48px;
+    top:0; /* l'en-tête au-dessus est masqué tant qu'un overlay est ouvert (refonte) */
     background:var(--paper);
     z-index:5;
   }

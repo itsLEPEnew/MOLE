@@ -4,9 +4,11 @@
  * Tourne sur Cloudflare Workers AI (binding "AI") plutôt que sur l'API Gemini externe :
  * pas de clé API à gérer/protéger, et l'inférence tourne sur la même infra que le Worker
  * lui-même (edge Cloudflare), donc une latence beaucoup plus stable que la file d'attente
- * du tier gratuit de Google constatée avec Gemini. Le modèle (IBM Granite 4.0 H-Micro, 3B
- * paramètres) est petit et taillé pour du tool-calling léger — largement suffisant pour
- * router entre 3 outils et tenir un personnage, pas besoin d'un gros modèle de raisonnement.
+ * du tier gratuit de Google constatée avec Gemini. Le modèle est Mistral Small 3.1 (24B) :
+ * un 3B (Granite 4.0 H-Micro) a d'abord été essayé, mais il ne tenait pas la consigne de
+ * refus hors-sujet — il donnait volontiers une recette de risotto ou des conseils
+ * juridiques. Mesuré sur 5 sujets hors-sujet : 2/5 de refus pour le 3B, 5/5 pour celui-ci,
+ * personnage préservé, au prix de quelques secondes de latence supplémentaires.
  * Son API est compatible OpenAI (messages/choices/tool_calls), pas le format Gemini.
  *
  * La Taupe peut aussi AGIR dans l'app (chercher/ouvrir une fiche, noter, lancer Terrain
@@ -29,7 +31,7 @@
  * petit modèle comme celui-ci. Au-delà, facturation à l'usage (pas de coupure surprise).
  */
 
-const MODEL = "@cf/ibm-granite/granite-4.0-h-micro";
+const MODEL = "@cf/mistralai/mistral-small-3.1-24b-instruct";
 
 const SYSTEM_INSTRUCTION = `Tu es la Taupe de MOLE, la mascotte du site. Tu es espiègle, chaleureuse, un peu taquine, passionnée de musique, et tu adores creuser des tunnels pour dénicher des pépites musicales.
 

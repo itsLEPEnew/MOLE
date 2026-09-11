@@ -131,7 +131,25 @@
     background:var(--paper);
     border-top:1px solid var(--card-border);
   }
+  /* Aura qui glisse d'une destination à l'autre : un seul élément positionné en JS
+     (moveBottomNavAura, appelé depuis setBottomNavActive) sur les coordonnées réelles du
+     bouton actif — robuste à la largeur d'écran, pas de calcul en dur par bouton. */
+  .bottom-nav-aura{
+    position:absolute;
+    top:6px;
+    bottom:6px;
+    left:0;
+    width:56px;
+    border-radius:16px;
+    background:radial-gradient(closest-side, oklch(94% 0 0 / 55%), oklch(94% 0 0 / 0%) 75%);
+    pointer-events:none;
+    z-index:0;
+    transition:transform .38s cubic-bezier(.22,1,.36,1), width .38s cubic-bezier(.22,1,.36,1);
+    transform:translateX(0);
+  }
   .bottom-nav-btn{
+    position:relative;
+    z-index:1;
     background:none;
     border:none;
     display:flex;
@@ -141,6 +159,7 @@
     color:var(--ink-soft);
     cursor:pointer;
     padding:2px 10px;
+    transition:color .2s;
   }
   .bottom-nav-btn.active{ color:var(--ink); }
   .bottom-nav-btn-label{
@@ -1192,17 +1211,18 @@
   .overlay.open{display:block;}
   #artistOverlay{ z-index:210; }
   /* Un overlay plein écran a déjà son propre bouton fermer + raccourci accueil dans sa
-     barre — l'en-tête et la nav du bas (sticky/fixed, refonte) n'ont plus de raison
-     d'apparaître par-dessus tant qu'un overlay est ouvert. */
+     barre — l'en-tête sticky (logo+avatar+recherche) n'a plus de raison d'apparaître
+     par-dessus tant qu'un overlay est ouvert. La nav du bas, elle, reste affichée en
+     permanence (y compris dans les overlays) : c'est le repère constant demandé. */
   body:has(.overlay.open) .app-header,
-  body:has(.overlay.open) .app-header-search,
-  body:has(.overlay.open) .bottom-nav{
+  body:has(.overlay.open) .app-header-search{
     display:none;
   }
   .overlay-inner{
     max-width:900px;
     margin:0 auto;
-    padding:16px 16px 60px; /* 64px avant réservait la place de l'ancien en-tête flottant */
+    /* bas : dégage la nav du bas, toujours visible même par-dessus un overlay */
+    padding:16px 16px calc(88px + env(safe-area-inset-bottom, 0px));
   }
   .overlay-topbar{
     display:flex;
@@ -2205,6 +2225,7 @@
      Profil/Réglages ouvrent exactement les mêmes vues/overlays qu'avant, voir les
      écouteurs de .bottom-nav-btn plus bas dans le fichier. -->
 <nav class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-aura" id="bottomNavAura" aria-hidden="true"></div>
   <button class="bottom-nav-btn active" data-nav="accueil" title="Accueil">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
     <span class="bottom-nav-btn-label">Accueil</span>
@@ -3290,9 +3311,25 @@ function openCreditsOverlayView(){
   closeAllOverlays();
   document.getElementById("creditsOverlay").classList.add("open");
 }
+const bottomNavAura = document.getElementById("bottomNavAura");
+function moveBottomNavAura(btn){
+  if(!bottomNavAura || !btn) return;
+  const navRect = btn.closest(".bottom-nav").getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  bottomNavAura.style.width = btnRect.width + "px";
+  bottomNavAura.style.transform = `translateX(${btnRect.left - navRect.left}px)`;
+}
 function setBottomNavActive(key){
   document.querySelectorAll(".bottom-nav-btn[data-nav]").forEach(b=>b.classList.toggle("active", b.dataset.nav === key));
+  moveBottomNavAura(document.querySelector(`.bottom-nav-btn[data-nav="${key}"]`));
 }
+// position initiale de l'aura sur "accueil" (actif par défaut dans le markup) — avant tout
+// clic, pour que le premier changement d'onglet parte déjà du bon endroit.
+setBottomNavActive("accueil");
+window.addEventListener("resize", () => {
+  const active = document.querySelector(".bottom-nav-btn.active[data-nav]");
+  if(active) moveBottomNavAura(active);
+});
 // Les 8 boutons "fermer" d'overlay (.overlay-close) ne repassent pas par closeAllOverlays —
 // chacun ferme juste sa propre vue. Un seul écouteur en délégation évite de dupliquer la
 // remise à "accueil" de la nav du bas dans chacun de leurs handlers.

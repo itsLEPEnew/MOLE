@@ -3745,7 +3745,7 @@ function renderIceberg(genre){
 
 // ---------- chat avec la taupe ----------
 // Proxy de chat, servi par Vercel comme le reste du backend (voir api/chat.js)
-const CHAT_PROXY_URL = "https://mole-mole4.vercel.app/chat"; // meme domaine que RECOS_PUBLIC_URL, declare plus bas
+const CHAT_PROXY_URL = location.origin + "/chat"; // meme origine que la page
 
 const chatLog = document.getElementById("chatLog");
 const chatInput = document.getElementById("chatInput");
@@ -5430,7 +5430,9 @@ function renderPisteResults(ranked){
 // l'ancien Worker Cloudflare public, portées dans /api + lib/mole-public-core.js, avec un
 // rewrite dans vercel.json pour garder les chemins identiques. L'ancien Worker Cloudflare
 // reste déployé pour l'instant (pas encore désactivé) mais n'est plus appelé par le site.
-const RECOS_PUBLIC_URL = "https://mole-mole4.vercel.app";
+// meme origine que la page : chaque deploiement (prod ou preview) parle a SA propre API,
+// au lieu que la preview interroge la prod comme c etait le cas avec l URL en dur
+const RECOS_PUBLIC_URL = location.origin;
 
 let recosWallCache = [];
 let recosActiveWeeks = [];

@@ -4090,6 +4090,7 @@ async function searchEverything(query, limit){
     const nameNorm = name.trim().toLowerCase();
     if(!looseNameMatch(nameNorm, qNorm, 0.6)) return;
     const fans = a.nbFan || 0;
+    const exact = nameNorm === qNorm;
     items.push({
       type: "artist",
       id: a.artistId,
@@ -4097,7 +4098,10 @@ async function searchEverything(query, limit){
       subtitle: fans ? `${fans.toLocaleString("fr-FR")} fans` : "",
       // la photo arrive avec le résultat -> avatar immédiat, sans le détour Wikipédia
       cover: a.artworkUrl100 || null,
-      score: 100 + (perTypeLimit - idx)
+      // seul l'artiste au nom EXACTEMENT identique passe devant les albums : sinon, chercher
+      // "daft punk" remplissait les 8 places de variantes ("Daft Punk's Karaoke Band", "Daft Punk,
+      // Pharrell Williams"...) et reléguait Discovery et Random Access Memories hors écran
+      score: exact ? 130 : 55 - idx
     });
   });
 

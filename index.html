@@ -3745,7 +3745,7 @@ function renderIceberg(genre){
 
 // ---------- chat avec la taupe ----------
 // Proxy de chat, servi par Vercel comme le reste du backend (voir api/chat.js)
-const CHAT_PROXY_URL = "https://mole-mole4.vercel.app/chat"; // meme domaine que RECOS_PUBLIC_URL, declare plus bas
+const CHAT_PROXY_URL = location.origin + "/chat"; // meme origine que la page
 
 const chatLog = document.getElementById("chatLog");
 const chatInput = document.getElementById("chatInput");
@@ -4064,36 +4064,44 @@ function titleCloseMatch(titleNorm, qNorm, minRatio){
   return false;
 }
 
-// les artistes restent cherchés sur MusicBrainz : leur mbid alimente ensuite l'avatar
-// (photo Wikipedia), la bio et les artistes associés (renderAvatarInto, fetchArtistWikiInfo,
-// fetchRelatedArtists) qui n'ont pas d'équivalent côté iTunes -> changer cet id casserait
-// ces trois fonctionnalités. Les albums/singles, eux, viennent d'iTunes Search : un seul appel
-// qui renvoie déjà l'artwork (fini le double appel Cover Art Archive) et trie par pertinence
-// (fini le bruit d'obscurités que MusicBrainz remontait sans scoring de popularité).
+// Artistes ET albums passent par notre proxy, qui interroge Deezer (voir mole-public-core.js).
+// MusicBrainz a été retiré de la recherche le 12/09/2026 : son score est purement lexical,
+// sans notion de notoriété, donc "daft punk" y remontait "Daft Punk NFT", "Daft Cluck" et
+// "[unknown]" au même niveau que le vrai duo. Deezer expose un nombre de fans, qu'on utilise
+// pour classer et dédupliquer côté serveur. MusicBrainz reste utilisé, mais seulement à
+// l'ouverture d'une fiche artiste (bio + artistes associés), résolu par nom — voir
+// openArtistOverlay : sa précision y est un atout, alors qu'elle polluait le classement.
 async function searchEverything(query, limit){
   const qNorm = query.trim().toLowerCase();
   const perTypeLimit = Math.max(limit, 12);
 
   const [artistData, albumData] = await Promise.all([
-    fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(query)}&fmt=json&limit=${perTypeLimit}`, { headers: { "Accept": "application/json" } })
-      .then(r => r.json()).catch(() => ({ artists: [] })),
+    fetch(`${RECOS_PUBLIC_URL}/apple/search?term=${encodeURIComponent(query)}&entity=musicArtist&limit=${perTypeLimit}`)
+      .then(r => r.json()).catch(() => ({ results: [] })),
     fetch(`${RECOS_PUBLIC_URL}/apple/search?term=${encodeURIComponent(query)}&entity=album&limit=${perTypeLimit}`)
       .then(r => r.json()).catch(() => ({ results: [] }))
   ]);
 
   const items = [];
 
-  (artistData.artists || []).forEach(a => {
-    if((a.score || 0) < 60) return;
-    if(a.type === "Character") return;
-    const nameNorm = (a.name || "").trim().toLowerCase();
+  // déjà classés et dédupliqués par le serveur -> on conserve cet ordre (l'index sert de score)
+  (artistData.results || []).forEach((a, idx) => {
+    const name = a.artistName || "";
+    const nameNorm = name.trim().toLowerCase();
     if(!looseNameMatch(nameNorm, qNorm, 0.6)) return;
+    const fans = a.nbFan || 0;
+    const exact = nameNorm === qNorm;
     items.push({
       type: "artist",
-      id: a.id,
-      name: a.name,
-      subtitle: [a.type, a.country].filter(Boolean).join(" · ") || a.disambiguation || "",
-      score: a.score || 0
+      id: a.artistId,
+      name,
+      subtitle: fans ? `${fans.toLocaleString("fr-FR")} fans` : "",
+      // la photo arrive avec le résultat -> avatar immédiat, sans le détour Wikipédia
+      cover: a.artworkUrl100 || null,
+      // seul l'artiste au nom EXACTEMENT identique passe devant les albums : sinon, chercher
+      // "daft punk" remplissait les 8 places de variantes ("Daft Punk's Karaoke Band", "Daft Punk,
+      // Pharrell Williams"...) et reléguait Discovery et Random Access Memories hors écran
+      score: exact ? 130 : 55 - idx
     });
   });
 
@@ -4202,45 +4210,33 @@ async function fetchGenreDescription(styleName){
 }
 
 // --- artistes associés (relations factuelles MusicBrainz : membres, collaborations...) ---
-const RELATION_LABELS = {
-  "member of band": "Membre de",
-  "founder": "Fondateur de",
-  "collaboration": "Collaboration",
-  "remixer": "Remix",
-  "composer": "Compositeur",
-  "conductor": "Chef d'orchestre",
-  "is person": "Alias de",
-  "voice actor": "Voix"
-};
-const artistRelatedCache = new Map();
-async function fetchRelatedArtists(artistMbid){
-  if(artistRelatedCache.has(artistMbid)) return artistRelatedCache.get(artistMbid);
-  let related = [];
-  try{
-    const res = await fetch(`https://musicbrainz.org/ws/2/artist/${artistMbid}?inc=artist-rels&fmt=json`, { headers: { "Accept": "application/json" } });
-    const data = await res.json();
-    const seen = new Map();
-    (data.relations || []).forEach(r => {
-      if(!r.artist || !r.artist.id || r.artist.id === artistMbid) return;
-      if(seen.has(r.artist.id)) return;
-      seen.set(r.artist.id, { id: r.artist.id, name: r.artist.name, label: RELATION_LABELS[r.type] || r.type });
-    });
-    related = Array.from(seen.values()).slice(0, 12);
-  }catch(e){ /* pas grave */ }
-  artistRelatedCache.set(artistMbid, related);
-  return related;
-}
+// RELATION_LABELS et fetchRelatedArtists ont été déplacés côté serveur (mole-public-core.js,
+// handleArtistInfo) le 13/09/2026 : ils appelaient MusicBrainz depuis le navigateur.
 
 // --- avatar : photo si trouvée, sinon initiale en fond ---
-function renderAvatarInto(el, artistId, artistName){
+// directImageUrl : photo déjà connue (Deezer la renvoie avec le résultat de recherche) ->
+// affichage immédiat, sans aller-retour. Sans elle, on retombe sur la photo Wikipédia, qui
+// exige un mbid et deux appels réseau.
+function renderAvatarInto(el, artistId, artistName, directImageUrl){
   el.textContent = (artistName || "?").trim().charAt(0).toUpperCase();
   el.style.backgroundImage = "";
+  if(directImageUrl){
+    el.style.backgroundImage = `url("${directImageUrl}")`;
+    el.textContent = "";
+    return;
+  }
+  if(!isMusicBrainzId(artistId)) return; // rien à demander à MusicBrainz avec un id Deezer
   fetchArtistWikiInfo(artistId).then(info => {
     if(info.image){
       el.style.backgroundImage = `url("${info.image}")`;
       el.textContent = "";
     }
   });
+}
+
+// les identifiants MusicBrainz sont des UUID ; ceux de Deezer arrivent préfixés "deezer-"
+function isMusicBrainzId(id){
+  return typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
 const TYPE_LABELS = { artist: "Artiste", album: "Album", single: "Single" };
@@ -4264,10 +4260,10 @@ function renderAlbumSearchResults(items){
         </div>
         <button class="hsr-add" title="Voir le profil de l'artiste">&#8594;</button>
       `;
-      renderAvatarInto(item.querySelector(".avatar"), it.id, it.name);
+      renderAvatarInto(item.querySelector(".avatar"), it.id, it.name, it.cover);
       item.addEventListener("click", () => {
         albumSearchResults.classList.remove("open");
-        openArtistOverlay(it.id, it.name);
+        openArtistOverlay(it.id, it.name, it.cover);
       });
     } else {
       item.innerHTML = `
@@ -4366,8 +4362,8 @@ function renderSearchOverlayResults(){
           <button class="res-btn">Voir le profil</button>
         </div>
       `;
-      renderAvatarInto(card.querySelector(".avatar"), it.id, it.name);
-      card.querySelector(".res-btn").addEventListener("click", () => openArtistOverlay(it.id, it.name));
+      renderAvatarInto(card.querySelector(".avatar"), it.id, it.name, it.cover);
+      card.querySelector(".res-btn").addEventListener("click", () => openArtistOverlay(it.id, it.name, it.cover));
     } else {
       card.className = "res-card";
       card.innerHTML = `
@@ -4425,22 +4421,34 @@ async function fetchItunesDiscography(artistId, artistName){
   return groups;
 }
 
-async function openArtistOverlay(artistMbid, artistName){
+async function openArtistOverlay(artistId, artistName, artistImageUrl){
   dockSearchHome();
-  currentOpenArtist = { mbid: artistMbid, name: artistName };
+  currentOpenArtist = { mbid: artistId, name: artistName };
   currentOpenAlbum = null;
   artistOverlay.classList.add("open");
   artistOverlayTitle.textContent = artistName;
   artistOverlayBody.innerHTML = '<div class="overlay-status">Chargement de la discographie...</div>';
   artistBioBlock.classList.add("show");
-  renderAvatarInto(artistProfileAvatar, artistMbid, artistName);
+  renderAvatarInto(artistProfileAvatar, artistId, artistName, artistImageUrl);
   artistProfileBio.textContent = "";
 
-  fetchArtistWikiInfo(artistMbid).then(info => {
+  // Bio et artistes associés viennent de notre proxy (handleArtistInfo, côté serveur) :
+  // MusicBrainz limite à UNE requête par seconde et par IP, donc l'interroger depuis le
+  // navigateur de chaque visiteur donnait 12 s d'attente puis des 503 — la bio n'arrivait
+  // jamais. Avec le cache serveur, c'est un appel par artiste, puis une réponse immédiate.
+  const infoPromise = fetch(`${RECOS_PUBLIC_URL}/apple/artist-info?name=${encodeURIComponent(artistName)}`)
+    .then(r => r.json())
+    .catch(() => ({ bio: null, image: null, related: [] }));
+
+  infoPromise.then(info => {
     artistProfileBio.textContent = info.bio || "";
+    if(!artistImageUrl && info.image){
+      artistProfileAvatar.style.backgroundImage = `url("${info.image}")`;
+      artistProfileAvatar.textContent = "";
+    }
   });
 
-  const relatedPromise = fetchRelatedArtists(artistMbid);
+  const relatedPromise = infoPromise.then(info => info.related || []);
 
   try{
     const itunesArtistId = await resolveItunesArtistId(artistName);
@@ -4468,7 +4476,7 @@ async function openArtistOverlay(artistMbid, artistName){
         <div class="related-name">${escapeHtml(r.name)}</div>
         <div class="related-label">${escapeHtml(r.label)}</div>
       `;
-      renderAvatarInto(card.querySelector(".avatar"), r.id, r.name);
+      renderAvatarInto(card.querySelector(".avatar"), null, r.name); // pas d'id : evite 12 appels MusicBrainz depuis le navigateur
       card.addEventListener("click", () => openArtistOverlay(r.id, r.name));
       row.appendChild(card);
     });
@@ -5397,7 +5405,9 @@ function renderPisteResults(ranked){
 // l'ancien Worker Cloudflare public, portées dans /api + lib/mole-public-core.js, avec un
 // rewrite dans vercel.json pour garder les chemins identiques. L'ancien Worker Cloudflare
 // reste déployé pour l'instant (pas encore désactivé) mais n'est plus appelé par le site.
-const RECOS_PUBLIC_URL = "https://mole-mole4.vercel.app";
+// meme origine que la page : chaque deploiement (prod ou preview) parle a SA propre API,
+// au lieu que la preview interroge la prod comme c etait le cas avec l URL en dur
+const RECOS_PUBLIC_URL = location.origin;
 
 let recosWallCache = [];
 let recosActiveWeeks = [];

@@ -4210,34 +4210,8 @@ async function fetchGenreDescription(styleName){
 }
 
 // --- artistes associés (relations factuelles MusicBrainz : membres, collaborations...) ---
-const RELATION_LABELS = {
-  "member of band": "Membre de",
-  "founder": "Fondateur de",
-  "collaboration": "Collaboration",
-  "remixer": "Remix",
-  "composer": "Compositeur",
-  "conductor": "Chef d'orchestre",
-  "is person": "Alias de",
-  "voice actor": "Voix"
-};
-const artistRelatedCache = new Map();
-async function fetchRelatedArtists(artistMbid){
-  if(artistRelatedCache.has(artistMbid)) return artistRelatedCache.get(artistMbid);
-  let related = [];
-  try{
-    const res = await fetch(`https://musicbrainz.org/ws/2/artist/${artistMbid}?inc=artist-rels&fmt=json`, { headers: { "Accept": "application/json" } });
-    const data = await res.json();
-    const seen = new Map();
-    (data.relations || []).forEach(r => {
-      if(!r.artist || !r.artist.id || r.artist.id === artistMbid) return;
-      if(seen.has(r.artist.id)) return;
-      seen.set(r.artist.id, { id: r.artist.id, name: r.artist.name, label: RELATION_LABELS[r.type] || r.type });
-    });
-    related = Array.from(seen.values()).slice(0, 12);
-  }catch(e){ /* pas grave */ }
-  artistRelatedCache.set(artistMbid, related);
-  return related;
-}
+// RELATION_LABELS et fetchRelatedArtists ont été déplacés côté serveur (mole-public-core.js,
+// handleArtistInfo) le 13/09/2026 : ils appelaient MusicBrainz depuis le navigateur.
 
 // --- avatar : photo si trouvée, sinon initiale en fond ---
 // directImageUrl : photo déjà connue (Deezer la renvoie avec le résultat de recherche) ->
@@ -4458,26 +4432,23 @@ async function openArtistOverlay(artistId, artistName, artistImageUrl){
   renderAvatarInto(artistProfileAvatar, artistId, artistName, artistImageUrl);
   artistProfileBio.textContent = "";
 
-  // La recherche vient de Deezer (ids "deezer-…"), mais la bio et les artistes associés
-  // n'existent que côté MusicBrainz. On résout donc le mbid par nom, uniquement ici, à
-  // l'ouverture de la fiche : un seul appel, là où sa précision sert — au lieu de laisser
-  // MusicBrainz décider du classement de toutes les recherches.
-  const mbidPromise = isMusicBrainzId(artistId)
-    ? Promise.resolve(artistId)
-    : findArtistMbidByName(artistName);
+  // Bio et artistes associés viennent de notre proxy (handleArtistInfo, côté serveur) :
+  // MusicBrainz limite à UNE requête par seconde et par IP, donc l'interroger depuis le
+  // navigateur de chaque visiteur donnait 12 s d'attente puis des 503 — la bio n'arrivait
+  // jamais. Avec le cache serveur, c'est un appel par artiste, puis une réponse immédiate.
+  const infoPromise = fetch(`${RECOS_PUBLIC_URL}/apple/artist-info?name=${encodeURIComponent(artistName)}`)
+    .then(r => r.json())
+    .catch(() => ({ bio: null, image: null, related: [] }));
 
-  mbidPromise.then(mbid => {
-    if(!mbid) return; // pas trouvé côté MusicBrainz -> fiche sans bio, le reste fonctionne
-    fetchArtistWikiInfo(mbid).then(info => {
-      artistProfileBio.textContent = info.bio || "";
-      if(!artistImageUrl && info.image){
-        artistProfileAvatar.style.backgroundImage = `url("${info.image}")`;
-        artistProfileAvatar.textContent = "";
-      }
-    });
+  infoPromise.then(info => {
+    artistProfileBio.textContent = info.bio || "";
+    if(!artistImageUrl && info.image){
+      artistProfileAvatar.style.backgroundImage = `url("${info.image}")`;
+      artistProfileAvatar.textContent = "";
+    }
   });
 
-  const relatedPromise = mbidPromise.then(mbid => mbid ? fetchRelatedArtists(mbid) : []);
+  const relatedPromise = infoPromise.then(info => info.related || []);
 
   try{
     const itunesArtistId = await resolveItunesArtistId(artistName);
@@ -4505,7 +4476,7 @@ async function openArtistOverlay(artistId, artistName, artistImageUrl){
         <div class="related-name">${escapeHtml(r.name)}</div>
         <div class="related-label">${escapeHtml(r.label)}</div>
       `;
-      renderAvatarInto(card.querySelector(".avatar"), r.id, r.name);
+      renderAvatarInto(card.querySelector(".avatar"), null, r.name); // pas d'id : evite 12 appels MusicBrainz depuis le navigateur
       card.addEventListener("click", () => openArtistOverlay(r.id, r.name));
       row.appendChild(card);
     });
